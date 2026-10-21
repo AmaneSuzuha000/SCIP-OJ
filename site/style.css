@@ -1,0 +1,11 @@
+:root { font-family: system-ui, sans-serif; color: #e8eaed; background: #0f1115; }
+body { max-width: 920px; margin: 0 auto; padding: 1.5rem; line-height: 1.5; }
+header p, footer { color: #9aa0a6; font-size: 0.95rem; }
+a { color: #8ab4f8; }
+.card { display: block; padding: 1rem; margin: 0.75rem 0; border: 1px solid #30363d; border-radius: 8px; text-decoration: none; color: inherit; }
+.card:hover { border-color: #8ab4f8; }
+textarea { width: 100%; font-family: ui-monospace, monospace; font-size: 13px; background: #161b22; color: #e6edf3; border: 1px solid #30363d; border-radius: 8px; padding: 0.75rem; }
+button { background: #238636; color: #fff; border: 0; border-radius: 6px; padding: 0.55rem 1rem; cursor: pointer; font-weight: 600; }
+button:hover { background: #2ea043; }
+#report { background: #161b22; padding: 1rem; border-radius: 8px; overflow: auto; min-height: 4rem; }
+.pass { color: #3fb950; } .fail { color: #f85149; }
