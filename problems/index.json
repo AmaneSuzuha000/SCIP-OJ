@@ -5,5 +5,12 @@
     "difficulty": "easy",
     "tags": ["MIP", "knapsack"],
     "path": "problems/P001_knapsack"
+  },
+  {
+    "id": "P002",
+    "title": "指派问题（Assignment）",
+    "difficulty": "easy",
+    "tags": ["MIP", "assignment"],
+    "path": "problems/P002_assignment"
   }
 ]

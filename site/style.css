@@ -9,3 +9,4 @@ button { background: #238636; color: #fff; border: 0; border-radius: 6px; paddin
 button:hover { background: #2ea043; }
 #report { background: #161b22; padding: 1rem; border-radius: 8px; overflow: auto; min-height: 4rem; }
 .pass { color: #3fb950; } .fail { color: #f85149; }
+.links a{margin-right:.5rem}

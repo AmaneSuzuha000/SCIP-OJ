@@ -10,13 +10,14 @@
   <header>
     <h1>scip-oj</h1>
     <p>GitHub Pages · L1 浏览器判分（练习，不作正式成绩）· 通过线 90 · 多实例平均分</p>
+    <p class="links"><a href="docs/出题指南.md">出题指南</a> · <a href="docs/学生指南.md">学生指南</a> · <a href="README.md">README</a></p>
   </header>
   <main>
     <section id="problem-list"></section>
     <section id="workspace" hidden>
       <h2 id="title"></h2>
       <article id="readme"></article>
-      <label for="code">你的 solve 实现（Python 子集 · MVP 用内置解释器跑背包 DP/提交）</label>
+      <label for="code">你的 solve 实现（Python · MVP 按钮跑内置最优 demo；正式作业走 L2 PR）</label>
       <textarea id="code" rows="22" spellcheck="false"></textarea>
       <div class="actions">
         <button id="btn-grade" type="button">提交评分（L1）</button>
@@ -26,9 +27,10 @@
     </section>
   </main>
   <footer>
-    <p>骨架阶段：P001 在浏览器内用 JS 复现同一套性质验证规则。JupyterLite + PySCIPOpt 见 README Phase 0+。</p>
+    <p>骨架：P001/P002 L1 性质验证。正式成绩请用 L2（PR + Actions）。JupyterLite + PySCIPOpt 见 README。</p>
   </footer>
   <script src="js/knapsack_judge.js"></script>
+  <script src="js/assignment_judge.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

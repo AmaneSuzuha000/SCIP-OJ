@@ -162,3 +162,113 @@ def _pack(score: int, passed: bool, breakdown: dict, messages: list[str], meta: 
         "messages": messages,
         "pass_score": int(meta.get("pass_score", 90)),
     }
+
+
+def check_assignment_feasibility(
+    solution: Mapping[Any, float] | Sequence[float],
+    instance: Mapping[str, Any],
+    eps: float = 1e-5,
+) -> tuple[bool, str]:
+    """n×n assignment: binary matrix, each row/col sums to 1."""
+    n = int(instance["n"])
+    x = _as_matrix(solution, n)
+    for i in range(n):
+        for j in range(n):
+            v = x[i][j]
+            if v < -eps or v > 1 + eps:
+                return False, f"x[{i},{j}]={v} 超出 [0,1]"
+    for i in range(n):
+        s = sum(x[i][j] for j in range(n))
+        if abs(s - 1.0) > eps:
+            return False, f"行 {i} 和={s}（应为 1）"
+    for j in range(n):
+        s = sum(x[i][j] for i in range(n))
+        if abs(s - 1.0) > eps:
+            return False, f"列 {j} 和={s}（应为 1）"
+    return True, "可行"
+
+
+def check_assignment_integrality(
+    solution: Mapping[Any, float] | Sequence[float],
+    instance: Mapping[str, Any],
+    eps: float = 1e-5,
+) -> tuple[bool, str]:
+    n = int(instance["n"])
+    x = _as_matrix(solution, n)
+    for i in range(n):
+        for j in range(n):
+            v = x[i][j]
+            if abs(v - round(v)) > eps:
+                return False, f"x[{i},{j}]={v} 非整数"
+    return True, "整数性 OK"
+
+
+def grade_assignment(result: Mapping[str, Any], instance: Mapping[str, Any], meta: Mapping[str, Any]) -> dict[str, Any]:
+    weights = {"F": 10, "C": 35, "I": 10, "O": 35, "R": 0}
+    weights.update(meta.get("weights") or {})
+    breakdown = {k: 0 for k in weights}
+    messages: list[str] = []
+
+    ok, msg = check_format(result)
+    messages.append(msg)
+    if not ok:
+        return _pack(0, False, breakdown, messages, meta)
+    breakdown["F"] = weights["F"]
+
+    ok, msg = check_assignment_feasibility(result["solution"], instance, meta.get("eps_feas", 1e-5))
+    messages.append(msg)
+    if not ok:
+        return _pack(sum(breakdown.values()), False, breakdown, messages, meta)
+    breakdown["C"] = weights["C"]
+
+    ok, msg = check_assignment_integrality(result["solution"], instance, meta.get("eps_int", 1e-5))
+    messages.append(msg)
+    if not ok:
+        return _pack(sum(breakdown.values()), False, breakdown, messages, meta)
+    breakdown["I"] = weights["I"]
+
+    n = int(instance["n"])
+    costs = instance["costs"]
+    x = _as_matrix(result["solution"], n)
+    recomputed = sum(costs[i][j] * x[i][j] for i in range(n) for j in range(n))
+    if abs(recomputed - float(result["objective"])) > meta.get("eps_feas", 1e-5):
+        messages.append("objective 与 solution 不一致")
+        return _pack(sum(breakdown.values()), False, breakdown, messages, meta)
+
+    pts, msg = score_objective(
+        float(result["objective"]),
+        float(instance["optimal_value"]),
+        meta.get("sense", "minimize"),
+        meta.get("eps_obj", 1e-4),
+    )
+    o_w = weights["O"]
+    breakdown["O"] = int(round(pts * o_w / 35)) if o_w != 35 else pts
+    messages.append(msg)
+
+    score = int(sum(breakdown.values()))
+    passed = score >= int(meta.get("pass_score", 90))
+    return _pack(score, passed, breakdown, messages, meta)
+
+
+def _as_matrix(solution: Mapping[Any, float] | Sequence[Any], n: int) -> list[list[float]]:
+    """Accept flat n*n list, nested list, or dict keys 'i,j' / (i,j) / i*n+j."""
+    if isinstance(solution, Mapping):
+        mat = [[0.0] * n for _ in range(n)]
+        for i in range(n):
+            for j in range(n):
+                for key in ((i, j), f"{i},{j}", f"{i}-{j}", i * n + j, str(i * n + j)):
+                    if key in solution:
+                        mat[i][j] = float(solution[key])
+                        break
+                else:
+                    # nested dict solution[i][j]
+                    row = solution.get(i, solution.get(str(i)))
+                    if isinstance(row, Mapping) and (j in row or str(j) in row):
+                        mat[i][j] = float(row[j] if j in row else row[str(j)])
+        return mat
+    seq = list(solution)
+    if len(seq) == n and all(isinstance(r, (list, tuple)) for r in seq):
+        return [[float(v) for v in row] for row in seq]
+    if len(seq) == n * n:
+        return [[float(seq[i * n + j]) for j in range(n)] for i in range(n)]
+    raise ValueError(f"solution 形状无法解析为 {n}x{n}")

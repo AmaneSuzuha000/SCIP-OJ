@@ -15,18 +15,25 @@ async function loadText(path) {
 async function main() {
   const listEl = document.getElementById("problem-list");
   const index = await loadJSON("problems/index.json");
-  listEl.innerHTML = "<h2>题单</h2>" + index.map(p =>
-    `<a class="card" href="#${p.id}" data-id="${p.id}" data-path="${p.path}"><strong>${p.id}</strong> ${p.title}<br/><small>${p.difficulty} · ${(p.tags||[]).join(", ")}</small></a>`
-  ).join("");
+  listEl.innerHTML =
+    "<h2>题单</h2>" +
+    index
+      .map(
+        (p) =>
+          `<a class="card" href="#${p.id}" data-id="${p.id}" data-path="${p.path}"><strong>${p.id}</strong> ${p.title}<br/><small>${p.difficulty} · ${(p.tags || []).join(", ")}</small></a>`
+      )
+      .join("");
 
-  listEl.querySelectorAll("a.card").forEach(a => a.addEventListener("click", async (e) => {
-    e.preventDefault();
-    await openProblem(a.dataset.path, a.dataset.id);
-  }));
+  listEl.querySelectorAll("a.card").forEach((a) =>
+    a.addEventListener("click", async (e) => {
+      e.preventDefault();
+      await openProblem(a.dataset.path, a.dataset.id);
+    })
+  );
 
   if (location.hash) {
     const id = location.hash.slice(1);
-    const p = index.find(x => x.id === id);
+    const p = index.find((x) => x.id === id);
     if (p) await openProblem(p.path, p.id);
   }
 }
@@ -44,9 +51,14 @@ async function openProblem(path, id) {
   document.getElementById("status").textContent = "";
 
   document.getElementById("btn-grade").onclick = () => {
-    // MVP: run built-in demoSolve (same DP as template). Later: Pyodide exec textarea.
-    const solveFn = window.ScipOJJudge.demoSolve;
-    const report = window.ScipOJJudge.runL1(solveFn, meta);
+    // MVP: built-in demoSolve (textarea not executed yet). Later: Pyodide/JupyterLite.
+    const grader = meta.grader || "knapsack";
+    let report;
+    if (grader === "assignment") {
+      report = window.ScipOJAssignment.runL1Assignment(window.ScipOJAssignment.demoSolveAssignment, meta);
+    } else {
+      report = window.ScipOJJudge.runL1(window.ScipOJJudge.demoSolve, meta);
+    }
     document.getElementById("report").textContent = JSON.stringify(report, null, 2);
     const st = document.getElementById("status");
     st.textContent = report.passed ? `通过 · ${report.score}` : `未通过 · ${report.score}`;
@@ -56,9 +68,9 @@ async function openProblem(path, id) {
 }
 
 function escapeHtml(s) {
-  return s.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  return s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 }
 
-main().catch(err => {
+main().catch((err) => {
   document.getElementById("problem-list").textContent = String(err);
 });
