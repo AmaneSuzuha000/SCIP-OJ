@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>scip-oj · 文档</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    #md { background:#161b22; border:1px solid #30363d; border-radius:8px; padding:1.25rem 1.5rem; }
+    #md h1,#md h2,#md h3 { margin-top:1.25em; }
+    #md pre, #md code { font-family: ui-monospace, monospace; }
+    #md pre { background:#0d1117; padding:.75rem 1rem; border-radius:6px; overflow:auto; }
+    #md code { background:#0d1117; padding:.1em .35em; border-radius:4px; }
+    #md pre code { background:transparent; padding:0; }
+    #md table { border-collapse:collapse; width:100%; }
+    #md th,#md td { border:1px solid #30363d; padding:.4rem .6rem; }
+    #md blockquote { border-left:3px solid #30363d; margin:0; padding-left:1rem; color:#9aa0a6; }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="links"><a href="index.html">← 题单</a></p>
+    <h1 id="title">文档</h1>
+  </header>
+  <main><article id="md">加载中…</article></main>
+  <script src="js/marked.min.js"></script>
+  <script>
+    (async () => {
+      const params = new URLSearchParams(location.search);
+      const path = params.get("path") || ("docs/" + (params.get("f") || "出题指南.md"));
+      const name = path.split("/").pop().replace(/\.md$/, "");
+      document.getElementById("title").textContent = name;
+      document.title = "scip-oj · " + name;
+      const r = await fetch(path);
+      if (!r.ok) {
+        document.getElementById("md").textContent = "加载失败: " + path + " (" + r.status + ")";
+        return;
+      }
+      document.getElementById("md").innerHTML = marked.parse(await r.text());
+    })();
+  </script>
+</body>
+</html>
