@@ -3,29 +3,60 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+
 permissions:
   contents: read
   pages: write
   id-token: write
+
 concurrency:
   group: pages
   cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Assemble site root
-        run: |
-          mkdir -p _site
-          cp -r site/* _site/
-          cp -r problems _site/problems
-          mkdir -p _site/docs
-          cp -r docs/* _site/docs/
-          cp README.md _site/README.md
-      - uses: actions/upload-pages-artifact@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          path: _site
+          python-version: "3.12"
+
+      - name: Install micromamba & build environment
+        uses: mamba-org/setup-micromamba@v1
+        with:
+          micromamba-version: "1.5.8-0"
+          environment-file: .github/build-environment.yml
+          cache-environment: true
+
+      - name: Build JupyterLite site
+        shell: bash -l {0}
+        run: |
+          cp README.md content/
+          jupyter lite build --contents content --output-dir dist
+
+      - name: Merge LeetCode Shell and Assets into dist
+        shell: bash
+        run: |
+          # Preserve JupyterLite's original launcher as lite.html
+          cp dist/index.html dist/lite.html 2>/dev/null || true
+          # Overlay LeetCode shell onto dist root
+          cp -r site/* dist/
+          # Ensure problems, docs and README are in dist
+          mkdir -p dist/problems dist/docs
+          cp -r problems/* dist/problems/
+          cp -r docs/* dist/docs/
+          cp README.md dist/README.md
+          # Ensure GitHub Pages does not filter files via Jekyll
+          touch dist/.nojekyll
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
