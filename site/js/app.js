@@ -45,7 +45,7 @@ async function openProblem(path, id) {
   const readme = await loadText(`${path}/README.md`);
   const template = await loadText(`${path}/template.py`);
   document.getElementById("title").textContent = `${meta.id} · 通过线 ${meta.pass_score}`;
-  document.getElementById("readme").innerHTML = `<pre>${escapeHtml(readme)}</pre>`;
+  document.getElementById("readme").innerHTML = window.marked ? marked.parse(readme) : `<pre>${escapeHtml(readme)}</pre>`;
   document.getElementById("code").value = template;
   document.getElementById("report").textContent = "";
   document.getElementById("status").textContent = "";
