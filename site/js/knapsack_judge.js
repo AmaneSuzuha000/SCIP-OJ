@@ -79,7 +79,7 @@ function gradeKnapsack(result, instance, meta) {
   return pack(score, score >= (meta.pass_score ?? 90), breakdown, messages, meta);
 }
 
-function runL1(solveFn, meta) {
+async function runL1(solveFn, meta) {
   const n = meta.n_instances_l1 ?? 3;
   const base = meta.seed_base ?? 20261021;
   const instances = [];
@@ -87,10 +87,10 @@ function runL1(solveFn, meta) {
     const inst = genKnapsack(base + i);
     let rep;
     try {
-      const result = solveFn(inst);
+      const result = await solveFn(inst);
       rep = gradeKnapsack(result, inst, meta);
     } catch (e) {
-      rep = { score: 0, passed: false, breakdown: { F: 0, C: 0, I: 0, O: 0 }, messages: ["运行错误: " + e] };
+      rep = { score: 0, passed: false, breakdown: { F: 0, C: 0, I: 0, O: 0 }, messages: ["运行错误: " + (e?.message || e)] };
     }
     rep.seed = base + i;
     instances.push(rep);

@@ -138,7 +138,7 @@ function gradeAssignment(result, instance, meta) {
   return packA(score, score >= (meta.pass_score ?? 90), breakdown, messages, meta);
 }
 
-function runL1Assignment(solveFn, meta) {
+async function runL1Assignment(solveFn, meta) {
   const n = meta.n_instances_l1 ?? 3;
   const base = meta.seed_base ?? 20261022;
   const instances = [];
@@ -146,9 +146,10 @@ function runL1Assignment(solveFn, meta) {
     const inst = genAssignment(base + i);
     let rep;
     try {
-      rep = gradeAssignment(solveFn(inst), inst, meta);
+      const result = await solveFn(inst);
+      rep = gradeAssignment(result, inst, meta);
     } catch (e) {
-      rep = { score: 0, passed: false, breakdown: { F: 0, C: 0, I: 0, O: 0 }, messages: ["运行错误: " + e] };
+      rep = { score: 0, passed: false, breakdown: { F: 0, C: 0, I: 0, O: 0 }, messages: ["运行错误: " + (e?.message || e)] };
     }
     rep.seed = base + i;
     instances.push(rep);

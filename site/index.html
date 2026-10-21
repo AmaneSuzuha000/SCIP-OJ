@@ -9,15 +9,21 @@
 <body>
   <header>
     <h1>scip-oj</h1>
-    <p>GitHub Pages · L1 浏览器判分（练习，不作正式成绩）· 通过线 90 · 多实例平均分</p>
-    <p class="links"><a href="doc.html?f=出题指南.md">出题指南</a> · <a href="doc.html?f=学生指南.md">学生指南</a> · <a href="doc.html?path=README.md">README</a></p>
+    <p>GitHub Pages · L1 浏览器 Python WASM 判分（练习，不作正式成绩）· 通过线 90 · 多实例平均分</p>
+    <p class="links">
+      <a href="lab/index.html" target="_blank"><strong>JupyterLab (PySCIPOpt)</strong></a> · 
+      <a href="repl/index.html" target="_blank">REPL</a> · 
+      <a href="doc.html?f=出题指南.md">出题指南</a> · 
+      <a href="doc.html?f=学生指南.md">学生指南</a> · 
+      <a href="doc.html?path=README.md">README</a>
+    </p>
   </header>
   <main>
     <section id="problem-list"></section>
     <section id="workspace" hidden>
       <h2 id="title"></h2>
       <article id="readme"></article>
-      <label for="code">你的 solve 实现（Python · MVP 按钮跑内置最优 demo；正式作业走 L2 PR）</label>
+      <label for="code">你的 solve 实现（Python 浏览器 WASM 真实执行；含 SCIP 求解器的题目请在上方 JupyterLab 打开；正式作业走 L2 PR）</label>
       <textarea id="code" rows="22" spellcheck="false"></textarea>
       <div class="actions">
         <button id="btn-grade" type="button">提交评分（L1）</button>
@@ -27,11 +33,12 @@
     </section>
   </main>
   <footer>
-    <p>骨架：P001/P002 L1 性质验证。正式成绩请用 L2（PR + Actions）。JupyterLite + PySCIPOpt 见 README。</p>
+    <p>scip-oj · L1 浏览器内由 WebAssembly 真跑学生 Python 代码；全功能 PySCIPOpt 内核请使用 <a href="lab/index.html" target="_blank">JupyterLab</a>。正式作业成绩认 L2（PR + Actions）。</p>
   </footer>
   <script src="js/marked.min.js"></script>
   <script src="js/knapsack_judge.js"></script>
   <script src="js/assignment_judge.js"></script>
+  <script src="js/python_runtime.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
