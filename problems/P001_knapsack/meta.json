@@ -1,0 +1,13 @@
+{
+  "id": "P001",
+  "sense": "maximize",
+  "eps_feas": 1e-5,
+  "eps_int": 1e-5,
+  "eps_obj": 1e-4,
+  "time_limit_sec": 30,
+  "pass_score": 90,
+  "n_instances_l1": 3,
+  "seed_base": 20261021,
+  "weights": { "F": 10, "C": 35, "I": 10, "O": 35, "R": 0 },
+  "grader": "knapsack"
+}

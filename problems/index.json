@@ -1,0 +1,9 @@
+[
+  {
+    "id": "P001",
+    "title": "0-1 背包（MIP 入门）",
+    "difficulty": "easy",
+    "tags": ["MIP", "knapsack"],
+    "path": "problems/P001_knapsack"
+  }
+]
