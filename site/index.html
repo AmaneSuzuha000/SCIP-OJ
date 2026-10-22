@@ -169,13 +169,28 @@
         <div id="status" class="status-badge" role="status" aria-live="polite"></div>
       </div>
 
-      <!-- 评测报告终端控制台 -->
+      <!-- LeetCode-style custom test and run-result console -->
       <div class="console-container">
         <div class="console-header">
-          <span>◉ 运行结果 <small class="console-shortcut">Ctrl / ⌘ + Enter · 本地运行</small></span>
-          <button id="btn-clear-console" type="button" class="btn-secondary" style="font-size:0.72rem; padding:0.15rem 0.45rem;">清空控制台</button>
+          <div class="console-tabs" role="tablist" aria-label="测试与运行">
+            <button id="tab-testcase" type="button" class="console-tab active" role="tab" aria-selected="true">◫ 测试用例</button>
+            <button id="tab-result" type="button" class="console-tab" role="tab" aria-selected="false">◉ 运行结果</button>
+          </div>
+          <button id="btn-clear-console" type="button" class="btn-secondary" style="font-size:0.72rem; padding:0.15rem 0.45rem;">清空结果</button>
         </div>
-        <pre id="report"></pre>
+        <div id="testcase-panel" role="tabpanel" aria-labelledby="tab-testcase">
+          <div class="testcase-caption">自定义实例 JSON <span>练习专用 · 不计算正式分</span></div>
+          <label class="sr-only" for="testcase-input">测试用例输入 JSON</label>
+          <textarea id="testcase-input" spellcheck="false" placeholder='{"n": 2, "weights": [2, 3], "values": [3, 4], "capacity": 3}'></textarea>
+          <div class="testcase-actions">
+            <button id="btn-reset-testcase" type="button" class="btn-secondary">恢复示例输入</button>
+            <button id="btn-run-testcase" type="button" class="btn-blue">▶ 运行此测试</button>
+          </div>
+        </div>
+        <div id="result-panel" role="tabpanel" aria-labelledby="tab-result" hidden>
+          <pre id="report" aria-label="运行与判分报告"></pre>
+          <div id="testcase-run-note" class="testcase-run-note" hidden></div>
+        </div>
       </div>
 
         </div>
