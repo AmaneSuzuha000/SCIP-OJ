@@ -8,6 +8,6 @@
   "pass_score": 90,
   "n_instances_l1": 3,
   "seed_base": 20261022,
-  "weights": { "F": 10, "C": 35, "I": 10, "O": 35, "R": 0 },
+  "weights": { "F": 10, "C": 35, "I": 10, "O": 45, "R": 0 },
   "grader": "assignment"
 }

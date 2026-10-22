@@ -1,0 +1,22 @@
+name: Judge Regression Tests
+
+on:
+  push:
+    branches: [main, 'fix/**']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  judge-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Python scoring and oracle isolation regressions
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Browser scoring regressions
+        run: node tests/test_browser_judge.cjs
