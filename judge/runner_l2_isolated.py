@@ -16,7 +16,8 @@ from pathlib import Path
 from typing import Any
 
 from judge.common import average_scores, grade_assignment, grade_knapsack
-from judge.runner_l1 import SystemJudgeError, gen_assignment, gen_knapsack
+from judge.runner_l1 import SystemJudgeError
+from judge.private_instances import private_assignment, private_knapsack
 from judge.runner_l2 import problem_dir_for
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -113,7 +114,7 @@ def grade_file(path: Path, problem_id: str | None = None,
     if not 1 <= n <= 20:
         return {"ok": False, "status": "system_error", "error": "非法测试实例数量",
                 "score": None, "passed": False, "path": str(path), "layer": "L2"}
-    gen = gen_assignment if meta.get("grader") == "assignment" else gen_knapsack
+    gen = private_assignment if meta.get("grader") == "assignment" else private_knapsack
     grade = grade_assignment if meta.get("grader") == "assignment" else grade_knapsack
     try:
         inspected = subprocess.run(
@@ -144,7 +145,7 @@ def grade_file(path: Path, problem_id: str | None = None,
         aggregate = average_scores(reports, int(meta.get("pass_score", 90)))
         aggregate.update({"ok": True, "status": "done", "problem_id": pid,
                           "path": str(path), "layer": "L2",
-                          "test_set": "server_private_random",
+                          "test_set": "server_private_v2",
                           "sandbox": "isolated_container"})
         return aggregate
     except (SystemJudgeError, OSError, subprocess.SubprocessError) as exc:
