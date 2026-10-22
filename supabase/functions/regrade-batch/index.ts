@@ -175,6 +175,7 @@ serve(async (req: Request): Promise<Response> => {
               callbackUrl,
               ghToken ?? "",
               ghRepo ?? "",
+          newGrading.id,
             );
           } catch (dispatchErr: any) {
             // 单条调度失败必须把该 grading 标记为 system_error，
