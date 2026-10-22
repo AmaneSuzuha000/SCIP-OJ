@@ -24,7 +24,7 @@ function asVector(solution, n) {
 }
 
 function gradeKnapsack(result, instance, meta) {
-  const weights = Object.assign({ F: 10, C: 35, I: 10, O: 35 }, meta.weights || {});
+  const weights = Object.assign({ F: 10, C: 35, I: 10, O: 45 }, meta.weights || {});
   const breakdown = { F: 0, C: 0, I: 0, O: 0 };
   const messages = [];
   const eps = meta.eps_feas ?? 1e-5;
@@ -38,6 +38,10 @@ function gradeKnapsack(result, instance, meta) {
   try { x = asVector(result.solution, instance.n); } catch (e) {
     messages.push(String(e));
     return pack(breakdown.F, false, breakdown, messages, meta);
+  }
+  if (x.length !== instance.n || !x.every(Number.isFinite) || !Number.isFinite(Number(result.objective))) {
+    messages.push("objective 和解向量必须包含有限数值且长度正确");
+    return pack(0, false, breakdown, messages, meta);
   }
   const load = x.reduce((s, xi, i) => s + xi * instance.weights[i], 0);
   if (load - instance.capacity > eps) {
@@ -87,7 +91,10 @@ async function runL1(solveFn, meta) {
     const inst = genKnapsack(base + i);
     let rep;
     try {
-      const result = await solveFn(inst);
+      const publicInstance = {
+        n: inst.n, weights: inst.weights.slice(), values: inst.values.slice(), capacity: inst.capacity
+      };
+      const result = await solveFn(publicInstance);
       rep = gradeKnapsack(result, inst, meta);
     } catch (e) {
       rep = { score: 0, passed: false, breakdown: { F: 0, C: 0, I: 0, O: 0 }, messages: ["运行错误: " + (e?.message || e)] };
