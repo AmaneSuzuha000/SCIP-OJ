@@ -3,62 +3,161 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>scip-oj · 系统建模与优化作业平台</title>
+  <title>SCIP-OJ · 系统建模与优化评测平台</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header>
-    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
-      <div>
-        <h1 style="margin-bottom:0.25rem;"><a href="index.html" style="color:inherit;text-decoration:none;">scip-oj</a></h1>
-        <p style="margin-top:0;">双轨作业平台 · L1 浏览器 Python WASM 练习 · 正式作业服务端评测</p>
-        <p class="links">
-          <a href="lab/index.html" target="_blank"><strong>JupyterLab (PySCIPOpt)</strong></a> · 
-          <a href="repl/index.html" target="_blank">REPL</a> · 
-          <a href="teacher.html" id="teacher-link" hidden><strong>教师面板</strong></a> · 
-          <a href="doc.html?f=出题指南.md">出题指南</a> · 
-          <a href="doc.html?f=学生指南.md">学生指南</a> · 
-          <a href="doc.html?path=README.md">README</a>
-        </p>
+  <!-- 顶部主导航栏 -->
+  <header class="navbar">
+    <div class="navbar-container">
+      <div class="brand-section">
+        <a href="index.html" class="brand-logo">
+          <div class="brand-logo-icon">S</div>
+          <span>SCIP-OJ</span>
+        </a>
+        <span class="brand-tag">双轨优化平台</span>
       </div>
-      <div id="auth-area"></div>
+
+      <nav class="nav-links">
+        <a href="index.html" class="nav-item active">题单大厅</a>
+        <a href="lab/index.html" target="_blank" class="nav-item" title="全功能 PySCIPOpt 交互式 JupyterLab 环境">JupyterLab</a>
+        <a href="repl/index.html" target="_blank" class="nav-item">REPL</a>
+        <a href="teacher.html" id="teacher-link" class="nav-item nav-item-highlight" hidden><strong>教师控制台</strong></a>
+        <a href="doc.html?f=学生指南.md" class="nav-item">学生指南</a>
+        <a href="doc.html?f=教师指南.md" class="nav-item">教师指南</a>
+        <a href="doc.html?path=README.md" class="nav-item">文档</a>
+      </nav>
+
+      <div class="auth-section" id="auth-area">
+        <span class="user-info" style="color:var(--text-secondary);">加载平台服务中...</span>
+      </div>
     </div>
   </header>
-  <main>
-    <section id="problem-list"></section>
-    <section id="workspace" hidden>
-      <h2 id="title"></h2>
-      <div id="assignment-meta-bar" class="meta-bar" hidden></div>
-      <article id="readme"></article>
-      <label for="code">你的 solve 实现（Python 浏览器 WASM 练习 / 平台正式提交；含 SCIP 求解器的题目可先在上方 JupyterLab 交互验证）</label>
-      <textarea id="code" rows="22" spellcheck="false"></textarea>
-      <div class="actions" style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap; margin:1rem 0;">
-        <button id="btn-grade" type="button" title="在浏览器内通过 WASM 快速验证（练习，不计入正式成绩）">⚡ L1 练习评分（浏览器 WASM）</button>
-        <button id="btn-submit-formal" type="button" class="btn-blue" title="提交至服务端进行 PySCIPOpt 权威评测，记录为正式作业成绩">🚀 提交正式作业（服务端评测）</button>
-        <span id="status"></span>
-      </div>
-      <pre id="report"></pre>
 
-      <!-- 我的提交记录 -->
-      <section id="my-submissions-section" style="margin-top:2.5rem; border-top:1px solid #30363d; padding-top:1.5rem;">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
-          <h3 style="margin:0;">📜 我的提交记录（正式作业）</h3>
+  <!-- 全局浮动提示容器 -->
+  <div id="toast-container"></div>
+
+  <!-- 主体工作区 -->
+  <main class="main-content">
+    <!-- 1. 题单大厅区域 -->
+    <section id="problem-list-section">
+      <div class="course-banner" id="current-course-banner">
+        <div class="course-title-group">
+          <h2 id="banner-course-title">系统建模与优化课程</h2>
+          <p id="banner-course-desc">正式作业认准服务端权威评测 · 练习模式由浏览器 Python WASM 本地真跑</p>
+        </div>
+        <div id="banner-course-action">
+          <button id="btn-banner-join-course" type="button" class="btn-secondary" style="font-size:0.85rem;">
+            🎓 选修新课程 / 输入邀请码
+          </button>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <h2>📚 题目清单</h2>
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <input type="text" id="problem-search-input" placeholder="按题目编号或名称检索..." style="width:220px;" />
+        </div>
+      </div>
+
+      <div id="problem-list" class="problem-grid">
+        <p style="color:var(--text-secondary); padding:1rem 0;">正在加载题目索引...</p>
+      </div>
+    </section>
+
+    <!-- 2. 题目工作台（选中题目后展开） -->
+    <section id="workspace" hidden>
+      <div class="workspace-header">
+        <a href="#list" id="btn-back-to-list" class="btn-back">
+          ← 返回题单大厅
+        </a>
+        <div id="workspace-extra-links" style="font-size:0.82rem; color:var(--text-secondary);">
+          评测契约：<code>solve(instance) -&gt; dict</code>
+        </div>
+      </div>
+
+      <h2 id="title" style="margin:0.25rem 0 0.5rem; font-size:1.45rem;"></h2>
+
+      <!-- 作业元数据状态栏（截止时间、及格线、计分规则） -->
+      <div id="assignment-meta-bar" class="meta-bar"></div>
+
+      <!-- 题目描述卡片 -->
+      <article id="readme"></article>
+
+      <!-- 代码编写器容器 -->
+      <div class="editor-container">
+        <div class="editor-toolbar">
           <div>
-            <button id="btn-show-leaderboard" type="button" class="btn-secondary" style="font-size:0.8rem; padding:0.3rem 0.7rem; margin-right:0.5rem;">🏆 课程排行榜</button>
-            <button id="btn-refresh-submissions" type="button" class="btn-secondary" style="font-size:0.8rem; padding:0.3rem 0.7rem;">刷新提交记录</button>
+            <strong>Python 3 代码实现</strong> · <code>solve(instance)</code>
+          </div>
+          <div class="editor-toolbar-actions">
+            <button id="btn-copy-template" type="button" class="btn-secondary" style="font-size:0.75rem; padding:0.2rem 0.5rem;">
+              复制代码
+            </button>
+            <button id="btn-reset-template" type="button" class="btn-secondary" style="font-size:0.75rem; padding:0.2rem 0.5rem;">
+              重置为模板
+            </button>
           </div>
         </div>
-        <div id="my-submissions-container" style="margin-top:1rem;">
-          <p style="color:#9aa0a6;">正在检查提交记录...</p>
+
+        <textarea id="code" spellcheck="false" placeholder="# 在此编写你的 solve(instance) 实现..."></textarea>
+      </div>
+
+      <!-- 执行与提交操作栏 -->
+      <div class="actions-bar">
+        <button id="btn-grade" type="button" class="btn-green" title="在浏览器本地通过 WebAssembly 快速自测，不写正式数据库">
+          ⚡ L1 练习评分（浏览器 WASM）
+        </button>
+        <button id="btn-submit-formal" type="button" class="btn-blue" title="提交至服务端触发 PySCIPOpt 权威评测并记入正式成绩">
+          🚀 提交正式作业（服务端评测）
+        </button>
+        <div id="status" class="status-badge"></div>
+      </div>
+
+      <!-- 评测报告终端控制台 -->
+      <div class="console-container">
+        <div class="console-header">
+          <span>🧪 评测输出与算例分析</span>
+          <button id="btn-clear-console" type="button" class="btn-secondary" style="font-size:0.72rem; padding:0.15rem 0.45rem;">清空控制台</button>
+        </div>
+        <pre id="report"></pre>
+      </div>
+
+      <!-- 我的提交记录卡片 -->
+      <section id="my-submissions-section" style="margin-top:2.5rem; padding-top:1.5rem; border-top:1px solid var(--border-default);">
+        <div class="section-header">
+          <h3 style="margin:0; font-size:1.15rem;">📜 我的正式提交记录</h3>
+          <div style="display:flex; gap:0.5rem;">
+            <button id="btn-show-leaderboard" type="button" class="btn-secondary" style="font-size:0.8rem; padding:0.35rem 0.65rem;">
+              🏆 课程排行榜
+            </button>
+            <button id="btn-refresh-submissions" type="button" class="btn-secondary" style="font-size:0.8rem; padding:0.35rem 0.65rem;">
+              刷新记录
+            </button>
+          </div>
+        </div>
+        <div id="my-submissions-container" class="table-wrapper">
+          <p style="color:var(--text-secondary); padding:1rem;">正在加载历史提交记录...</p>
         </div>
       </section>
     </section>
   </main>
+
+  <!-- 底部信息 -->
   <footer>
-    <p>scip-oj · L1 浏览器内由 WebAssembly 真跑学生 Python 代码；全功能 PySCIPOpt 内核请使用 <a href="lab/index.html" target="_blank">JupyterLab</a>。正式作业成绩认服务端自动化评测（成绩中心）。</p>
+    <div class="footer-container">
+      <div>
+        <strong>SCIP-OJ</strong> · 系统建模与优化课程平台 · 正式分基于服务端自动化评测入库
+      </div>
+      <div>
+        双轨架构：Pages 静态轻量站 + JupyterLite L1 练习 + Supabase Edge / GitHub Actions 评测
+      </div>
+    </div>
   </footer>
+
+  <!-- 依赖脚本 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="config.js" onerror="console.log('[SCIP-OJ] config.js not found')"></script>
+  <script src="config.js" onerror="console.log('[SCIP-OJ] config.js not found, fallback to defaults')"></script>
   <script src="js/platform.js"></script>
   <script src="js/marked.min.js"></script>
   <script src="js/knapsack_judge.js"></script>

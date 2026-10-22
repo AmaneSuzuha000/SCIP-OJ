@@ -3,63 +3,41 @@
 // ────────────────────────────────────────────
 // POST { invite_code: string }
 // 认证：Authorization header 中的 Supabase JWT
-// 流程：解析用户 -> 校验邀请码 -> 写入 enrollments -> 关联花名册 -> 返回课程信息
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
-const CORS_HEADERS: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
-
-function jsonResponse(body: Record<string, unknown>, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-  });
-}
+import { handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
+import { createServiceClient } from "../_shared/secrets.ts";
+import { getAuthenticatedUser } from "../_shared/auth.ts";
 
 serve(async (req: Request): Promise<Response> => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: CORS_HEADERS });
-  }
+  const corsResp = handleCors(req);
+  if (corsResp) return corsResp;
 
   if (req.method !== "POST") {
-    return jsonResponse({ error: "仅支持 POST 请求" }, 405);
+    return errorResponse("仅支持 POST 请求", 405);
   }
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return jsonResponse({ error: "缺少 Authorization 头，请先登录" }, 401);
+    const { supabase } = createServiceClient();
+
+    // 1. 身份认证
+    const auth = await getAuthenticatedUser(req, supabase);
+    if (!auth) {
+      return errorResponse("请先使用 GitHub 账号登录系统后再进行选课", 401, "UNAUTHORIZED");
     }
+    const user = auth.user;
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
-
-    const jwt = authHeader.replace(/^Bearer\s+/i, "");
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(jwt);
-
-    if (authError || !user) {
-      return jsonResponse({ error: "身份认证失败或登录已过期" }, 401);
-    }
-
+    // 2. 解析请求体
     const body = await req.json().catch(() => ({}));
     const rawCode = body.invite_code;
     if (!rawCode || typeof rawCode !== "string" || !rawCode.trim()) {
-      return jsonResponse({ error: "请输入有效的课程邀请码" }, 400);
+      return errorResponse("请输入有效的课程邀请码", 400, "INVALID_INVITE_CODE");
     }
 
     const code = rawCode.trim();
 
-    // 1. 查询 course_invites 表
+    // 3. 优先匹配 course_invites 表
     let courseId: string | null = null;
     let courseName: string | null = null;
     let courseCode: string | null = null;
@@ -75,12 +53,13 @@ serve(async (req: Request): Promise<Response> => {
     if (inviteData) {
       // 检查有效期
       if (inviteData.expires_at && new Date() > new Date(inviteData.expires_at)) {
-        return jsonResponse({ error: "该课程邀请码已过期" }, 400);
+        return errorResponse("该课程邀请码已过期", 400, "INVITE_EXPIRED");
       }
       // 检查上限
       if (inviteData.max_uses != null && inviteData.uses_count >= inviteData.max_uses) {
-        return jsonResponse({ error: "该课程邀请码已达到使用人数上限" }, 400);
+        return errorResponse("该课程邀请码已达到使用人数上限", 400, "INVITE_USAGE_EXCEEDED");
       }
+
       inviteId = inviteData.id;
       courseId = inviteData.course_id;
       inviteRole = inviteData.role || "student";
@@ -90,7 +69,7 @@ serve(async (req: Request): Promise<Response> => {
         courseCode = c.code;
       }
     } else {
-      // 2. 回退匹配 courses.invite_code 或 courses.code
+      // 4. 回退匹配 courses.invite_code 或 courses.code
       const { data: courseData } = await supabase
         .from("courses")
         .select("id, name, code, invite_code")
@@ -105,10 +84,10 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     if (!courseId) {
-      return jsonResponse({ error: "未找到匹配的课程，请核对邀请码" }, 404);
+      return errorResponse("邀请码无效，未找到对应课程，请向任课教师确认", 404, "COURSE_NOT_FOUND");
     }
 
-    // 3. 写入 enrollments
+    // 5. 写入 enrollments（幂等 upsert）
     const { error: enrollError } = await supabase
       .from("enrollments")
       .upsert(
@@ -121,11 +100,11 @@ serve(async (req: Request): Promise<Response> => {
       );
 
     if (enrollError) {
-      console.error("写入 enrollments 失败:", enrollError);
-      return jsonResponse({ error: "加入课程失败: " + enrollError.message }, 500);
+      console.error("[JoinCourse] 写入 enrollments 失败:", enrollError.message);
+      return errorResponse("加入课程失败: " + enrollError.message, 500, "ENROLL_FAILED");
     }
 
-    // 4. 更新邀请码使用计数
+    // 6. 递增邀请码使用计数
     if (inviteId) {
       await supabase
         .from("course_invites")
@@ -133,7 +112,7 @@ serve(async (req: Request): Promise<Response> => {
         .eq("id", inviteId);
     }
 
-    // 5. 自动匹配预设花名册（若学生已有学号）
+    // 7. 若学生已绑定学号，自动将预设花名册对齐为 matched
     const { data: profile } = await supabase
       .from("profiles")
       .select("student_no")
@@ -145,7 +124,7 @@ serve(async (req: Request): Promise<Response> => {
         .from("roster_pending")
         .update({ status: "matched", matched_user_id: user.id })
         .eq("course_id", courseId)
-        .ilike("student_no", profile.student_no);
+        .ilike("student_no", profile.student_no.trim());
     }
 
     return jsonResponse({
@@ -157,7 +136,7 @@ serve(async (req: Request): Promise<Response> => {
       role: inviteRole,
     });
   } catch (err: any) {
-    console.error("join-course 异常:", err);
-    return jsonResponse({ error: "选课服务处理异常: " + (err.message || String(err)) }, 500);
+    console.error("[JoinCourse] 未捕获异常:", err?.message || err);
+    return errorResponse("服务器内部处理异常", 500, "INTERNAL_ERROR");
   }
 });
