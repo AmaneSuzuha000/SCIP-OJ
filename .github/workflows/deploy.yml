@@ -44,6 +44,16 @@ jobs:
           cp dist/index.html dist/lite.html 2>/dev/null || true
           # Overlay LeetCode shell onto dist root
           cp -r site/* dist/
+          # Inject frontend config from Actions secrets (anon key is public by design)
+          if [ -n "${{ secrets.SUPABASE_URL }}" ] && [ -n "${{ secrets.SUPABASE_ANON_KEY }}" ]; then
+            cat > dist/config.js <<EOF
+window.SCIP_OJ_CONFIG = {
+  SUPABASE_URL: "${{ secrets.SUPABASE_URL }}",
+  SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}",
+  MOCK_MODE: false,
+};
+EOF
+          fi
           # Ensure problems, docs and README are in dist
           mkdir -p dist/problems dist/docs
           cp -r problems/* dist/problems/

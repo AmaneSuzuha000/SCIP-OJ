@@ -8,6 +8,25 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
+/** Resolve secret: Deno.env first, then platform_secrets (service_role only). */
+async function getPlatformSecret(
+  supabase: ReturnType<typeof createClient>,
+  name: string,
+): Promise<string | null> {
+  const fromEnv = Deno.env.get(name);
+  if (fromEnv) return fromEnv;
+  const { data, error } = await supabase
+    .from("platform_secrets")
+    .select("value")
+    .eq("key", name)
+    .maybeSingle();
+  if (error) {
+    console.error(`platform_secrets read failed for ${name}:`, error.message);
+    return null;
+  }
+  return data?.value ?? null;
+}
+
 /** 统一 JSON 响应 */
 function jsonResponse(
   body: Record<string, unknown>,
@@ -80,8 +99,12 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   try {
-    // ── 1. 获取回调签名密钥 ──
-    const callbackSecret = Deno.env.get("GRADE_CALLBACK_SECRET");
+    // ── 1. 构建 service client（用于读取 platform_secrets） ──
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+    const callbackSecret = await getPlatformSecret(supabase, "GRADE_CALLBACK_SECRET");
     if (!callbackSecret) {
       console.error("GRADE_CALLBACK_SECRET 未配置");
       return jsonResponse({ error: "服务器配置错误" }, 500);
@@ -122,9 +145,6 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // ── 4. 构建更新数据 ──
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     // 根据 status 构造不同的更新内容
     // 系统错误时不设置 score 为 0，保留为 null

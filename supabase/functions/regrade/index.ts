@@ -8,6 +8,25 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
+/** Resolve secret: Deno.env first, then platform_secrets (service_role only). */
+async function getPlatformSecret(
+  supabase: ReturnType<typeof createClient>,
+  name: string,
+): Promise<string | null> {
+  const fromEnv = Deno.env.get(name);
+  if (fromEnv) return fromEnv;
+  const { data, error } = await supabase
+    .from("platform_secrets")
+    .select("value")
+    .eq("key", name)
+    .maybeSingle();
+  if (error) {
+    console.error(`platform_secrets read failed for ${name}:`, error.message);
+    return null;
+  }
+  return data?.value ?? null;
+}
+
 /** 统一 JSON 响应 */
 function jsonResponse(
   body: Record<string, unknown>,
@@ -24,9 +43,9 @@ async function dispatchGitHubWorkflow(
   submissionId: string,
   problemId: string,
   callbackUrl: string,
+  token: string,
+  repo: string,
 ): Promise<void> {
-  const token = Deno.env.get("GITHUB_TOKEN");
-  const repo = Deno.env.get("GITHUB_REPO");
   if (!token || !repo) {
     throw new Error("GitHub 配置缺失：GITHUB_TOKEN 或 GITHUB_REPO 未设置");
   }
@@ -184,7 +203,7 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // ── 8. 触发判分（Mock 模式或 GitHub Actions） ──
-    const gradeRunner = Deno.env.get("GRADE_RUNNER");
+    const gradeRunner = await getPlatformSecret(supabase, "GRADE_RUNNER");
 
     if (gradeRunner === "mock") {
       // Mock 模式：直接更新为完成状态
@@ -201,11 +220,15 @@ serve(async (req: Request): Promise<Response> => {
     } else {
       // 真实模式：触发 GitHub Actions workflow
       const callbackUrl = `${supabaseUrl}/functions/v1/grade-callback`;
+      const ghToken = await getPlatformSecret(supabase, "GITHUB_TOKEN");
+      const ghRepo = await getPlatformSecret(supabase, "GITHUB_REPO");
       try {
         await dispatchGitHubWorkflow(
           submission_id,
           problemId,
           callbackUrl,
+          ghToken ?? "",
+          ghRepo ?? "",
         );
       } catch (dispatchErr) {
         console.error("GitHub Actions 触发失败:", dispatchErr);
