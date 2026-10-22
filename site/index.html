@@ -113,8 +113,13 @@
         <a href="#list" id="btn-back-to-list" class="btn-back">
           ← 返回题单大厅
         </a>
-        <div id="workspace-extra-links" style="font-size:0.82rem; color:var(--text-secondary);">
-          评测契约：<code>solve(instance) -&gt; dict</code>
+        <div class="workbench-page-actions">
+          <span id="workspace-extra-links" class="workspace-contract">solve(instance) → dict</span>
+          <div class="problem-sequence" aria-label="题目快速切换">
+            <button id="btn-prev-problem" type="button" class="btn-secondary" title="上一道题">← 上一题</button>
+            <span id="problem-position" aria-live="polite"></span>
+            <button id="btn-next-problem" type="button" class="btn-secondary" title="下一道题">下一题 →</button>
+          </div>
         </div>
       </div>
 

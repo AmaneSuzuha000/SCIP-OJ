@@ -52,8 +52,9 @@ BEGIN
         MESSAGE='SUBMISSION_RATE_LIMIT_DAILY';
     END IF;
 
-    -- Unlike COUNT()+1, MAX(attempt_no)+1 does not reuse previously assigned
-    -- attempt numbers if submissions were exceptionally removed by an admin.
+    -- MAX()+1 is stable across gaps, unlike COUNT()+1. An admin deleting
+    -- the latest submission can still cause number reuse; strict historical
+    -- monotonicity would require a separate immutable sequence table.
     SELECT coalesce(max(s.attempt_no),0) + 1
     INTO NEW.attempt_no
     FROM public.submissions s

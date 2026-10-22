@@ -56,6 +56,29 @@ function applyProblemFilters() {
   });
   renderProblemList(filtered);
 }
+async function confirmLeaveIfExamDraft() {
+  if (window.ScipOJExam?.getPolicy() === "standard" ||
+      getCodeValue().trim() === currentTemplate.trim()) return true;
+  // Exam drafts are deliberately not saved to shared-computer localStorage.
+  // Warn before navigating so students never lose work accidentally.
+  if (window.ScipOJPlatform?.showConfirmDialog) {
+    return window.ScipOJPlatform.showConfirmDialog({
+      title: "离开考试代码工作区？",
+      message: "考试模式不会自动保存代码草稿。离开本题前请先提交，否则当前修改会丢失。",
+      confirmText: "确定离开", danger: true,
+    });
+  }
+  return window.confirm("考试模式未保存代码：离开后当前修改会丢失，确定继续？");
+}
+function updateProblemSequence() {
+  const index = problemIndex.findIndex(p => p.id === activeProblemId);
+  const prev = document.getElementById("btn-prev-problem");
+  const next = document.getElementById("btn-next-problem");
+  const position = document.getElementById("problem-position");
+  if (prev) prev.disabled = index <= 0;
+  if (next) next.disabled = index < 0 || index >= problemIndex.length - 1;
+  if (position) position.textContent = index < 0 ? "" : `${index + 1} / ${problemIndex.length}`;
+}
 function showConsoleTab(name) {
   const result = name === "result";
   for (const [id, active] of [["tab-result", result], ["tab-testcase", !result]]) {
@@ -172,9 +195,25 @@ async function main() {
   if (btnBack) {
     btnBack.onclick = (e) => {
       e.preventDefault();
-      closeWorkspace();
+      if (await confirmLeaveIfExamDraft()) closeWorkspace();
     };
   }
+  // Keep exam navigation explicit; switching discards unsaved exam source.
+  for (const [id, step] of [["btn-prev-problem", -1], ["btn-next-problem", 1]]) {
+    document.getElementById(id)?.addEventListener("click", async () => {
+      const index = problemIndex.findIndex(p => p.id === activeProblemId);
+      const next = problemIndex[index + step];
+      if (!next || !(await confirmLeaveIfExamDraft())) return;
+      location.hash = "#" + next.id;
+    });
+  }
+  window.addEventListener("beforeunload", event => {
+    if (window.ScipOJExam?.getPolicy() !== "standard" &&
+        activeProblemId && getCodeValue().trim() !== currentTemplate.trim()) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+  });
 
   // 5. 班级横幅选课按钮
   const btnBannerJoin = document.getElementById("btn-banner-join-course");
@@ -292,6 +331,7 @@ function closeWorkspace() {
   const listSec = document.getElementById("problem-list-section");
   if (ws) ws.hidden = true;
   if (listSec) listSec.hidden = false;
+  document.body.classList.remove("workbench-active");
   // 用 replaceState 避免“返回题单”在浏览器历史里不断堆叠，按后退键可正常离开
   if (location.hash && location.hash !== "#list") {
     history.replaceState(null, "", "#list");
@@ -369,6 +409,8 @@ async function openProblem(path, id) {
   const listSec = document.getElementById("problem-list-section");
   if (ws) ws.hidden = false;
   if (listSec) listSec.hidden = true;
+  document.body.classList.add("workbench-active");
+  updateProblemSequence();
 
   // 滚动至顶部
   window.scrollTo({ top: 0, behavior: "smooth" });
