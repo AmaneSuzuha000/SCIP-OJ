@@ -154,6 +154,7 @@ serve(async (req: Request): Promise<Response> => {
           callbackUrl,
           ghToken ?? "",
           ghRepo ?? "",
+          newGrading.id,
         );
       } catch (dispatchErr: any) {
         console.error("[Regrade] dispatch 异常:", dispatchErr?.message);
