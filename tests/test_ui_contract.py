@@ -28,7 +28,8 @@ class UIContractTests(unittest.TestCase):
                            "btn-grade", "btn-submit-formal", "report", "draft-state",
                            "problem-search-input", "my-submissions-container",
                            "filter-difficulty", "filter-progress", "tab-description",
-                           "tab-history", "editor-font-size", "exam-notice"],
+                           "tab-history", "editor-font-size", "exam-notice",
+                           "btn-prev-problem", "btn-next-problem", "problem-position"],
             "teacher.html": ["teacher-panel", "course-select", "roster-area",
                              "tab-gradebook", "tab-roster", "tab-assignments",
                              "metric-students", "metric-graded", "metric-passrate",
@@ -52,6 +53,15 @@ class UIContractTests(unittest.TestCase):
         self.assertIn('localStorage.setItem("scipoj:draft:"', script)
         self.assertIn('localStorage.removeItem("scipoj:draft:"', script)
         self.assertIn("submitAssignment", script)
+
+    def test_immersive_workbench_hides_landing_and_guards_exam_draft(self):
+        js = (SITE / "js/app.js").read_text()
+        css = (SITE / "leetcode.css").read_text()
+        self.assertIn('document.body.classList.add("workbench-active")', js)
+        self.assertIn('document.body.classList.remove("workbench-active")', js)
+        self.assertIn("confirmLeaveIfExamDraft", js)
+        self.assertIn("workbench-active .hero-panel", css)
+        self.assertIn("workbench-active .overview-strip", css)
 
     def test_sql_regrade_view_orders_by_grading_time_first(self):
         text = (SITE.parent / "supabase/migrations/008_latest_grading_per_submission.sql").read_text()

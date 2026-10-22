@@ -86,3 +86,27 @@
 .testcase-actions{display:flex;justify-content:flex-end;gap:9px;flex-wrap:wrap;padding-top:12px}
 #result-panel #report{margin-top:12px}
 @media(max-width:640px){.testcase-actions button{flex:1 1 auto}.testcase-caption span{display:block;margin:3px 0 0}}
+
+/* The problem workbench is a dedicated screen, not a section below the
+   landing-page hero. Desktop editor fills the available viewport. */
+body.workbench-active .hero-panel,
+body.workbench-active .overview-strip {display:none!important}
+body.workbench-active .main-content{max-width:1660px;padding-top:16px}
+body.workbench-active .workspace-intro{margin:7px 0 13px}
+body.workbench-active .workspace-intro p{display:none}
+body.workbench-active .workspace-intro h2{font-size:1.4rem;line-height:1.45}
+body.workbench-active .CodeMirror{height:min(57vh,680px);min-height:350px}
+body.workbench-active #code{min-height:350px}
+.workbench-page-actions{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.workspace-contract{font:500 12px var(--font-mono);color:#7b8da2}
+.problem-sequence{display:flex;gap:8px;align-items:center}
+.problem-sequence button{font-size:.78rem;padding:7px 10px}
+.problem-sequence button:disabled{opacity:.38;cursor:not-allowed}
+#problem-position{font-size:.77rem;min-width:38px;text-align:center;color:#71849b;font-variant-numeric:tabular-nums}
+@media(max-width:760px){
+ body.workbench-active .main-content{padding-top:10px}
+ body.workbench-active .CodeMirror{height:380px;min-height:300px}
+ .workbench-page-actions{width:100%;justify-content:space-between}
+ .workspace-contract{display:none}
+ .problem-sequence{margin-left:auto}
+}
