@@ -2,7 +2,7 @@ name: Judge Regression Tests
 
 on:
   push:
-    branches: [main, 'fix/**', 'feat/**']
+    branches: [main, 'fix/**', 'feat/**', 'security/**']
   pull_request:
 
 permissions:
@@ -30,3 +30,30 @@ jobs:
           node --check site/js/editor.js
           node --check site/js/exam-integrity.js
           node --check site/js/teacher.js
+
+  sandbox-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Build isolated student image
+        run: docker build --pull --file judge/Dockerfile.sandbox --tag scip-oj-student:ci .
+      - name: Verify PySCIPOpt and offline Docker execution
+        run: |
+          docker run --rm --network none --entrypoint python scip-oj-student:ci -c 'from pyscipopt import Model; print("PySCIPOpt OK")'
+          python - <<'PY'
+          from pathlib import Path
+          from judge.runner_l2_isolated import grade_file
+          for pid, source in [
+              ("P001", "problems/P001_knapsack/template.py"),
+              ("P002", "problems/P002_assignment/template.py"),
+          ]:
+              report = grade_file(Path(source), pid, {"n_instances": 1, "pass_score": 90})
+              print(pid, report["status"], report["score"], report.get("messages"))
+              assert report["status"] == "done" and report["score"] == 100
+              assert report["sandbox"] == "isolated_container"
+              assert report["test_set"] == "server_private_random"
+          PY

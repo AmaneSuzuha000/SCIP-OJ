@@ -22,6 +22,7 @@ permissions:
 jobs:
   grade:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -29,17 +30,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install judge dependencies
-        id: install_deps
+      - name: Build isolated student-execution image
         run: |
-          pip install -r requirements-judge.txt
-          # Try to install PySCIPOpt for formal grading
-          if pip install pyscipopt; then
-            echo "pyscipopt_installed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::warning::PySCIPOpt installation failed"
-            echo "pyscipopt_installed=false" >> "$GITHUB_OUTPUT"
-          fi
+          docker build --pull --file judge/Dockerfile.sandbox --tag scip-oj-student:ci .
+          docker run --rm --network none --entrypoint python scip-oj-student:ci \
+            -c 'from pyscipopt import Model; print("SCIP image ready")'
 
       - name: Fetch submission code
         id: fetch
@@ -62,7 +57,7 @@ jobs:
               sys.exit(1)
 
           # Fetch submission from Supabase
-          url = f"{supabase_url}/rest/v1/submissions?id=eq.{submission_id}&select=id,code_text,assignment_id,assignments(problem_id)"
+          url = f"{supabase_url}/rest/v1/submissions?id=eq.{submission_id}&select=id,code_text,assignment_id,assignments(problem_id,pass_score,n_instances)"
           req = urllib.request.Request(url, headers={
               "apikey": service_key,
               "Authorization": f"Bearer {service_key}",
@@ -101,6 +96,16 @@ jobs:
           code_path = f"_grading_tmp/{problem_id}.py"
           with open(code_path, "w", encoding="utf-8") as f:
               f.write(code_text)
+
+          # Assignment settings come from the trusted service-role lookup.
+          # These values never enter the untrusted execution container.
+          cfg = assignments if isinstance(assignments, dict) else (assignments[0] if isinstance(assignments, list) and assignments else {})
+          grade_settings = {
+              "pass_score": cfg.get("pass_score", 90),
+              "n_instances": cfg.get("n_instances", 3),
+          }
+          with open("_grading_tmp/grade-context.json", "w", encoding="utf-8") as f:
+              json.dump(grade_settings, f)
 
           # Set outputs
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
@@ -143,7 +148,6 @@ jobs:
         env:
           PROBLEM_ID: ${{ steps.fetch.outputs.problem_id }}
           CODE_PATH: ${{ steps.fetch.outputs.code_path }}
-          PYSCIPOPT_INSTALLED: ${{ steps.install_deps.outputs.pyscipopt_installed }}
         run: |
           python << 'PYEOF'
           import json, os, sys
@@ -153,8 +157,9 @@ jobs:
           code_path = Path(os.environ.get("CODE_PATH", ""))
 
           try:
-              from judge.runner_l2 import grade_file
-              report = grade_file(code_path)
+              from judge.runner_l2_isolated import grade_file
+              settings = json.loads(Path("_grading_tmp/grade-context.json").read_text(encoding="utf-8"))
+              report = grade_file(code_path, problem_id=problem_id, assignment_meta=settings)
           except Exception as e:
               report = {
                   "ok": False,
