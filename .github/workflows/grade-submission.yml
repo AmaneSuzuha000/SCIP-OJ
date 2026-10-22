@@ -7,6 +7,10 @@ on:
         description: 'Submission UUID from platform database'
         required: true
         type: string
+      grading_id:
+        description: 'Unique grading attempt UUID'
+        required: true
+        type: string
       problem_id:
         description: 'Problem ID (e.g. P001)'
         required: false
@@ -42,15 +46,22 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SUBMISSION_ID: ${{ inputs.submission_id }}
+          GRADING_ID: ${{ inputs.grading_id }}
           INPUT_PROBLEM_ID: ${{ inputs.problem_id }}
           GITHUB_RUN_ID: ${{ github.run_id }}
         run: |
           python << 'PYEOF'
-          import os, json, urllib.request, urllib.error, sys
+          import os, json, urllib.request, urllib.error, sys, uuid
 
           supabase_url = os.environ.get("SUPABASE_URL", "")
           service_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
           submission_id = os.environ["SUBMISSION_ID"]
+          grading_id = os.environ["GRADING_ID"]
+          try:
+              uuid.UUID(grading_id)
+          except ValueError:
+              print("::error::Invalid grading UUID")
+              sys.exit(1)
 
           if not supabase_url or not service_key:
               print("::error::Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY secrets")
@@ -112,35 +123,33 @@ jobs:
               f.write(f"problem_id={problem_id}\n")
               f.write(f"code_path={code_path}\n")
 
-          # Also update grading status to 'running'
-          gurl = f"{supabase_url}/rest/v1/gradings?submission_id=eq.{submission_id}&status=eq.queued&order=created_at.desc&limit=1"
-          greq = urllib.request.Request(gurl, headers={
+          # Claim EXACT queued attempt using the signed dispatch grading ID.
+          # No more "latest queued" lookup, which races with regrades.
+          from datetime import datetime, timezone
+          patch_url = (
+              f"{supabase_url}/rest/v1/gradings?id=eq.{grading_id}"
+              f"&submission_id=eq.{submission_id}&status=eq.queued"
+          )
+          patch_data = json.dumps({
+              "status": "running",
+              "started_at": datetime.now(timezone.utc).isoformat(),
+              "runner_ref": f"run_{os.environ['GITHUB_RUN_ID']}"
+          }).encode()
+          patch_req = urllib.request.Request(patch_url, data=patch_data, method="PATCH", headers={
               "apikey": service_key,
               "Authorization": f"Bearer {service_key}",
-              "Accept": "application/json"
+              "Content-Type": "application/json",
+              "Prefer": "return=representation",
           })
           try:
-              gresp = urllib.request.urlopen(greq)
-              gdata = json.loads(gresp.read().decode())
-              if gdata:
-                  grading_id = gdata[0]["id"]
-                  import datetime
-                  now = datetime.datetime.utcnow().isoformat() + "Z"
-                  patch_url = f"{supabase_url}/rest/v1/gradings?id=eq.{grading_id}"
-                  patch_data = json.dumps({
-                      "status": "running",
-                      "started_at": now,
-                      "runner_ref": f"run_{os.environ.get('GITHUB_RUN_ID', '')}"
-                  }).encode()
-                  patch_req = urllib.request.Request(patch_url, data=patch_data, method="PATCH", headers={
-                      "apikey": service_key,
-                      "Authorization": f"Bearer {service_key}",
-                      "Content-Type": "application/json",
-                      "Prefer": "return=minimal"
-                  })
-                  urllib.request.urlopen(patch_req)
-          except Exception as e:
-              print(f"::warning::Failed to mark grading as running: {e}")
+              with urllib.request.urlopen(patch_req) as resp:
+                  changed = json.loads(resp.read().decode())
+              if len(changed) != 1 or changed[0]["id"] != grading_id:
+                  print("::error::grading_id was not queued for this submission")
+                  sys.exit(1)
+          except Exception as exc:
+              print(f"::error::Cannot claim grading attempt: {exc}")
+              sys.exit(1)
           PYEOF
 
       - name: Run judge
@@ -203,6 +212,8 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GRADE_CALLBACK_SECRET: ${{ secrets.GRADE_CALLBACK_SECRET }}
           SUBMISSION_ID: ${{ inputs.submission_id }}
+          GRADING_ID: ${{ inputs.grading_id }}
+          RUNNER_REF: run_${{ github.run_id }}
           CALLBACK_URL: ${{ inputs.callback_url || secrets.GRADE_CALLBACK_URL }}
           STATUS: ${{ steps.judge.outputs.status || 'system_error' }}
           SCORE: ${{ steps.judge.outputs.score }}
@@ -235,6 +246,8 @@ jobs:
 
           body = {
               "submission_id": submission_id,
+              "grading_id": os.environ["GRADING_ID"],
+              "runner_ref": os.environ["RUNNER_REF"],
               "score": score,
               "passed": os.environ.get("PASSED", "false").lower() == "true",
               "report": report,
