@@ -210,6 +210,7 @@ serve(async (req: Request): Promise<Response> => {
           callbackUrl,
           ghToken ?? "",
           ghRepo ?? "",
+          grading.id,
         );
       } catch (dispatchErr: any) {
         // Actions 触发失败：隔离为 system_error，绝不给学生打 0 分！

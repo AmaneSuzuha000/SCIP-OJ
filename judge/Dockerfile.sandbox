@@ -1,0 +1,10 @@
+# Only student's submission file and one public instance are mounted at runtime.
+# Pinned Python/PySCIPOpt image; no grade secrets, trusted grader or private seeds.
+FROM python:3.11.13-slim-bookworm
+RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 \
+    && rm -rf /var/lib/apt/lists/* \
+    && python -m pip install --no-cache-dir --only-binary=:all: "pyscipopt==6.2.1"
+WORKDIR /sandbox
+COPY judge/sandbox_worker.py /sandbox/worker.py
+USER 65534:65534
+ENTRYPOINT ["python", "-I", "-B", "/sandbox/worker.py"]
