@@ -394,7 +394,10 @@ const ScipOJPlatform = (() => {
         throw new Error("请先在个人资料中绑定真实学号与姓名再提交作业");
       }
       if (code === "CODE_TOO_LARGE") {
-        throw new Error("提交代码过长，请精简后重试（上限 200000 字符）");
+        throw new Error("提交代码过长，请精简后重试（上限 200 KB UTF-8）");
+      }
+      if (resp.status === 429 || code.startsWith("SUBMISSION_RATE_LIMIT_")) {
+        throw new Error(json.error || "正式提交过于频繁，请稍后再试；练习运行不受影响");
       }
       throw new Error(json.error || `提交作业失败 (HTTP ${resp.status})`);
     }
