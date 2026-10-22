@@ -1,0 +1,88 @@
+/* LeetCode-inspired OJ interaction layout; original SCIP-OJ branding and assets. */
+.catalog-toolbar {display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:-4px 0 15px}
+.catalog-filters,.catalog-view {display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.catalog-filters label{color:var(--text-secondary);font-size:.83rem;font-weight:700;margin-right:3px}
+.catalog-filters select,.editor-toolbar-actions select{width:auto;min-width:105px;padding:8px 11px;border-radius:9px;background:#fff}
+.catalog-view {background:#e9eff6;border-radius:10px;padding:4px}
+.view-toggle {background:transparent;color:#68809c;padding:8px 12px;font-size:.8rem;border-radius:8px}
+.view-toggle.active {background:white;color:#23559d;box-shadow:0 2px 6px rgba(20,45,74,.1)}
+.problem-list-mode {display:flex;flex-direction:column;gap:0;border:1px solid #e0e7ef;border-radius:16px;background:#fff;overflow:hidden}
+.problem-list-mode .problem-table-heading{display:grid;grid-template-columns:64px minmax(0,2.3fr) 100px minmax(140px,1fr) 35px;align-items:center;gap:15px;padding:13px 23px;background:#f1f5fa;color:#6b7e93;font-size:.79rem;font-weight:700;border-bottom:1px solid #e0e7ef}
+.problem-list-mode .problem-card.problem-row{display:grid;grid-template-columns:64px minmax(0,2.3fr) 100px minmax(140px,1fr) 35px;align-items:center;gap:15px;margin:0;padding:16px 23px;border:0;border-bottom:1px solid #edf1f6;border-radius:0;min-height:70px;box-shadow:none;transform:none;background:#fff}
+.problem-list-mode .problem-card.problem-row:last-child{border-bottom:0}
+.problem-list-mode .problem-card.problem-row:nth-of-type(even){background:#fbfcfe}
+.problem-list-mode .problem-card.problem-row:hover{background:#eef6fe}
+.problem-list-mode .problem-row:after{display:none}
+.problem-progress{font-size:19px;color:#9aadbc;display:inline-block;text-align:center}
+.problem-progress.solved{color:#168e70;font-weight:800}
+.problem-row-title{display:flex;align-items:center;gap:18px;min-width:0}
+.problem-row-title strong{font-size:.94rem;font-weight:690;color:#1e344a;white-space:normal}
+.problem-number{font:700 12px var(--font-mono);color:#7490ad;flex:0 0 44px}
+.problem-row-difficulty{font-size:.85rem;font-weight:700}
+.problem-row-arrow{font-size:18px;text-align:right;color:#91a8bd}
+.problem-list-mode .problem-tags{margin:0;gap:5px}
+.problem-list-mode .topic-tag{font-size:.72rem;max-width:140px;overflow:hidden;text-overflow:ellipsis}
+.problem-grid-mode{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.card-progress{margin-top:16px;color:#6b829a;font-size:.79rem}
+.workspace-layout{gap:12px;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr)}
+.workspace-intro{margin:17px 0}
+.workspace-intro h2{font-size:1.6rem}
+.workspace-intro p{font-size:.85rem}
+.workbench-tabs{display:flex;align-items:center;gap:6px;background:#f5f8fc;border:1px solid #dce5ef;border-bottom:0;border-radius:15px 15px 0 0;padding:8px 10px}
+.workbench-tab{border:0;background:transparent;color:#698097;border-radius:8px;padding:10px 14px;font-size:.84rem}
+.workbench-tab.active{background:#fff;color:#1b528e;box-shadow:0 1px 5px rgba(20,49,86,.08)}
+#readme{border-radius:0 0 15px 15px;margin:0;min-height:360px;max-height:calc(100vh - 260px)}
+#history-tab{min-height:320px;background:#fff;border:1px solid #dce5ef;border-radius:0 0 15px 15px;padding:18px;min-width:0;overflow:auto;max-height:calc(100vh - 260px)}
+#history-tab #my-submissions-section{margin:0!important;border:0!important}
+#history-tab .section-heading-group h3{font-size:1.2rem}
+#history-tab .section-heading-group p{font-size:.75rem}
+#history-tab .section-header{align-items:flex-start;gap:10px}
+#history-tab .table-wrapper{box-shadow:none}
+.workspace-solution .workbench-kicker{display:none}
+.editor-title{display:inline-flex;align-items:center;gap:8px;color:#1b3654;font:700 13px var(--font-mono)}
+.editor-title small{font:500 11px var(--font-sans);color:#7e8fa4;margin-left:5px}
+.file-dot{color:#3a8eca;font-size:10px}
+.editor-font-label{font-size:.75rem;color:#667c91}
+.editor-toolbar-actions select{min-width:64px;padding:4px 7px;font-size:.78rem}
+.CodeMirror{height:440px;min-height:290px;background:#132136;color:#e4f0ff;font:14px/1.7 var(--font-mono)}
+.CodeMirror-gutters{background:#15273d;border-color:#29435f}
+.CodeMirror-linenumber{color:#7189a1}
+.CodeMirror-cursor{border-left:2px solid #a4ddff}
+.CodeMirror-activeline-background{background:#1e354e}
+.CodeMirror-selected{background:#2f4c68!important}
+.CodeMirror-focused .CodeMirror-selected{background:#355675!important}
+.CodeMirror-matchingbracket{color:#9de6cf!important}
+.cm-s-default .cm-keyword{color:#c29df2}.cm-s-default .cm-def{color:#83c8ff}
+.cm-s-default .cm-variable{color:#d9e8fa}.cm-s-default .cm-variable-2{color:#8cceff}
+.cm-s-default .cm-number{color:#f4c184}.cm-s-default .cm-string{color:#a3ddaf}
+.cm-s-default .cm-comment{color:#7a9bb0}.cm-s-default .cm-operator{color:#d3e1ec}
+.cm-s-default .cm-builtin{color:#e6b5fa}
+.editor-container{overflow:hidden}
+.editor-container textarea#code{min-height:440px}
+.exam-notice{padding:11px 14px;font-size:.78rem;line-height:1.6;border-top:1px solid #edd5a5;background:#fff8e9;color:#825319}
+.exam-notice.exam_block{border-color:#eac2cb;background:#fff0f2;color:#96364a}
+.console-header small{font-size:.72rem;font-weight:450;color:#8899ac}
+#my-submissions-section{margin:0!important;padding:0!important}
+@media (max-width:1000px){.workspace-layout{grid-template-columns:1fr}#readme,#history-tab{max-height:none}}
+@media (max-width:760px){
+ .problem-list-mode .problem-table-heading{display:none}
+ .problem-list-mode .problem-card.problem-row{grid-template-columns:30px minmax(0,1fr) 50px;gap:10px;padding:16px}
+ .problem-row-title{gap:8px}.problem-number{flex-basis:40px}
+ .problem-list-mode .problem-tags,.problem-row-arrow{display:none}
+ .problem-row-difficulty{text-align:right}
+ .catalog-filters{width:100%}.catalog-filters select{min-width:110px}
+ .catalog-toolbar{justify-content:flex-start}.catalog-view{margin-left:auto}
+ .editor-title small,.console-shortcut{display:none}
+ .CodeMirror{height:370px}
+}
+
+/* Custom test-runner and output tabs */
+.console-tabs{display:flex;align-items:center;gap:4px}
+.console-tab{background:transparent;color:#6d8098;border:none;border-radius:8px;font-size:.82rem;padding:8px 12px}
+.console-tab.active{background:#e9f1fe;color:#2756a2}
+.testcase-caption{font-size:.83rem;font-weight:720;color:#435d77;padding:10px 0}
+.testcase-caption span{font-weight:400;font-size:.73rem;color:#8193a6;margin-left:8px}
+#testcase-input{display:block;width:100%;min-height:160px;resize:vertical;box-sizing:border-box;border:1px solid #dae5f1;border-radius:10px;background:#f9fbfe;color:#233b55;padding:16px;font:13px/1.65 var(--font-mono)}
+.testcase-actions{display:flex;justify-content:flex-end;gap:9px;flex-wrap:wrap;padding-top:12px}
+#result-panel #report{margin-top:12px}
+@media(max-width:640px){.testcase-actions button{flex:1 1 auto}.testcase-caption span{display:block;margin:3px 0 0}}

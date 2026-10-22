@@ -512,6 +512,11 @@
           detailReport.textContent = "暂无评分记录";
         }
 
+        if (subData.metadata?.integrity) {
+          detailReport.textContent += "\n\n--- 考试模式记录（浏览器自报；不可直接认定作弊） ---\n" +
+            JSON.stringify(subData.metadata.integrity, null, 2);
+        }
+
         renderTimeline(detailTimeline, subData, latestGrading);
 
         // 绑定单条复判
@@ -889,6 +894,7 @@
     const assignPassScore = document.getElementById("assign-pass-score");
     const assignInstances = document.getElementById("assign-instances");
     const assignPolicy = document.getElementById("assign-policy");
+    const assignIntegrityPolicy = document.getElementById("assign-integrity-policy");
     const publishStatus = document.getElementById("publish-status");
     const courseAssignmentsArea = document.getElementById("course-assignments-area");
 
@@ -969,6 +975,7 @@
             pass_score: passScoreVal,
             n_instances: instancesVal,
             score_policy: policyVal,
+            integrity_policy: assignIntegrityPolicy?.value || "standard",
           });
 
           publishStatus.textContent = `✓ 作业 ${pId} 已成功发布/保存至当前班级！`;
@@ -1020,6 +1027,7 @@
                 <th>及格线</th>
                 <th>测试实例数</th>
                 <th>计分规则</th>
+                <th>考试策略</th>
                 <th>操作</th>
               </tr>
             </thead>
@@ -1031,6 +1039,7 @@
                   <td>${a.pass_score} 分</td>
                   <td>${a.n_instances} 实例</td>
                   <td>${policyNames[a.score_policy] || a.score_policy}</td>
+                  <td>${a.integrity_policy === "exam_block" ? "限制粘贴" : a.integrity_policy === "exam_warn" ? "监测提示" : "普通"}</td>
                   <td>
                     <button type="button" class="btn-edit-assign btn-secondary" data-idx="${idx}" style="font-size:0.75rem; padding:0.25rem 0.55rem;">
                       填入表单修改
@@ -1064,6 +1073,7 @@
             assignPassScore.value = a.pass_score || 90;
             assignInstances.value = a.n_instances || 3;
             assignPolicy.value = a.score_policy || "highest_before_due";
+            if (assignIntegrityPolicy) assignIntegrityPolicy.value = a.integrity_policy || "standard";
             formPublish.scrollIntoView({ behavior: "smooth" });
           };
         });

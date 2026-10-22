@@ -258,6 +258,15 @@
               </div>
 
               <div class="form-group" style="grid-column: span 2;">
+                <label for="assign-integrity-policy">考试完整性策略（仅正式作业）：</label>
+                <select id="assign-integrity-policy">
+                  <option value="standard">普通练习 / 正常复制粘贴（默认）</option>
+                  <option value="exam_warn">考试监测 / 粘贴提示与操作次数记录</option>
+                  <option value="exam_block">考试限制 / 尝试阻止编辑区粘贴、复制、拖放</option>
+                </select>
+                <small>本功能需要数据库迁移 009 与新版 Edge Functions。前端限制可被绕过；操作计数只供人工复核，不自动处罚。</small>
+              </div>
+              <div class="form-group" style="grid-column: span 2;">
                 <label for="assign-policy">计分策略 (score_policy)：</label>
                 <select id="assign-policy">
                   <option value="highest_before_due" selected>截止前最高分（默认，截止后的提交不覆盖更早的合规最高分）</option>
@@ -292,8 +301,8 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="config.js?v=ui2" onerror="console.log('[SCIP-OJ] config.js not found')"></script>
-  <script src="js/platform.js?v=ui2"></script>
-  <script src="js/teacher.js?v=ui2"></script>
+  <script src="config.js?v=leetcode1" onerror="console.log('[SCIP-OJ] config.js not found')"></script>
+  <script src="js/platform.js?v=leetcode1"></script>
+  <script src="js/teacher.js?v=leetcode1"></script>
 </body>
 </html>
