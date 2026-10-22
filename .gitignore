@@ -5,3 +5,8 @@ _site/
 dist/
 _output/
 .jupyterlite.doit.db
+.env
+.env.local
+site/config.js
+_grading_tmp/
+
