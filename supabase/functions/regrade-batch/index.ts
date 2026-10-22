@@ -33,10 +33,16 @@ serve(async (req: Request): Promise<Response> => {
     const body = await req.json().catch(() => ({}));
     const reason = String(body.reason || "教师批量复判").slice(0, 500);
 
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     let targetSubmissionIds: string[] = [];
 
     if (Array.isArray(body.submission_ids) && body.submission_ids.length > 0) {
-      targetSubmissionIds = body.submission_ids;
+      targetSubmissionIds = Array.from(new Set(
+        body.submission_ids.filter((x: unknown) => typeof x === "string" && UUID_RE.test(x)),
+      ));
+      if (targetSubmissionIds.length === 0) {
+        return errorResponse("submission_ids 中没有合法的提交记录 ID", 400, "INVALID_SUBMISSION_IDS");
+      }
     } else if (body.course_id && body.problem_id) {
       // 整题重判模式
       const isTeacher = await isTeacherOrAdmin(supabase, user.id, body.course_id);
@@ -44,11 +50,16 @@ serve(async (req: Request): Promise<Response> => {
         return errorResponse("权限不足：仅任课教师可发起整题重判", 403, "FORBIDDEN");
       }
 
+      const cleanProblemId = String(body.problem_id).trim().toUpperCase();
+      if (!/^[A-Z0-9_-]{1,32}$/.test(cleanProblemId)) {
+        return errorResponse("problem_id 格式不正确", 400, "INVALID_PROBLEM_ID");
+      }
+
       const { data: assignment } = await supabase
         .from("assignments")
         .select("id")
         .eq("course_id", body.course_id)
-        .eq("problem_id", String(body.problem_id).toUpperCase())
+        .eq("problem_id", cleanProblemId)
         .maybeSingle();
 
       if (!assignment) {
@@ -80,6 +91,7 @@ serve(async (req: Request): Promise<Response> => {
     const results: Array<{ id: string; success: boolean; error?: string }> = [];
 
     for (const subId of targetSubmissionIds) {
+      let newGradingId: string | null = null;
       try {
         const { data: submission } = await supabase
           .from("submissions")
@@ -115,19 +127,21 @@ serve(async (req: Request): Promise<Response> => {
         const oldScore = lastGrading?.score ?? null;
 
         // 插入新 grading
-        const { data: newGrading } = await supabase
+        const { data: newGrading, error: gradingErr } = await supabase
           .from("gradings")
           .insert({ submission_id: subId, status: "queued" })
           .select("id")
           .single();
 
-        if (!newGrading) {
+        if (gradingErr || !newGrading) {
+          console.error("[RegradeBatch] 创建评分记录失败:", gradingErr?.message);
           results.push({ id: subId, success: false, error: "创建评分记录失败" });
           continue;
         }
+        newGradingId = newGrading.id;
 
         // 记录审计日志
-        await supabase.from("grade_audits").insert({
+        const { error: auditErr } = await supabase.from("grade_audits").insert({
           grading_id: newGrading.id,
           submission_id: subId,
           actor_id: user.id,
@@ -135,6 +149,7 @@ serve(async (req: Request): Promise<Response> => {
           new_score: null,
           reason,
         });
+        if (auditErr) console.error("[RegradeBatch] 写入 grade_audits 失败:", auditErr.message);
 
         // 调度评测
         if (gradeRunner === "mock") {
@@ -148,18 +163,48 @@ serve(async (req: Request): Promise<Response> => {
               finished_at: new Date().toISOString(),
             })
             .eq("id", newGrading.id);
+          await supabase
+            .from("grade_audits")
+            .update({ new_score: 90 })
+            .eq("grading_id", newGrading.id);
         } else {
-          await dispatchGitHubWorkflow(
-            subId,
-            problemId,
-            callbackUrl,
-            ghToken ?? "",
-            ghRepo ?? "",
-          );
+          try {
+            await dispatchGitHubWorkflow(
+              subId,
+              problemId,
+              callbackUrl,
+              ghToken ?? "",
+              ghRepo ?? "",
+            );
+          } catch (dispatchErr: any) {
+            // 单条调度失败必须把该 grading 标记为 system_error，
+            // 否则会留下永远 queued 的“僵尸任务”。
+            console.error("[RegradeBatch] dispatch 失败:", dispatchErr?.message);
+            await supabase
+              .from("gradings")
+              .update({
+                status: "system_error",
+                error_message: "复判评测任务调度失败，请重试",
+                finished_at: new Date().toISOString(),
+              })
+              .eq("id", newGrading.id);
+            results.push({ id: subId, success: false, error: "评测任务调度失败" });
+            continue;
+          }
         }
 
         results.push({ id: subId, success: true });
       } catch (e: any) {
+        if (newGradingId) {
+          await supabase
+            .from("gradings")
+            .update({
+              status: "system_error",
+              error_message: e?.message || "复判异常",
+              finished_at: new Date().toISOString(),
+            })
+            .eq("id", newGradingId);
+        }
         results.push({ id: subId, success: false, error: e?.message || String(e) });
       }
     }

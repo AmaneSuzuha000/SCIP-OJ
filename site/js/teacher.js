@@ -59,10 +59,14 @@
     return true;
   }
 
+  let initializedForUser = null;
+
   const hasAccess = await checkTeacherAccess();
   ScipOJPlatform.onAuthChange(async () => {
     const ok = await checkTeacherAccess();
-    if (ok) initTeacherView();
+    const uid = ScipOJPlatform.getUser()?.id || null;
+    // 仅在登录用户变化时重建工作台，避免 token 刷新把正在填写的表单清空
+    if (ok && uid && uid !== initializedForUser) initTeacherView();
   });
 
   if (hasAccess) {
@@ -71,6 +75,7 @@
 
   // ── 教师工作台主逻辑 ──
   async function initTeacherView() {
+    initializedForUser = ScipOJPlatform.getUser()?.id || null;
     const courseSelect = document.getElementById("course-select");
     const inviteCodeEl = document.getElementById("course-invite-code");
     const btnCopyInvite = document.getElementById("btn-copy-invite");
@@ -143,23 +148,38 @@
       }
     };
 
-    // 更新当前班级邀请码显示
-    function updateCourseInviteDisplay() {
-      const cur = currentCoursesList.find(e => e.courses?.id === currentCourseId);
-      const c = cur?.courses;
-      const code = c?.invite_code || c?.code || "REDACTED-INVITE";
-      if (inviteCodeEl) inviteCodeEl.textContent = code;
+    // 更新当前班级邀请码显示（邀请码受列级权限保护，需通过教师 RPC 读取）
+    let inviteDisplaySeq = 0;
+    async function updateCourseInviteDisplay() {
+      const seq = ++inviteDisplaySeq;
+      if (!inviteCodeEl) return;
+      if (!currentCourseId) {
+        inviteCodeEl.textContent = "-";
+        return;
+      }
+      inviteCodeEl.textContent = "加载中…";
+      let code = null;
+      try {
+        code = await ScipOJPlatform.getCourseInviteCode(currentCourseId);
+      } catch (err) {
+        console.warn("[Teacher] 读取邀请码失败:", err);
+      }
+      if (seq !== inviteDisplaySeq) return; // 已切换到其他班级
+      inviteCodeEl.textContent = code || "未配置";
     }
 
     // 复制邀请码
     if (btnCopyInvite) {
       btnCopyInvite.onclick = () => {
         const code = inviteCodeEl?.textContent;
-        if (!code) return;
+        if (!code || code === "加载中…" || code === "未配置") {
+          ScipOJPlatform.showToast("邀请码尚未加载完成或未配置", "warning");
+          return;
+        }
         navigator.clipboard.writeText(code).then(() => {
           ScipOJPlatform.showToast(`邀请码 ${code} 已复制到剪贴板`, "success");
         }).catch(() => {
-          prompt("请手动复制邀请码：", code);
+          ScipOJPlatform.showTextDialog({ title: "复制邀请码", text: code });
         });
       };
     }
@@ -168,13 +188,22 @@
     if (btnRotateInvite) {
       btnRotateInvite.onclick = async () => {
         if (!currentCourseId) return;
-        const customCode = prompt("请输入新的课程邀请码（留空将自动生成随机邀请码）：");
+        const customCode = await ScipOJPlatform.showPromptDialog({
+          title: "轮换课程邀请码",
+          message: "请输入新的邀请码（仅字母、数字、下划线或短横线，4-32 位）；留空将自动生成随机邀请码。",
+          defaultValue: "",
+          confirmText: "确认轮换",
+        });
         if (customCode === null) return;
+        if (customCode && !/^[A-Za-z0-9_-]{4,32}$/.test(customCode)) {
+          ScipOJPlatform.showToast("邀请码只能包含字母、数字、下划线或短横线（4-32 位）", "warning");
+          return;
+        }
         btnRotateInvite.disabled = true;
         try {
           const newCode = await ScipOJPlatform.rotateCourseInviteCode(currentCourseId, customCode);
           ScipOJPlatform.showToast(`邀请码已成功更新为：${newCode}`, "success");
-          if (inviteCodeEl) inviteCodeEl.textContent = newCode;
+          await updateCourseInviteDisplay();
         } catch (err) {
           ScipOJPlatform.showToast("轮换邀请码失败: " + err.message, "error");
         } finally {
@@ -242,10 +271,19 @@
 
     filterProblem.onchange = () => renderGradebookTable();
     filterKeyword.oninput = () => renderGradebookTable();
-    btnRefresh.onclick = () => {
-      if (currentCourseId) {
-        loadGradebook(currentCourseId);
-        ScipOJPlatform.showToast("成绩表已刷新", "info");
+    btnRefresh.onclick = async () => {
+      if (!currentCourseId) return;
+      btnRefresh.disabled = true;
+      const original = btnRefresh.textContent;
+      btnRefresh.textContent = "刷新中…";
+      try {
+        await loadGradebook(currentCourseId);
+        ScipOJPlatform.showToast("成绩表已刷新", "success");
+      } catch (err) {
+        ScipOJPlatform.showToast("刷新失败: " + err.message, "error");
+      } finally {
+        btnRefresh.disabled = false;
+        btnRefresh.textContent = original;
       }
     };
 
@@ -275,7 +313,7 @@
         </thead>
         <tbody>
           ${filtered.map((row, idx) => {
-            const passScore = row.pass_score || 90;
+            const passScore = row.pass_score ?? 90;
             const isPass = row.best_score != null && row.best_score >= passScore;
             const curAssign = currentAssignmentsList.find(a => a.id === row.assignment_id || a.problem_id === row.problem_id);
             const isLate = curAssign?.due_at && row.last_submitted_at ? new Date(row.last_submitted_at) > new Date(curAssign.due_at) : false;
@@ -293,7 +331,9 @@
                     ? `<strong class="${isPass ? 'pass' : 'fail'}">${row.best_score} 分</strong>`
                     : '<span style="color:var(--text-secondary);">未出分</span>'}
                 </td>
-                <td>${row.passed ? '<span class="tag-normal">✓ 通过</span>' : '<span class="tag-late">✗ 未通过</span>'}</td>
+                <td>${row.best_score == null
+                  ? '<span class="tag-pending">— 未提交</span>'
+                  : (row.passed ? '<span class="tag-normal">✓ 通过</span>' : '<span class="tag-late">✗ 未通过</span>')}</td>
                 <td>${isLate ? '<span class="tag-late">迟交</span>' : '<span class="tag-normal">正常</span>'}</td>
                 <td>${row.attempt_count != null ? `第 ${row.attempt_count} 次` : '-'}</td>
                 <td style="color:var(--text-secondary); font-size:0.8rem;">${row.last_submitted_at ? formatTime(row.last_submitted_at) : '-'}</td>
@@ -343,6 +383,7 @@
       const btnCopyReport = document.getElementById("btn-copy-student-report");
 
       detailSection.hidden = false;
+      detailSection.scrollIntoView({ behavior: "smooth", block: "start" });
       detailTitle.textContent = `评测证据：${row.student_no || '-'} ${row.display_name || ''} · 题目 ${row.problem_id || ''}`;
       detailCode.textContent = "正在获取学生提交源码...";
       detailReport.textContent = "正在获取评测报告...";
@@ -354,16 +395,22 @@
 
       if (btnCopyCode) {
         btnCopyCode.onclick = () => {
-          navigator.clipboard.writeText(detailCode.textContent).then(() => {
+          const text = detailCode.textContent || "";
+          navigator.clipboard.writeText(text).then(() => {
             ScipOJPlatform.showToast("代码已复制", "success");
+          }).catch(() => {
+            ScipOJPlatform.showTextDialog({ title: "复制学生代码", text });
           });
         };
       }
 
       if (btnCopyReport) {
         btnCopyReport.onclick = () => {
-          navigator.clipboard.writeText(detailReport.textContent).then(() => {
+          const text = detailReport.textContent || "";
+          navigator.clipboard.writeText(text).then(() => {
             ScipOJPlatform.showToast("评测报告已复制", "success");
+          }).catch(() => {
+            ScipOJPlatform.showTextDialog({ title: "复制评测报告", text });
           });
         };
       }
@@ -417,6 +464,8 @@
             )
           `)
           .eq("id", subId)
+          // 复判会追加 grading，必须按时间倒序取最新一条
+          .order("created_at", { ascending: false, referencedTable: "gradings" })
           .single();
 
         if (error || !subData) throw error || new Error("未找到指定提交记录");
@@ -439,7 +488,13 @@
 
         // 绑定单条复判
         btnRegrade.onclick = async () => {
-          const reason = prompt("请输入复判原因（将写入系统审计日志 grade_audits）：", "教师抽查复判");
+          const reason = await ScipOJPlatform.showPromptDialog({
+            title: "发起单条复判",
+            message: "请输入复判原因（将写入系统审计日志 grade_audits）。",
+            defaultValue: "教师抽查复判",
+            confirmText: "确认复判",
+            required: true,
+          });
           if (reason === null) return;
           btnRegrade.disabled = true;
           btnRegrade.textContent = "调度复判中…";
@@ -461,7 +516,6 @@
         detailReport.textContent = "";
       }
 
-      detailSection.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
     function renderTimeline(container, submission, grading) {
@@ -531,11 +585,17 @@
         const ids = Array.from(checkedBoxes).map(cb => cb.dataset.subId).filter(Boolean);
 
         if (ids.length === 0) {
-          alert("请先勾选需要复判的学生提交记录！");
+          ScipOJPlatform.showToast("请先勾选需要复判的学生提交记录", "warning");
           return;
         }
 
-        const reason = prompt(`确定要对选中的 ${ids.length} 条提交发起批量复判吗？\n请输入复判说明（写入审计日志）：`, "教师批量抽查复判");
+        const reason = await ScipOJPlatform.showPromptDialog({
+          title: "批量复判",
+          message: `确定要对选中的 ${ids.length} 条提交发起批量复判吗？复判说明将写入审计日志。`,
+          defaultValue: "教师批量抽查复判",
+          confirmText: `确认复判 ${ids.length} 条`,
+          required: true,
+        });
         if (reason === null) return;
 
         btnBatchRegrade.disabled = true;
@@ -546,7 +606,16 @@
           const res = await ScipOJPlatform.requestBatchRegrade(ids, reason, (curr, total) => {
             batchProgressText.textContent = `正在调度批量复判 (${curr}/${total})…`;
           });
-          ScipOJPlatform.showToast(`批量复判调度完成！共触发 ${res.success_count || ids.length} 条评测任务。`, "success");
+          const okCount = Number(res.success_count || 0);
+          const failures = (res.results || []).filter(r => !r.success);
+          if (failures.length > 0) {
+            ScipOJPlatform.showToast(
+              `批量复判：成功 ${okCount} 条，失败 ${failures.length} 条。首个错误：${failures[0].error || "未知错误"}`,
+              "warning",
+            );
+          } else {
+            ScipOJPlatform.showToast(`批量复判调度完成！共触发 ${okCount} 条评测任务。`, "success");
+          }
           if (currentCourseId) await loadGradebook(currentCourseId);
         } catch (err) {
           ScipOJPlatform.showToast("批量复判请求异常: " + err.message, "error");
@@ -562,14 +631,25 @@
       btnRegradeProblem.onclick = async () => {
         const p = filterProblem.value;
         if (!p) {
-          alert("请先在上方「题目」下拉框中选择要重判的特定题目！");
+          ScipOJPlatform.showToast("请先在上方「题目」下拉框中选择要重判的特定题目", "warning");
           return;
         }
 
-        const confirmMsg = `⚠️ 警告：整题一键重判将重新评测全班所有学生在题目 ${p} 的提交。\n通常在教师更新测例或修复题目参考实现后使用。\n\n确定继续吗？`;
-        if (!confirm(confirmMsg)) return;
+        const confirmed = await ScipOJPlatform.showConfirmDialog({
+          title: "整题一键重判",
+          message: `警告：整题重判将重新评测全班所有学生在题目 ${p} 的提交。\n通常在教师更新测例或修复参考实现后使用。\n\n确定继续吗？`,
+          confirmText: "继续重判",
+          danger: true,
+        });
+        if (!confirmed) return;
 
-        const reason = prompt(`请输入整题重判原因：`, `测例更新整题重判 (${p})`);
+        const reason = await ScipOJPlatform.showPromptDialog({
+          title: "整题重判原因",
+          message: `请填写题目 ${p} 的重判原因（写入审计日志）。`,
+          defaultValue: `测例更新整题重判 (${p})`,
+          confirmText: "确认重判",
+          required: true,
+        });
         if (reason === null) return;
 
         btnRegradeProblem.disabled = true;
@@ -580,7 +660,15 @@
           const res = await ScipOJPlatform.requestProblemRegrade(currentCourseId, p, reason, (curr, total) => {
             batchProgressText.textContent = `正在重判 ${p} (${curr}/${total})…`;
           });
-          ScipOJPlatform.showToast(`整题重判已调度入队！共触发 ${res.total || res.success_count || 0} 条。`, "success");
+          const okCount = Number(res.success_count || 0);
+          const total = Number(res.total || okCount);
+          const failures = (res.results || []).filter(r => !r.success);
+          ScipOJPlatform.showToast(
+            failures.length > 0
+              ? `整题重判：成功 ${okCount}/${total} 条，失败 ${failures.length} 条。首个错误：${failures[0].error || "未知错误"}`
+              : `整题重判已调度入队！共触发 ${okCount} 条。`,
+            failures.length > 0 ? "warning" : "success",
+          );
           if (currentCourseId) await loadGradebook(currentCourseId);
         } catch (err) {
           ScipOJPlatform.showToast("整题重判失败: " + err.message, "error");
@@ -596,13 +684,13 @@
       btnExportCsv.onclick = () => {
         const filtered = getFilteredRoster();
         if (filtered.length === 0) {
-          alert("当前筛选条件下暂无成绩记录可供导出");
+          ScipOJPlatform.showToast("当前筛选条件下暂无成绩记录可供导出", "info");
           return;
         }
 
         const headers = ["学号", "姓名", "题目", "最高分", "是否通过", "迟交状态", "提交轮次", "最后提交时间"];
         const rows = filtered.map(row => {
-          const passScore = row.pass_score || 90;
+          const passScore = row.pass_score ?? 90;
           const isPass = row.best_score != null && row.best_score >= passScore;
           const curAssign = currentAssignmentsList.find(a => a.id === row.assignment_id || a.problem_id === row.problem_id);
           const isLate = curAssign?.due_at && row.last_submitted_at ? new Date(row.last_submitted_at) > new Date(curAssign.due_at) : false;
@@ -619,9 +707,15 @@
           ];
         });
 
-        // 写入 UTF-8 BOM，防止 Excel 打开乱码
+        // 写入 UTF-8 BOM，防止 Excel 打开乱码；
+        // 同时对 =/+/-/@ 开头的单元格加前缀，避免 CSV 公式注入（学生姓名可被构造）
+        const escapeCell = (value) => {
+          let text = String(value ?? "");
+          if (/^[=+\-@\t\r]/.test(text)) text = "'" + text;
+          return `"${text.replace(/"/g, '""')}"`;
+        };
         const csvContent = "\uFEFF" + [headers, ...rows]
-          .map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(","))
+          .map(r => r.map(escapeCell).join(","))
           .join("\n");
 
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -668,7 +762,7 @@
         if (!currentCourseId) return;
         const content = csvInputText.value.trim();
         if (!content) {
-          alert("请先输入或从文件载入 CSV 内容");
+          ScipOJPlatform.showToast("请先输入或从文件载入 CSV 内容", "warning");
           return;
         }
 
@@ -700,7 +794,6 @@
 
       try {
         const rosterPending = await ScipOJPlatform.getPendingRoster(courseId);
-        const gradebookData = await ScipOJPlatform.getTeacherRoster(courseId);
 
         if (rosterPending.length === 0) {
           pendingRosterArea.innerHTML = '<p style="color:var(--text-secondary); padding:1rem;">当前班级暂无导入的花名册。可在上方粘贴或载入 CSV 进行预置。</p>';
@@ -797,7 +890,7 @@
       formPublish.onsubmit = async (e) => {
         e.preventDefault();
         if (!currentCourseId) {
-          alert("请先选择教学班级");
+          ScipOJPlatform.showToast("请先选择教学班级", "warning");
           return;
         }
 
@@ -806,14 +899,34 @@
           pId = assignCustomProblem.value.trim().toUpperCase();
         }
         if (!pId) {
-          alert("请选择或输入有效的题目编号");
+          ScipOJPlatform.showToast("请选择或输入有效的题目编号", "warning");
           return;
         }
 
-        const dueVal = assignDueAt.value ? new Date(assignDueAt.value).toISOString() : null;
+        let dueVal = null;
+        if (assignDueAt.value) {
+          const d = new Date(assignDueAt.value);
+          if (Number.isNaN(d.getTime())) {
+            publishStatus.textContent = "❌ 截止时间格式不正确";
+            publishStatus.className = "fail";
+            return;
+          }
+          dueVal = d.toISOString();
+        }
         const passScoreVal = parseInt(assignPassScore.value, 10);
         const instancesVal = parseInt(assignInstances.value, 10);
         const policyVal = assignPolicy.value;
+
+        if (!Number.isInteger(passScoreVal) || passScoreVal < 0 || passScoreVal > 100) {
+          publishStatus.textContent = "❌ 及格线必须是 0-100 的整数（默认 90）";
+          publishStatus.className = "fail";
+          return;
+        }
+        if (!Number.isInteger(instancesVal) || instancesVal < 1 || instancesVal > 20) {
+          publishStatus.textContent = "❌ 测试实例数必须是 1-20 的整数";
+          publishStatus.className = "fail";
+          return;
+        }
 
         const btnSave = document.getElementById("btn-save-assignment");
         btnSave.disabled = true;

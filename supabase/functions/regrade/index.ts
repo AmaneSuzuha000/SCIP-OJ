@@ -44,7 +44,8 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     const { submission_id, reason = "教师手动复判" } = body;
-    if (!submission_id || typeof submission_id !== "string") {
+    if (!submission_id || typeof submission_id !== "string" ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(submission_id)) {
       return errorResponse("缺少有效的 submission_id", 400, "MISSING_SUBMISSION_ID");
     }
 
@@ -104,7 +105,7 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // 7. 写入审计日志 grade_audits
-    await supabase.from("grade_audits").insert({
+    const { error: auditErr } = await supabase.from("grade_audits").insert({
       grading_id: newGrading.id,
       submission_id,
       actor_id: user.id,
@@ -112,6 +113,10 @@ serve(async (req: Request): Promise<Response> => {
       new_score: null,
       reason: String(reason).slice(0, 500),
     });
+    if (auditErr) {
+      // 审计写入失败不应静默：记录日志，便于管理员排查
+      console.error("[Regrade] 写入 grade_audits 失败:", auditErr.message);
+    }
 
     // 8. 调度评测任务
     const gradeRunner = await getPlatformSecret(supabase, "GRADE_RUNNER");

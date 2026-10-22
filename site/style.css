@@ -218,6 +218,31 @@ code, pre, kbd {
   background-color: #19202a;
 }
 
+/* 证据台是常驻面板，不是可点击卡片，避免 hover 造成误导 */
+#submission-detail:hover {
+  border-color: var(--border-default);
+  background-color: var(--bg-surface);
+}
+
+/* 通用两列表单网格（移动端自动折叠） */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+/* 配置缺失提示条 */
+.config-warning {
+  background: var(--color-warn-bg, #3a2d12);
+  border: 1px solid var(--color-warn-border, #9e6a03);
+  color: var(--color-warn, #e3b341);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+
 .course-banner {
   background: linear-gradient(180deg, #161b22 0%, #13171e 100%);
   border: 1px solid var(--border-default);
@@ -807,15 +832,15 @@ textarea#code:focus {
    ============================================================ */
 
 
-/* ============================================================
-   HOTFIX: hidden must override display:flex/grid
-   Author CSS `.modal-overlay { display:flex }` otherwise beats the
-   UA rule for [hidden], so close buttons that set hidden=true leave
-   the dialog stuck on screen.
-   ============================================================ */
-/* HOTFIX: hidden must override display:flex/grid */
+/* HOTFIX: 作者样式 `display:flex/grid` 会覆盖 UA 的 [hidden] 规则，
+   导致设置 hidden=true 的弹窗仍然停留在屏幕上。 */
 [hidden] {
   display: none !important;
+}
+
+/* 弹窗打开时锁定背景滚动，避免移动端出现“背景跟着滚”的问题 */
+body.modal-open {
+  overflow: hidden;
 }
 
 .modal-overlay {
@@ -824,10 +849,12 @@ textarea#code:focus {
   background-color: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(4px);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   z-index: 1000;
   padding: 1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   animation: fadeIn 0.15s ease-out;
 }
 
@@ -843,6 +870,10 @@ textarea#code:focus {
   box-shadow: var(--shadow-lg);
   width: 100%;
   max-width: 520px;
+  margin: auto; /* 配合 overlay 的 overflow-y:auto，长弹窗可完整滚动 */
+  max-height: calc(100vh - 2rem);
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   animation: scaleUp 0.15s ease-out;
 }
@@ -858,6 +889,7 @@ textarea#code:focus {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .modal-header h3 {
@@ -885,7 +917,8 @@ textarea#code:focus {
   padding: 1.4rem;
   font-size: 0.9rem;
   color: var(--text-primary);
-  max-height: 75vh;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -895,7 +928,9 @@ textarea#code:focus {
   border-top: 1px solid var(--border-default);
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 0.75rem;
+  flex-shrink: 0;
 }
 
 /* 表单控件 */
@@ -1095,19 +1130,28 @@ textarea:focus {
 
 #toast-container {
   position: fixed;
-  top: 1.5rem;
+  top: 4.75rem; /* 避开 sticky 导航栏，避免遮挡登录/资料按钮 */
   right: 1.5rem;
   z-index: 9999;
   display: flex;
   flex-direction: column;
+  align-items: flex-end;
   gap: 0.6rem;
+  max-width: calc(100vw - 3rem);
   pointer-events: none;
+}
+
+/* 弹窗打开时把 toast 移到底部，避免遮挡弹窗右上角的关闭按钮 */
+body.modal-open #toast-container {
+  top: auto;
+  bottom: 1.25rem;
 }
 
 .toast {
   pointer-events: auto;
-  min-width: 280px;
-  max-width: 420px;
+  min-width: 0;
+  width: max-content;
+  max-width: min(420px, calc(100vw - 3rem));
   background-color: var(--bg-surface);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
@@ -1182,5 +1226,86 @@ footer {
   .status-badge {
     margin-left: 0;
     margin-top: 0.5rem;
+  }
+  .nav-links {
+    justify-content: flex-start;
+    gap: 0.25rem;
+  }
+  .nav-item {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.82rem;
+  }
+  .auth-section {
+    justify-content: flex-start;
+  }
+  .course-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem;
+  }
+  .filter-bar {
+    align-items: stretch;
+  }
+  .filter-group {
+    flex: 1 1 100%;
+  }
+  .filter-group input,
+  .filter-group select {
+    width: 100%;
+    min-width: 0;
+  }
+  .teacher-tabs {
+    gap: 0.35rem;
+    padding-bottom: 0.4rem;
+  }
+  .teacher-tabs .tab-btn {
+    flex: 0 0 auto;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.82rem;
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  .modal-overlay {
+    padding: 0.5rem;
+  }
+  .modal-content {
+    max-height: calc(100vh - 1rem);
+  }
+  .modal-header,
+  .modal-body,
+  .modal-actions {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .modal-actions {
+    flex-direction: column-reverse;
+  }
+  .modal-actions button {
+    width: 100%;
+    min-height: 42px;
+  }
+  button, .btn {
+    min-height: 40px;
+  }
+  #toast-container {
+    top: auto;
+    bottom: 1rem;
+    left: 1rem;
+    right: 1rem;
+    align-items: stretch;
+    max-width: none;
+  }
+  .toast {
+    width: 100%;
+    max-width: none;
+  }
+  .submissions-table,
+  .roster-table {
+    font-size: 0.8rem;
+  }
+  .table-wrapper {
+    -webkit-overflow-scrolling: touch;
   }
 }

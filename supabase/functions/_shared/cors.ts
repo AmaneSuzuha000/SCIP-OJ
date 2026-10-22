@@ -3,15 +3,18 @@
 
 export const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-grade-signature",
+  "Access-Control-Max-Age": "86400",
+  "Vary": "Origin",
 };
 
 /** 处理 CORS 预检请求（OPTIONS） */
 export function handleCors(req: Request): Response | null {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: CORS_HEADERS });
+    // 204 + 空 body：部分浏览器/代理对 200 "ok" 的预检响应兼容性较差
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
   return null;
 }

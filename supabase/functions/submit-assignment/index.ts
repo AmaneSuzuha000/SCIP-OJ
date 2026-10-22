@@ -59,6 +59,10 @@ serve(async (req: Request): Promise<Response> => {
     if (!code_text || typeof code_text !== "string" || !code_text.trim()) {
       return errorResponse("提交代码不能为空", 400, "EMPTY_CODE");
     }
+    // 限制单次提交体积，防止超大 payload 拖垮数据库与评测队列
+    if (code_text.length > 200_000) {
+      return errorResponse("提交代码过长（上限 200000 字符）", 413, "CODE_TOO_LARGE");
+    }
 
     // 4. 查询作业及课程信息
     const { data: assignment, error: assignmentError } = await supabase
@@ -105,11 +109,13 @@ serve(async (req: Request): Promise<Response> => {
       submissionMeta.submitted_after_due = true;
     }
 
-    // 8. 计算代码 SHA-256 哈希
+    // 8. 计算代码 SHA-256 哈希（仅用于审计/查重）
     const codeHash = await sha256Hex(code_text);
-    const publicCode = `SUB-${codeHash.substring(0, 8).toUpperCase()}`;
 
     // 9. 写入 submissions 表
+    // 注意：public_code 由数据库触发器生成随机唯一值，绝不能从 code_hash 派生：
+    // public_code 有 UNIQUE 约束，相同代码二次提交（或两名学生提交同一模板）会触发
+    // 唯一键冲突，导致“提交记录保存失败”的 500 错误。
     const { data: submission, error: insertSubErr } = await supabase
       .from("submissions")
       .insert({
@@ -117,7 +123,6 @@ serve(async (req: Request): Promise<Response> => {
         assignment_id,
         code_text,
         code_hash: codeHash,
-        public_code: publicCode,
         metadata: submissionMeta,
       })
       .select("id, public_code, attempt_no")
@@ -140,6 +145,8 @@ serve(async (req: Request): Promise<Response> => {
 
     if (insertGradingErr || !grading) {
       console.error("[Submit] 插入 grading 失败:", insertGradingErr?.message);
+      // 回滚孤立的 submission，避免产生永远没有评分记录的“幽灵提交”
+      await supabase.from("submissions").delete().eq("id", submission.id);
       return errorResponse("评分记录初始化失败，请稍后重试", 500, "DB_GRADING_INIT_FAILED");
     }
 

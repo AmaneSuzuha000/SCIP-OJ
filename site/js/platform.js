@@ -13,6 +13,7 @@ const ScipOJPlatform = (() => {
   let currentUser = null;
   let currentProfile = null;
   let currentEnrollments = [];
+  let enrollmentsLoadFailed = false;
   const authListeners = [];
 
   function isConfigured() {
@@ -30,11 +31,14 @@ const ScipOJPlatform = (() => {
     if (!isConfigured()) {
       console.log("[Platform] 未检测到 Supabase 配置，平台运行于离线练习模式（L1 WASM 练习正常可用）");
       updateAuthUI();
+      showConfigWarning();
       return false;
     }
 
     if (!window.supabase || typeof window.supabase.createClient !== "function") {
       console.warn("[Platform] 未检测到 @supabase/supabase-js 库");
+      updateAuthUI();
+      showToast("平台脚本加载失败（supabase-js 未加载），正式作业功能暂不可用", "error");
       return false;
     }
 
@@ -51,18 +55,24 @@ const ScipOJPlatform = (() => {
       }
 
       // 监听认证状态变更
-      supabase.auth.onAuthStateChange(async (event, session) => {
+      // 注意：Supabase 官方要求不要在 onAuthStateChange 回调内直接 await 其他
+      // Supabase 查询（会持有 auth 锁导致死锁），这里用 setTimeout 跳出回调再刷新。
+      supabase.auth.onAuthStateChange((event, session) => {
         currentUser = session?.user || null;
-        if (currentUser) {
-          await refreshProfile();
-          await refreshEnrollments();
-          checkStudentGates();
-        } else {
-          currentProfile = null;
-          currentEnrollments = [];
-        }
-        updateAuthUI();
-        notifyAuthListeners();
+        setTimeout(async () => {
+          if (currentUser) {
+            await refreshProfile();
+            await refreshEnrollments();
+            if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+              checkStudentGates();
+            }
+          } else {
+            currentProfile = null;
+            currentEnrollments = [];
+          }
+          updateAuthUI();
+          notifyAuthListeners();
+        }, 0);
       });
     } catch (e) {
       console.warn("[Platform] 会话恢复异常:", e);
@@ -96,7 +106,8 @@ const ScipOJPlatform = (() => {
           user_id: currentUser.id,
           student_no: meta.student_no || null,
           display_name: meta.display_name || meta.user_name || meta.preferred_username || (currentUser.email ? currentUser.email.split("@")[0] : "GitHub 用户"),
-          role: meta.role || "student",
+          // 角色绝不从用户可控的 metadata 读取（GitHub OAuth 元数据不可信）
+          role: "student",
         };
       }
     } catch (e) {
@@ -113,17 +124,21 @@ const ScipOJPlatform = (() => {
     try {
       const { data, error } = await supabase
         .from("enrollments")
-        .select("id, course_id, role, courses(id, name, code, invite_code)")
+        .select("id, course_id, role, courses(id, name, code)")
         .eq("user_id", currentUser.id);
 
       if (!error && data) {
         currentEnrollments = data;
+        enrollmentsLoadFailed = false;
       } else {
+        console.warn("[Platform] 加载选课关系失败:", error);
         currentEnrollments = [];
+        enrollmentsLoadFailed = true;
       }
     } catch (e) {
       console.warn("[Platform] 加载选课关系异常:", e);
       currentEnrollments = [];
+      enrollmentsLoadFailed = true;
     }
     return currentEnrollments;
   }
@@ -198,6 +213,13 @@ const ScipOJPlatform = (() => {
       .eq("user_id", currentUser.id);
 
     if (error) {
+      // 学号全局唯一：给出可操作的中文提示，而不是裸露的 Postgres 错误
+      if (error.code === "23505" || /duplicate key|unique constraint/i.test(error.message || "")) {
+        throw new Error("该学号已被其他账号绑定，请联系任课教师核对处理");
+      }
+      if (error.code === "42501" || /row-level security|permission denied/i.test(error.message || "")) {
+        throw new Error("没有权限修改个人资料，请确认登录状态后重试");
+      }
       throw new Error(error.message || "更新个人资料失败");
     }
 
@@ -209,14 +231,23 @@ const ScipOJPlatform = (() => {
   }
 
   // ── 课程选课与邀请码 ──
+  function notifyEnrollmentsChanged() {
+    try {
+      document.dispatchEvent(new CustomEvent("scipoj:enrollments-changed"));
+    } catch (e) { /* CustomEvent 不可用时忽略 */ }
+  }
+
   async function joinCourse(inviteCode) {
     if (!supabase || !currentUser) throw new Error("请先登录平台账号");
     const code = (inviteCode || "").trim();
     if (!code) throw new Error("请输入有效的课程邀请码");
+    if (code.length > 64) throw new Error("邀请码格式不正确");
 
     const cfg = window.SCIP_OJ_CONFIG;
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error("登录会话已失效，请重新登录");
+
+    let lastError = null;
 
     // 1. 优先调用 Edge Function: join-course
     try {
@@ -232,55 +263,50 @@ const ScipOJPlatform = (() => {
       if (resp.ok) {
         const json = await resp.json();
         await refreshEnrollments();
+        notifyEnrollmentsChanged();
         showToast(json.message || "选课成功！", "success");
         return json;
-      } else if (resp.status !== 404) {
+      }
+      // 404 = Edge Function 未部署，继续尝试 RPC；其余错误直接呈现给用户
+      if (resp.status !== 404) {
         const errJson = await resp.json().catch(() => ({}));
         throw new Error(errJson.error || `选课失败 (HTTP ${resp.status})`);
       }
     } catch (e) {
-      if (!e.message.includes("HTTP 404") && !e.message.includes("Failed to fetch")) {
+      if (e.name === "TypeError" || /Failed to fetch|NetworkError|Load failed/i.test(e.message || "")) {
+        lastError = e; // 网络/CORS 问题，继续尝试 RPC
+      } else {
         throw e;
       }
     }
 
-    // 2. 回退 Supabase RPC: join_course_by_code
+    // 2. 回退 Supabase RPC: join_course_by_code（SECURITY DEFINER，受服务端校验）
     try {
       const { data, error } = await supabase.rpc("join_course_by_code", { p_code: code });
-      if (!error && data) {
+      if (error) {
+        lastError = new Error(error.message || "选课服务调用失败");
+      } else if (data) {
         if (!data.ok) throw new Error(data.error || "加入课程失败");
         await refreshEnrollments();
+        notifyEnrollmentsChanged();
         showToast(data.message || "加入课程成功！", "success");
         return data;
       }
     } catch (rpcErr) {
-      if (rpcErr.message && !rpcErr.message.includes("function") && !rpcErr.message.includes("not found")) {
+      // 函数不存在（未执行 004/005 迁移）时给出明确提示，而不是误报“邀请码无效”
+      if (/function .* does not exist|not found/i.test(rpcErr.message || "")) {
+        lastError = rpcErr;
+      } else {
         throw rpcErr;
       }
     }
 
-    // 3. 回退查询 courses 表
-    const { data: matchedCourses } = await supabase
-      .from("courses")
-      .select("id, name, code, invite_code")
-      .or(`code.ilike.${code},invite_code.ilike.${code}`)
-      .limit(1);
-
-    if (matchedCourses && matchedCourses.length > 0) {
-      const c = matchedCourses[0];
-      const { error: insErr } = await supabase
-        .from("enrollments")
-        .insert({ course_id: c.id, user_id: currentUser.id, role: "student" });
-
-      if (!insErr) {
-        await refreshEnrollments();
-        const msg = `成功加入课程：${c.code} ${c.name}`;
-        showToast(msg, "success");
-        return { ok: true, message: msg, course_name: c.name, course_code: c.code };
-      }
+    // 3. 不再直接写 enrollments 表：RLS 未开放学生 INSERT，直写必然失败且会
+    //    把“服务未部署/网络异常”误报成“邀请码无效”。
+    if (lastError) {
+      throw new Error("选课服务暂不可用，请联系任课教师或管理员检查后端部署（join-course / join_course_by_code）。");
     }
-
-    throw new Error("未找到匹配的课程，或邀请码不存在/已失效");
+    throw new Error("邀请码无效或已过期，请向任课教师确认后重试");
   }
 
   // ── 作业查询与正式提交 ──
@@ -294,8 +320,11 @@ const ScipOJPlatform = (() => {
 
       if (courseId) {
         query = query.eq("course_id", courseId);
-      } else if (currentEnrollments.length > 0) {
-        const courseIds = currentEnrollments.map(e => e.course_id);
+      } else {
+        // 只查询“我所在班级”的作业；否则会把他校/他班的作业误判为可提交，
+        // 直到服务端返回 NOT_ENROLLED 才报错，体验与预期不符。
+        const courseIds = currentEnrollments.map(e => e.course_id).filter(Boolean);
+        if (courseIds.length === 0) return null;
         query = query.in("course_id", courseIds);
       }
 
@@ -354,10 +383,20 @@ const ScipOJPlatform = (() => {
 
     const json = await resp.json().catch(() => ({ error: `HTTP ${resp.status} ${resp.statusText}` }));
     if (!resp.ok) {
-      if (resp.status === 403 && json.error?.includes("未选修")) {
+      const code = json.code || "";
+      if (resp.status === 401 || code === "UNAUTHORIZED") {
+        throw new Error("登录已过期，请重新登录后再提交作业");
+      }
+      if (code === "NOT_ENROLLED" || (resp.status === 403 && json.error?.includes("未选修"))) {
         throw new Error("您未选修本门课程，请先输入课程邀请码选课！");
       }
-      throw new Error(json.error || "提交作业失败");
+      if (code === "STUDENT_NO_REQUIRED") {
+        throw new Error("请先在个人资料中绑定真实学号与姓名再提交作业");
+      }
+      if (code === "CODE_TOO_LARGE") {
+        throw new Error("提交代码过长，请精简后重试（上限 200000 字符）");
+      }
+      throw new Error(json.error || `提交作业失败 (HTTP ${resp.status})`);
     }
     return json;
   }
@@ -385,7 +424,9 @@ const ScipOJPlatform = (() => {
           )
         `)
         .eq("user_id", currentUser.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        // 关键：复判会新增 grading，必须让最新一次评分排在最前，否则前端会展示旧分数
+        .order("created_at", { ascending: false, referencedTable: "gradings" });
 
       if (assignmentId) {
         query = query.eq("assignment_id", assignmentId);
@@ -394,12 +435,13 @@ const ScipOJPlatform = (() => {
       const { data, error } = await query;
       if (error) {
         console.warn("[Platform] getMySubmissions error:", error);
-        return [];
+        throw new Error("加载提交记录失败：" + (error.message || "数据库查询错误"));
       }
       return data || [];
     } catch (e) {
+      if (e instanceof Error && e.message.startsWith("加载提交记录失败")) throw e;
       console.warn("[Platform] getMySubmissions exception:", e);
-      return [];
+      throw new Error("加载提交记录失败，请检查网络后重试");
     }
   }
 
@@ -410,13 +452,35 @@ const ScipOJPlatform = (() => {
 
   async function getTeacherRoster(courseId) {
     if (!supabase) return [];
-    const { data, error } = await supabase
-      .from("course_gradebook")
-      .select("*")
-      .eq("course_id", courseId);
+    // 通过受控 RPC 读取：course_gradebook 已撤销 authenticated 直接 SELECT，
+    // 由数据库函数校验 is_teacher_of(course_id) 后返回本课程数据。
+    const { data, error } = await supabase.rpc("get_teacher_gradebook", { p_course_id: courseId });
 
     if (error) throw error;
     return data || [];
+  }
+
+  async function getCourseInviteCode(courseId) {
+    if (!supabase) return null;
+    const { data, error } = await supabase.rpc("get_course_invite_code", { p_course_id: courseId });
+    if (error) throw error;
+    return data || null;
+  }
+
+  async function getLeaderboard(courseId, problemId = null, limit = 30) {
+    if (!supabase) throw new Error("平台未配置云端服务");
+    // 服务端 RPC 负责校验“本课程师生”并在返回前脱敏学号
+    const { data, error } = await supabase.rpc("get_course_leaderboard", {
+      p_course_id: courseId,
+      p_problem_id: problemId || null,
+    });
+
+    if (error) {
+      const err = new Error(error.message || "排行榜查询失败");
+      err.code = error.code;
+      throw err;
+    }
+    return (data || []).slice(0, Math.max(1, Math.min(100, Number(limit) || 30)));
   }
 
   async function getPendingRoster(courseId) {
@@ -430,12 +494,13 @@ const ScipOJPlatform = (() => {
 
       if (error) {
         console.warn("[Platform] getPendingRoster error:", error);
-        return [];
+        throw new Error("加载花名册失败：" + (error.message || "数据库查询错误"));
       }
       return data || [];
     } catch (e) {
+      if (e instanceof Error && e.message.startsWith("加载花名册失败")) throw e;
       console.warn("[Platform] getPendingRoster exception:", e);
-      return [];
+      throw new Error("加载花名册失败，请稍后重试");
     }
   }
 
@@ -447,6 +512,7 @@ const ScipOJPlatform = (() => {
     if (lines.length === 0) throw new Error("未解析到任何有效数据行");
 
     const rows = [];
+    const seen = new Set();
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       if (i === 0 && (line.includes("学号") || line.toLowerCase().includes("student_no"))) {
@@ -457,13 +523,14 @@ const ScipOJPlatform = (() => {
       const student_no = parts[0];
       const display_name = parts[1];
       const github_login = parts[2] || null;
-      if (student_no && display_name) {
+      if (student_no && display_name && !seen.has(student_no)) {
+        seen.add(student_no);
+        // 注意：不要携带 status，重复导入时保留已 matched 的状态
         rows.push({
           course_id: courseId,
           student_no,
           display_name,
           github_login,
-          status: "pending",
         });
       }
     }
@@ -555,7 +622,24 @@ const ScipOJPlatform = (() => {
     return json;
   }
 
+  const REGRADE_BATCH_LIMIT = 50;
+
+  async function postRegradeBatch(payload, session, cfg) {
+    const resp = await fetch(`${cfg.SUPABASE_URL}/functions/v1/regrade-batch`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    let json = null;
+    try { json = await resp.json(); } catch (_) { /* 非 JSON 响应 */ }
+    return { resp, json };
+  }
+
   async function requestBatchRegrade(submissionIds, reason, onProgress) {
+    if (!supabase || !currentUser) throw new Error("请先登录教师账号");
     if (!Array.isArray(submissionIds) || submissionIds.length === 0) {
       throw new Error("未选择任何待复判记录");
     }
@@ -564,28 +648,56 @@ const ScipOJPlatform = (() => {
     if (!session) throw new Error("请先登录");
 
     const cfg = window.SCIP_OJ_CONFIG;
-    try {
-      const resp = await fetch(`${cfg.SUPABASE_URL}/functions/v1/regrade-batch`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ submission_ids: submissionIds, reason }),
-      });
-
-      if (resp.ok) {
-        return await resp.json();
-      }
-    } catch (e) {
-      console.warn("[Platform] regrade-batch 端点不可用，回退单条循环复判:", e);
+    const ids = Array.from(new Set(submissionIds.filter(Boolean)));
+    const chunks = [];
+    for (let i = 0; i < ids.length; i += REGRADE_BATCH_LIMIT) {
+      chunks.push(ids.slice(i, i + REGRADE_BATCH_LIMIT));
     }
 
-    // 回退单条调用
+    let endpointMissing = false;
+    let totalSuccess = 0;
+    const allResults = [];
+
+    for (let c = 0; c < chunks.length; c++) {
+      const chunk = chunks[c];
+      try {
+        const { resp, json } = await postRegradeBatch({ submission_ids: chunk, reason }, session, cfg);
+        if (resp.ok && json) {
+          totalSuccess += Number(json.success_count || 0);
+          if (Array.isArray(json.results)) allResults.push(...json.results);
+          if (typeof onProgress === "function") {
+            onProgress(Math.min((c + 1) * REGRADE_BATCH_LIMIT, ids.length), ids.length);
+          }
+          continue;
+        }
+        if (resp.status === 404) {
+          endpointMissing = true;
+          break;
+        }
+        // 服务端明确拒绝（权限不足、参数错误等）时直接抛错，不再静默降级
+        const msg = json?.error || `批量复判失败 (HTTP ${resp.status})`;
+        const err = new Error(msg);
+        err.code = json?.code;
+        throw err;
+      } catch (e) {
+        if (e.name === "TypeError" || /Failed to fetch|NetworkError|Load failed/i.test(e.message || "")) {
+          endpointMissing = true;
+          break;
+        }
+        throw e;
+      }
+    }
+
+    if (!endpointMissing) {
+      return { ok: true, total: ids.length, success_count: totalSuccess, results: allResults };
+    }
+
+    // 仅在端点未部署 / 网络不可达时回退为单条复判
+    console.warn("[Platform] regrade-batch 端点不可用，回退单条循环复判");
     let successCount = 0;
     const results = [];
-    for (let i = 0; i < submissionIds.length; i++) {
-      const subId = submissionIds[i];
+    for (let i = 0; i < ids.length; i++) {
+      const subId = ids[i];
       try {
         await requestRegrade(subId, reason);
         successCount++;
@@ -594,48 +706,61 @@ const ScipOJPlatform = (() => {
         results.push({ id: subId, success: false, error: err.message });
       }
       if (typeof onProgress === "function") {
-        onProgress(i + 1, submissionIds.length);
+        onProgress(i + 1, ids.length);
       }
     }
-    return { ok: true, total: submissionIds.length, success_count: successCount, results };
+    return { ok: true, total: ids.length, success_count: successCount, results };
   }
 
   async function requestProblemRegrade(courseId, problemId, reason, onProgress) {
+    if (!supabase || !currentUser) throw new Error("请先登录教师账号");
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error("请先登录");
 
     const cfg = window.SCIP_OJ_CONFIG;
     try {
-      const resp = await fetch(`${cfg.SUPABASE_URL}/functions/v1/regrade-batch`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ course_id: courseId, problem_id: problemId, reason }),
-      });
-
-      if (resp.ok) {
-        return await resp.json();
+      const { resp, json } = await postRegradeBatch(
+        { course_id: courseId, problem_id: problemId, reason },
+        session,
+        cfg,
+      );
+      if (resp.ok && json) return json;
+      if (resp.status !== 404) {
+        // 超过单次上限时，前端改为按 50 条分片调用同一端点
+        if (json?.code === "BATCH_LIMIT_EXCEEDED") {
+          return await requestProblemRegradeChunked(courseId, problemId, reason, onProgress);
+        }
+        const err = new Error(json?.error || `整题复判失败 (HTTP ${resp.status})`);
+        err.code = json?.code;
+        throw err;
       }
     } catch (e) {
-      console.warn("[Platform] regrade-batch 整题重判不可用，回退查询提交列表:", e);
+      if (!(e.name === "TypeError" || /Failed to fetch|NetworkError|Load failed/i.test(e.message || ""))) {
+        throw e;
+      }
+      console.warn("[Platform] regrade-batch 整题重判端点不可用，回退查询提交列表");
     }
 
-    // 回退查询提交
-    const { data: assignments } = await supabase
+    return await requestProblemRegradeChunked(courseId, problemId, reason, onProgress);
+  }
+
+  async function requestProblemRegradeChunked(courseId, problemId, reason, onProgress) {
+    const { data: assignment, error: aErr } = await supabase
       .from("assignments")
       .select("id")
       .eq("course_id", courseId)
-      .eq("problem_id", problemId)
+      .eq("problem_id", String(problemId).toUpperCase())
       .maybeSingle();
 
-    if (!assignments) throw new Error("未找到对应作业");
+    if (aErr) throw new Error("查询作业失败：" + aErr.message);
+    if (!assignment) throw new Error("未找到对应作业");
 
-    const { data: subs } = await supabase
+    const { data: subs, error: sErr } = await supabase
       .from("submissions")
       .select("id")
-      .eq("assignment_id", assignments.id);
+      .eq("assignment_id", assignment.id);
+
+    if (sErr) throw new Error("查询提交记录失败：" + sErr.message);
 
     const ids = (subs || []).map(s => s.id);
     if (ids.length === 0) throw new Error("该题目暂无任何学生提交记录");
@@ -645,15 +770,31 @@ const ScipOJPlatform = (() => {
 
   async function rotateCourseInviteCode(courseId, newCode = null) {
     if (!supabase || !currentUser) throw new Error("请先登录");
-    const code = newCode ? newCode.trim().toUpperCase() : "SCIP-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+    const code = newCode
+      ? newCode.trim().toUpperCase()
+      : "SCIP-" + Math.random().toString(36).substring(2, 8).toUpperCase();
 
-    await supabase.from("courses").update({ invite_code: code }).eq("id", courseId);
+    if (!/^[A-Z0-9_-]{4,32}$/.test(code)) {
+      throw new Error("邀请码只能包含字母、数字、下划线或短横线（4-32 位）");
+    }
 
-    await supabase.from("course_invites").insert({
-      course_id: courseId,
-      code,
-      role: "student",
-    });
+    const { error: updateErr } = await supabase
+      .from("courses")
+      .update({ invite_code: code })
+      .eq("id", courseId);
+
+    if (updateErr) {
+      if (updateErr.code === "23505") throw new Error("该邀请码已被其他课程占用，请重试");
+      throw new Error("更新课程邀请码失败：" + updateErr.message);
+    }
+
+    const { error: insertErr } = await supabase
+      .from("course_invites")
+      .insert({ course_id: courseId, code, role: "student" });
+
+    if (insertErr && insertErr.code !== "23505") {
+      throw new Error("写入邀请码记录失败：" + insertErr.message);
+    }
 
     await refreshEnrollments();
     return code;
@@ -737,6 +878,10 @@ const ScipOJPlatform = (() => {
   // ── 学生门禁检查 ──
   function checkStudentGates() {
     if (!currentUser || isTeacher()) return;
+    // 已有弹窗打开时不要叠加第二个门禁弹窗
+    if (document.querySelector(".modal-overlay:not([hidden])")) return;
+    // 选课关系查询失败时不要误判为“未选课”而强制弹窗
+    if (enrollmentsLoadFailed) return;
 
     // 门禁 1：未填学号，引导先填学号与真实姓名
     if (!currentProfile?.student_no) {
@@ -760,6 +905,80 @@ const ScipOJPlatform = (() => {
       }, 350);
     }
   }
+
+  // ── 通用弹窗管理：Escape 关闭 / 焦点圈定 / 背景滚动锁定 / 焦点恢复 ──
+  const modalStack = [];
+  const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]):not([hidden]), input:not([disabled]):not([hidden]), select:not([disabled]):not([hidden]), textarea:not([disabled]):not([hidden]), [tabindex]:not([tabindex="-1"])';
+
+  function openModal(dialog, options = {}) {
+    if (!dialog) return;
+    const dismissible = options.dismissible !== false;
+    dialog.dataset.dismissible = dismissible ? "true" : "false";
+    dialog.__onClose = typeof options.onClose === "function" ? options.onClose : null;
+    if (!dialog.__prevFocus) dialog.__prevFocus = document.activeElement;
+    if (!modalStack.includes(dialog)) modalStack.push(dialog);
+    dialog.hidden = false;
+    dialog.setAttribute("role", "dialog");
+    dialog.setAttribute("aria-modal", "true");
+    document.body.classList.add("modal-open");
+    setTimeout(() => {
+      const target = dialog.querySelector("[data-autofocus]") ||
+        dialog.querySelector(FOCUSABLE_SELECTOR);
+      if (target && typeof target.focus === "function") {
+        try { target.focus(); } catch (_) { /* ignore */ }
+      }
+    }, 30);
+  }
+
+  function closeModal(dialog, options = {}) {
+    if (!dialog) return;
+    if (dialog.dataset.dismissible === "false" && !options.force) return;
+    dialog.hidden = true;
+    const idx = modalStack.indexOf(dialog);
+    if (idx >= 0) modalStack.splice(idx, 1);
+    if (modalStack.length === 0) document.body.classList.remove("modal-open");
+    const prev = dialog.__prevFocus;
+    dialog.__prevFocus = null;
+    if (prev && typeof prev.focus === "function") {
+      try { prev.focus(); } catch (_) { /* ignore */ }
+    }
+    const cb = dialog.__onClose;
+    dialog.__onClose = null;
+    if (cb) {
+      try { cb(); } catch (e) { console.error(e); }
+    }
+  }
+
+  function getTopModal() {
+    return modalStack.length ? modalStack[modalStack.length - 1] : null;
+  }
+
+  document.addEventListener("keydown", (e) => {
+    const top = getTopModal();
+    if (!top) return;
+
+    if (e.key === "Escape") {
+      if (top.dataset.dismissible === "false") return; // 强制门禁弹窗不允许 Esc 绕过
+      e.preventDefault();
+      closeModal(top);
+      return;
+    }
+
+    if (e.key === "Tab") {
+      const nodes = Array.from(top.querySelectorAll(FOCUSABLE_SELECTOR))
+        .filter((el) => el.offsetParent !== null || el === document.activeElement);
+      if (nodes.length === 0) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  });
 
   // ── 弹窗: 登录 ──
   function showLoginDialog() {
@@ -788,15 +1007,17 @@ const ScipOJPlatform = (() => {
           </div>
           <div class="modal-actions">
             <button type="button" id="login-cancel" class="btn-secondary">取消</button>
-            <button type="button" id="login-github" class="btn-blue">使用 GitHub 账号登录</button>
+            <button type="button" id="login-github" class="btn-blue" data-autofocus>使用 GitHub 账号登录</button>
           </div>
         </div>
       `;
+      dialog.hidden = true;
       document.body.appendChild(dialog);
 
-      const close = () => { dialog.hidden = true; };
+      const close = () => closeModal(dialog);
       document.getElementById("login-cancel").onclick = close;
       document.getElementById("login-modal-x").onclick = close;
+      document.getElementById("login-modal-x").setAttribute("aria-label", "关闭登录弹窗");
       dialog.onclick = (e) => { if (e.target === dialog) close(); };
 
       document.getElementById("login-github").onclick = async () => {
@@ -816,7 +1037,7 @@ const ScipOJPlatform = (() => {
       };
     }
 
-    dialog.hidden = false;
+    openModal(dialog);
     const errEl = document.getElementById("login-error");
     if (errEl) errEl.hidden = true;
   }
@@ -841,7 +1062,7 @@ const ScipOJPlatform = (() => {
             </p>
             <div class="form-group">
               <label for="input-student-no">学号 (如 20260001)：</label>
-              <input type="text" id="input-student-no" placeholder="输入您的学号" />
+              <input type="text" id="input-student-no" placeholder="输入您的学号" data-autofocus />
             </div>
             <div class="form-group">
               <label for="input-display-name">真实姓名 / 显示名：</label>
@@ -855,6 +1076,7 @@ const ScipOJPlatform = (() => {
           </div>
         </div>
       `;
+      dialog.hidden = true;
       document.body.appendChild(dialog);
     }
 
@@ -869,14 +1091,23 @@ const ScipOJPlatform = (() => {
     inputName.value = currentProfile?.display_name || "";
     errEl.hidden = true;
 
-    const canCancel = !forced || !!currentProfile?.student_no;
-    btnCancel.hidden = !canCancel;
-    btnX.hidden = !canCancel;
+    // 强制门禁也保留“稍后填写（仅练习）”出口：
+    // 关闭弹窗不会影响 L1 练习；正式提交仍由服务端门禁校验学号，安全边界不变。
+    const isForcedBlocking = forced && !currentProfile?.student_no;
+    btnCancel.hidden = false;
+    btnCancel.textContent = isForcedBlocking ? "稍后填写（仅练习）" : "取消";
+    btnX.hidden = false;
+    btnX.setAttribute("aria-label", "关闭学号绑定弹窗");
 
-    const close = () => { if (canCancel) dialog.hidden = true; };
-    btnCancel.onclick = close;
+    const close = () => closeModal(dialog);
+    btnCancel.onclick = () => {
+      close();
+      if (isForcedBlocking) {
+        showToast("已跳过学号绑定：可继续 L1 练习，提交正式作业前需补齐学号", "info");
+      }
+    };
     btnX.onclick = close;
-    dialog.onclick = (e) => { if (e.target === dialog && canCancel) close(); };
+    dialog.onclick = (e) => { if (e.target === dialog) close(); };
 
     // 支持回车保存
     inputNo.onkeydown = (e) => { if (e.key === "Enter") btnSave.click(); };
@@ -902,7 +1133,7 @@ const ScipOJPlatform = (() => {
       btnSave.textContent = "保存中…";
       try {
         await updateProfile({ student_no: sNo, display_name: sName });
-        dialog.hidden = true;
+        closeModal(dialog, { force: true });
         if (typeof options.onComplete === "function") {
           options.onComplete();
         }
@@ -915,7 +1146,7 @@ const ScipOJPlatform = (() => {
       }
     };
 
-    dialog.hidden = false;
+    openModal(dialog, { dismissible: true });
     setTimeout(() => { (inputNo.value ? inputName : inputNo).focus(); }, 100);
   }
 
@@ -938,7 +1169,7 @@ const ScipOJPlatform = (() => {
             </p>
             <div class="form-group">
               <label for="input-invite-code">课程邀请码：</label>
-              <input type="text" id="input-invite-code" placeholder="如 REDACTED-INVITE" />
+              <input type="text" id="input-invite-code" placeholder="如 REDACTED-INVITE" data-autofocus />
             </div>
             <p id="join-course-error" class="fail" style="font-size:0.85rem; margin-top:0.5rem;" hidden></p>
           </div>
@@ -948,6 +1179,7 @@ const ScipOJPlatform = (() => {
           </div>
         </div>
       `;
+      dialog.hidden = true;
       document.body.appendChild(dialog);
     }
 
@@ -960,9 +1192,10 @@ const ScipOJPlatform = (() => {
     inputCode.value = "";
     errEl.hidden = true;
 
-    const close = () => { dialog.hidden = true; };
+    const close = () => closeModal(dialog);
     btnCancel.onclick = close;
     btnX.onclick = close;
+    btnX.setAttribute("aria-label", "关闭选课弹窗");
     dialog.onclick = (e) => { if (e.target === dialog) close(); };
 
     inputCode.onkeydown = (e) => { if (e.key === "Enter") btnSubmit.click(); };
@@ -980,7 +1213,7 @@ const ScipOJPlatform = (() => {
       btnSubmit.textContent = "正在校验加入…";
       try {
         const res = await joinCourse(code);
-        dialog.hidden = true;
+        closeModal(dialog, { force: true });
         if (typeof options.onComplete === "function") {
           options.onComplete(res);
         }
@@ -993,7 +1226,7 @@ const ScipOJPlatform = (() => {
       }
     };
 
-    dialog.hidden = false;
+    openModal(dialog, { dismissible: true });
     setTimeout(() => inputCode.focus(), 100);
   }
 
@@ -1005,22 +1238,237 @@ const ScipOJPlatform = (() => {
       container.id = "toast-container";
       document.body.appendChild(container);
     }
+    container.setAttribute("role", "status");
+    container.setAttribute("aria-live", "polite");
+
+    // 最多保留 4 条，避免刷屏遮挡页面按钮
+    while (container.children.length >= 4) {
+      container.removeChild(container.firstElementChild);
+    }
+
+    const allowed = ["info", "success", "error", "warning"];
+    const kind = allowed.includes(type) ? type : "info";
 
     const toast = document.createElement("div");
-    toast.className = `toast toast-${type}`;
+    toast.className = `toast toast-${kind}`;
 
     let icon = "ℹ️";
-    if (type === "success") icon = "✅";
-    else if (type === "error") icon = "❌";
-    else if (type === "warning") icon = "⚠️";
+    if (kind === "success") icon = "✅";
+    else if (kind === "error") icon = "❌";
+    else if (kind === "warning") icon = "⚠️";
 
     toast.innerHTML = `<span>${icon}</span><span style="flex:1;">${escapeHtml(message)}</span>`;
+    toast.title = "点击关闭";
+    toast.onclick = () => toast.remove();
     container.appendChild(toast);
 
     setTimeout(() => {
       toast.style.opacity = "0";
       setTimeout(() => toast.remove(), 250);
     }, 3200);
+  }
+
+  // ── 通用输入 / 确认弹窗：替代原生 prompt/confirm（移动端不友好且会阻塞渲染） ──
+  function ensurePromptDialog() {
+    let dialog = document.getElementById("prompt-dialog");
+    if (dialog) return dialog;
+    dialog = document.createElement("div");
+    dialog.id = "prompt-dialog";
+    dialog.className = "modal-overlay";
+    dialog.innerHTML = `
+      <div class="modal-content" style="max-width:460px;">
+        <div class="modal-header">
+          <h3 id="prompt-title">请输入</h3>
+          <button type="button" class="modal-close-btn" id="prompt-x" aria-label="关闭输入弹窗">✕</button>
+        </div>
+        <div class="modal-body">
+          <p id="prompt-message" style="color:var(--text-secondary); margin-top:0; line-height:1.6;"></p>
+          <div class="form-group">
+            <input type="text" id="prompt-input" data-autofocus />
+            <p id="prompt-error" class="fail" style="font-size:0.85rem; margin:0.4rem 0 0;" hidden></p>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="prompt-cancel" class="btn-secondary">取消</button>
+          <button type="button" id="prompt-ok" class="btn-blue">确定</button>
+        </div>
+      </div>
+    `;
+    dialog.hidden = true;
+    document.body.appendChild(dialog);
+    return dialog;
+  }
+
+  function showPromptDialog(options = {}) {
+    const dialog = ensurePromptDialog();
+    const titleEl = document.getElementById("prompt-title");
+    const msgEl = document.getElementById("prompt-message");
+    const input = document.getElementById("prompt-input");
+    const errEl = document.getElementById("prompt-error");
+    const btnOk = document.getElementById("prompt-ok");
+    const btnCancel = document.getElementById("prompt-cancel");
+    const btnX = document.getElementById("prompt-x");
+
+    titleEl.textContent = options.title || "请输入";
+    msgEl.textContent = options.message || "";
+    msgEl.hidden = !options.message;
+    input.value = options.defaultValue ?? "";
+    input.placeholder = options.placeholder || "";
+    errEl.hidden = true;
+    btnOk.textContent = options.confirmText || "确定";
+    btnCancel.textContent = options.cancelText || "取消";
+
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = (value) => {
+        if (settled) return;
+        settled = true;
+        closeModal(dialog);
+        resolve(value);
+      };
+
+      const submit = () => {
+        const val = input.value.trim();
+        if (options.required && !val) {
+          errEl.textContent = options.requiredMessage || "内容不能为空";
+          errEl.hidden = false;
+          input.focus();
+          return;
+        }
+        finish(val);
+      };
+
+      btnOk.onclick = submit;
+      btnCancel.onclick = () => finish(null);
+      btnX.onclick = () => finish(null);
+      input.onkeydown = (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          submit();
+        }
+      };
+      dialog.onclick = (e) => { if (e.target === dialog) finish(null); };
+
+      openModal(dialog, {
+        dismissible: true,
+        onClose: () => { if (!settled) { settled = true; resolve(null); } },
+      });
+      setTimeout(() => {
+        input.focus();
+        if (options.selectAll !== false) input.select();
+      }, 60);
+    });
+  }
+
+  // 只读长文本弹窗：剪贴板 API 不可用（非 HTTPS / 权限被拒）时的兜底
+  function showTextDialog(options = {}) {
+    let dialog = document.getElementById("text-dialog");
+    if (!dialog) {
+      dialog = document.createElement("div");
+      dialog.id = "text-dialog";
+      dialog.className = "modal-overlay";
+      dialog.innerHTML = `
+        <div class="modal-content" style="max-width:680px;">
+          <div class="modal-header">
+            <h3 id="text-dialog-title">复制内容</h3>
+            <button type="button" class="modal-close-btn" id="text-dialog-x" aria-label="关闭">✕</button>
+          </div>
+          <div class="modal-body">
+            <p style="color:var(--text-secondary); margin-top:0;">
+              浏览器不允许自动写入剪贴板，请点击下方文本框后按 <kbd>Ctrl/⌘ + C</kbd> 手动复制。
+            </p>
+            <textarea id="text-dialog-body" readonly rows="14"
+              style="width:100%; font-family:var(--font-mono, monospace); font-size:0.82rem; resize:vertical;"></textarea>
+          </div>
+          <div class="modal-actions">
+            <button type="button" id="text-dialog-select" class="btn-secondary">全选内容</button>
+            <button type="button" id="text-dialog-close" class="btn-blue">关闭</button>
+          </div>
+        </div>
+      `;
+      dialog.hidden = true;
+      document.body.appendChild(dialog);
+    }
+
+    document.getElementById("text-dialog-title").textContent = options.title || "复制内容";
+    const body = document.getElementById("text-dialog-body");
+    body.value = options.text || "";
+    const close = () => closeModal(dialog);
+    document.getElementById("text-dialog-close").onclick = close;
+    document.getElementById("text-dialog-x").onclick = close;
+    document.getElementById("text-dialog-select").onclick = () => {
+      body.focus();
+      body.select();
+    };
+    dialog.onclick = (e) => { if (e.target === dialog) close(); };
+    openModal(dialog);
+    setTimeout(() => { body.focus(); body.select(); }, 80);
+  }
+
+  function ensureConfirmDialog() {
+    let dialog = document.getElementById("confirm-dialog");
+    if (dialog) return dialog;
+    dialog = document.createElement("div");
+    dialog.id = "confirm-dialog";
+    dialog.className = "modal-overlay";
+    dialog.innerHTML = `
+      <div class="modal-content" style="max-width:440px;">
+        <div class="modal-header">
+          <h3 id="confirm-title">请确认</h3>
+          <button type="button" class="modal-close-btn" id="confirm-x" aria-label="关闭确认弹窗">✕</button>
+        </div>
+        <div class="modal-body">
+          <p id="confirm-message" style="margin:0; line-height:1.7; white-space:pre-line;"></p>
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="confirm-cancel" class="btn-secondary" data-autofocus>取消</button>
+          <button type="button" id="confirm-ok" class="btn-blue">确定</button>
+        </div>
+      </div>
+    `;
+    dialog.hidden = true;
+    document.body.appendChild(dialog);
+    return dialog;
+  }
+
+  function showConfirmDialog(options = {}) {
+    const dialog = ensureConfirmDialog();
+    document.getElementById("confirm-title").textContent = options.title || "请确认";
+    document.getElementById("confirm-message").textContent = options.message || "";
+    const btnOk = document.getElementById("confirm-ok");
+    const btnCancel = document.getElementById("confirm-cancel");
+    const btnX = document.getElementById("confirm-x");
+    btnOk.textContent = options.confirmText || "确定";
+    btnCancel.textContent = options.cancelText || "取消";
+    btnOk.className = options.danger ? "btn-danger" : "btn-blue";
+
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = (value) => {
+        if (settled) return;
+        settled = true;
+        closeModal(dialog);
+        resolve(value);
+      };
+      btnOk.onclick = () => finish(true);
+      btnCancel.onclick = () => finish(false);
+      btnX.onclick = () => finish(false);
+      dialog.onclick = (e) => { if (e.target === dialog) finish(false); };
+      openModal(dialog, {
+        dismissible: true,
+        onClose: () => { if (!settled) { settled = true; resolve(false); } },
+      });
+    });
+  }
+
+  function showConfigWarning() {
+    if (document.getElementById("config-warning")) return;
+    const main = document.querySelector("main") || document.body;
+    const el = document.createElement("div");
+    el.id = "config-warning";
+    el.className = "config-warning";
+    el.innerHTML = `⚠️ <strong>离线练习模式</strong>：未检测到 <code>config.js</code>（Supabase 配置未注入）。L1 练习可正常使用；正式作业提交、选课与成绩功能暂不可用。管理员请检查部署 Secrets <code>SUPABASE_URL</code> / <code>SUPABASE_ANON_KEY</code> 后重新部署。`;
+    main.insertBefore(el, main.firstChild);
   }
 
   function escapeHtml(s) {
@@ -1055,6 +1503,8 @@ const ScipOJPlatform = (() => {
     getAssignmentForProblem,
     getMyCourses,
     getTeacherRoster,
+    getCourseInviteCode,
+    getLeaderboard,
     getPendingRoster,
     importRosterCSV,
     publishAssignment,
@@ -1066,8 +1516,13 @@ const ScipOJPlatform = (() => {
     showLoginDialog,
     showStudentNoDialog,
     showJoinCourseDialog,
+    showPromptDialog,
+    showConfirmDialog,
+    showTextDialog,
     checkStudentGates,
     showToast,
+    openModal,
+    closeModal,
     escapeHtml,
   };
 })();

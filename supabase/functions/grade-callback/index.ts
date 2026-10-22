@@ -103,9 +103,23 @@ serve(async (req: Request): Promise<Response> => {
     if (!submission_id || !status) {
       return errorResponse("缺少必要参数 submission_id 或 status", 400, "INVALID_PARAMS");
     }
+    if (typeof submission_id !== "string" ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(submission_id)) {
+      return errorResponse("submission_id 格式不正确", 400, "INVALID_SUBMISSION_ID");
+    }
 
     if (status !== "done" && status !== "system_error") {
       return errorResponse("status 必须为 'done' 或 'system_error'", 400, "INVALID_STATUS");
+    }
+
+    // done 必须有合法分数：绝不允许把“已完成但无分数”写进成绩表
+    if (status === "done") {
+      if (typeof score !== "number" || !Number.isFinite(score) || score < 0 || score > 100) {
+        return errorResponse("status=done 时 score 必须是 0-100 的数字", 400, "INVALID_SCORE");
+      }
+      if (typeof passed !== "boolean") {
+        return errorResponse("status=done 时 passed 必须是布尔值", 400, "INVALID_PASSED");
+      }
     }
 
     // 4. 构建入库更新
@@ -127,26 +141,52 @@ serve(async (req: Request): Promise<Response> => {
       if (report) updateData.report_json = report;
     }
 
-    // 5. 更新待评分行（幂等处理：优先更新 queued/running）
-    const { data: updated, error: updateError } = await supabase
+    // 5. 只更新“最新一条” queued/running 评分记录。
+    //    同一提交可能因复判存在多条评分行，若全部更新会覆盖旧记录，导致成绩错乱。
+    const { data: pending, error: pendingErr } = await supabase
       .from("gradings")
-      .update(updateData)
+      .select("id")
       .eq("submission_id", submission_id)
       .in("status", ["queued", "running"])
-      .select("id");
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (pendingErr) {
+      console.error("[GradeCallback] 查询待评分记录失败:", pendingErr.message);
+      return errorResponse("更新评测结果失败", 500, "DB_QUERY_FAILED");
+    }
+
+    if (!pending) {
+      // 若未找到处于 queued/running 的记录，可能是重复回调或已被人工复判
+      console.info(`[GradeCallback] 提交 ${submission_id} 未找到等待中的评分记录，幂等返回`);
+      return jsonResponse({ ok: true, duplicate: true });
+    }
+
+    const { error: updateError } = await supabase
+      .from("gradings")
+      .update(updateData)
+      .eq("id", pending.id)
+      .in("status", ["queued", "running"]);
 
     if (updateError) {
       console.error("[GradeCallback] 更新 grading 记录失败:", updateError.message);
       return errorResponse("更新评测结果失败", 500, "DB_UPDATE_FAILED");
     }
 
-    if (!updated || updated.length === 0) {
-      // 若未找到处于 queued/running 的记录，可能是重复回调或已被人工复判
-      console.info(`[GradeCallback] 提交 ${submission_id} 未找到等待中的评分记录，幂等返回`);
-      return jsonResponse({ ok: true, duplicate: true });
+    // 回填审计日志的 new_score，保证教师复判审计链完整
+    if (status === "done") {
+      const { error: auditErr } = await supabase
+        .from("grade_audits")
+        .update({ new_score: score })
+        .eq("grading_id", pending.id)
+        .is("new_score", null);
+      if (auditErr) {
+        console.error("[GradeCallback] 回填 grade_audits.new_score 失败:", auditErr.message);
+      }
     }
 
-    return jsonResponse({ ok: true, grading_id: updated[0].id });
+    return jsonResponse({ ok: true, grading_id: pending.id });
   } catch (err: any) {
     console.error("[GradeCallback] 未捕获异常:", err?.message || err);
     return errorResponse("服务器内部处理异常", 500, "INTERNAL_ERROR");
