@@ -224,18 +224,29 @@
     const batchProgressText = document.getElementById("batch-progress-text");
 
     async function loadGradebook(courseId) {
+      if (!rosterArea) {
+        console.error("[Teacher] #roster-area missing");
+        return;
+      }
       rosterArea.innerHTML = '<p style="color:var(--text-secondary); padding:1rem;">正在加载班级成绩表与评测状态...</p>';
       try {
         const data = await ScipOJPlatform.getTeacherRoster(courseId);
-        currentRosterData = data;
+        currentRosterData = data || [];
 
         await loadCourseAssignments(courseId);
         updateProblemFilterOptions();
 
         renderGradebookTable();
       } catch (err) {
+        console.error("[Teacher] loadGradebook failed:", err);
         rosterArea.innerHTML = `<p class="fail" style="padding:1rem;">加载成绩簿失败: ${esc(err.message)}</p>`;
       }
+    }
+
+    // 首屏加载：紧跟 loadGradebook 定义，避免后面绑定事件抛错导致永远不加载
+    if (currentCourseId) {
+      updateCourseInviteDisplay();
+      void loadGradebook(currentCourseId);
     }
 
     function updateProblemFilterOptions() {
@@ -267,28 +278,24 @@
       });
     }
 
-    filterProblem.onchange = () => renderGradebookTable();
-    filterKeyword.oninput = () => renderGradebookTable();
-    btnRefresh.onclick = async () => {
-      if (!currentCourseId) return;
-      btnRefresh.disabled = true;
-      const original = btnRefresh.textContent;
-      btnRefresh.textContent = "刷新中…";
-      try {
-        await loadGradebook(currentCourseId);
-        ScipOJPlatform.showToast("成绩表已刷新", "success");
-      } catch (err) {
-        ScipOJPlatform.showToast("刷新失败: " + err.message, "error");
-      } finally {
-        btnRefresh.disabled = false;
-        btnRefresh.textContent = original;
-      }
-    };
-
-    // 首屏加载：必须在 rosterArea / loadGradebook 就绪之后
-    if (currentCourseId) {
-      updateCourseInviteDisplay();
-      loadGradebook(currentCourseId);
+    if (filterProblem) filterProblem.onchange = () => renderGradebookTable();
+    if (filterKeyword) filterKeyword.oninput = () => renderGradebookTable();
+    if (btnRefresh) {
+      btnRefresh.onclick = async () => {
+        if (!currentCourseId) return;
+        btnRefresh.disabled = true;
+        const original = btnRefresh.textContent;
+        btnRefresh.textContent = "刷新中…";
+        try {
+          await loadGradebook(currentCourseId);
+          ScipOJPlatform.showToast("成绩表已刷新", "success");
+        } catch (err) {
+          ScipOJPlatform.showToast("刷新失败: " + err.message, "error");
+        } finally {
+          btnRefresh.disabled = false;
+          btnRefresh.textContent = original;
+        }
+      };
     }
 
     function renderGradebookTable() {
