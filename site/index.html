@@ -6,6 +6,8 @@
   <title>SCIP-OJ · 系统建模与优化评测平台</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="ui-refresh.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.20/lib/codemirror.min.css" />
+  <link rel="stylesheet" href="leetcode.css" />
 </head>
 <body class="student-page">
   <a class="skip-link" href="#main-content">跳转到主要内容</a>
@@ -88,7 +90,19 @@
         </div>
       </div>
 
-      <div id="problem-list" class="problem-grid">
+      <div class="catalog-toolbar" aria-label="筛选与布局">
+        <div class="catalog-filters">
+          <label for="filter-difficulty">难度</label>
+          <select id="filter-difficulty"><option value="all">全部难度</option><option value="easy">简单</option><option value="medium">中等</option><option value="hard">困难</option></select>
+          <label for="filter-progress">状态</label>
+          <select id="filter-progress"><option value="all">全部题目</option><option value="solved">练习已通过</option><option value="todo">尚未通过</option></select>
+        </div>
+        <div class="catalog-view" aria-label="题库显示方式">
+          <button type="button" id="view-list" class="view-toggle active" aria-pressed="true">☷ 列表</button>
+          <button type="button" id="view-grid" class="view-toggle" aria-pressed="false">▦ 卡片</button>
+        </div>
+      </div>
+      <div id="problem-list" class="problem-grid problem-list-mode">
         <p style="color:var(--text-secondary); padding:1rem 0;">正在加载题目索引...</p>
       </div>
     </section>
@@ -110,16 +124,25 @@
       <div id="assignment-meta-bar" class="meta-bar"></div>
 
       <div class="workspace-layout">
-        <div class="workspace-problem"><div class="workbench-kicker">01 / 问题与约束</div><article id="readme"></article></div>
+        <div class="workspace-problem">
+          <div class="workbench-tabs" role="tablist" aria-label="题目工作区">
+            <button id="tab-description" class="workbench-tab active" type="button" role="tab" aria-selected="true" aria-controls="readme">▤ 题目描述</button>
+            <button id="tab-history" class="workbench-tab" type="button" role="tab" aria-selected="false" aria-controls="history-tab">◷ 提交记录</button>
+          </div>
+          <article id="readme" role="tabpanel" aria-labelledby="tab-description"></article>
+          <div id="history-tab" role="tabpanel" aria-labelledby="tab-history" hidden></div>
+        </div>
         <div class="workspace-solution"><div class="workbench-kicker">02 / 编写与验证</div>
 
       <!-- 代码编写器容器 -->
       <div class="editor-container">
         <div class="editor-toolbar">
           <div>
-            <strong>Python 3 代码实现</strong> · <code>solve(instance)</code>
+            <span class="editor-title"><span class="file-dot">●</span> solution.py <small>Python 3 · solve(instance)</small></span>
           </div>
           <div class="editor-toolbar-actions">
+            <label class="editor-font-label" for="editor-font-size">字号</label>
+            <select id="editor-font-size" aria-label="代码字体大小"><option value="12">12</option><option value="14" selected>14</option><option value="16">16</option><option value="18">18</option><option value="20">20</option></select>
             <button id="btn-copy-template" type="button" class="btn-secondary" style="font-size:0.75rem; padding:0.2rem 0.5rem;">
               复制代码
             </button>
@@ -131,6 +154,7 @@
 
         <label class="sr-only" for="code">Python 解题代码</label>
         <textarea id="code" spellcheck="false" placeholder="# 在此编写你的 solve(instance) 实现..."></textarea>
+        <div id="exam-notice" class="exam-notice" hidden aria-live="polite"></div>
         <div id="draft-state" class="draft-state" role="status" aria-live="polite">草稿自动保存在此浏览器；正式成绩以提交记录为准</div>
       </div>
 
@@ -148,7 +172,7 @@
       <!-- 评测报告终端控制台 -->
       <div class="console-container">
         <div class="console-header">
-          <span>🧪 评测输出与算例分析</span>
+          <span>◉ 运行结果 <small class="console-shortcut">Ctrl / ⌘ + Enter · 本地运行</small></span>
           <button id="btn-clear-console" type="button" class="btn-secondary" style="font-size:0.72rem; padding:0.15rem 0.45rem;">清空控制台</button>
         </div>
         <pre id="report"></pre>
@@ -191,12 +215,16 @@
   <!-- 依赖脚本 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="config.js?v=ui2" onerror="console.log('[SCIP-OJ] config.js not found, fallback to defaults')"></script>
-  <script src="js/platform.js?v=ui2"></script>
+  <script src="js/platform.js?v=leetcode1"></script>
   <script src="js/marked.min.js"></script>
   <script src="js/purify.min.js"></script>
   <script src="js/knapsack_judge.js"></script>
   <script src="js/assignment_judge.js"></script>
   <script src="js/python_runtime.js"></script>
-  <script src="js/app.js?v=ui2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.20/lib/codemirror.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.20/mode/python/python.min.js"></script>
+  <script src="js/editor.js?v=leetcode1"></script>
+  <script src="js/exam-integrity.js?v=leetcode1"></script>
+  <script src="js/app.js?v=leetcode1"></script>
 </body>
 </html>
