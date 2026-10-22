@@ -1,6 +1,8 @@
 """Property-based grading helpers (feasibility, integrality, objective gap)."""
 from __future__ import annotations
 
+import math
+
 from typing import Any, Mapping, Sequence
 
 
@@ -12,9 +14,11 @@ def check_format(result: Mapping[str, Any]) -> tuple[bool, str]:
     if "solution" not in result:
         return False, "缺少 solution"
     try:
-        float(result["objective"])
-    except (TypeError, ValueError):
+        objective = float(result["objective"])
+    except (TypeError, ValueError, OverflowError):
         return False, "objective 必须是数字"
+    if not math.isfinite(objective):
+        return False, "objective 必须是有限数字"
     return True, "格式 OK"
 
 
@@ -56,7 +60,9 @@ def score_objective(
     sense: str = "maximize",
     eps_obj: float = 1e-4,
 ) -> tuple[int, str]:
-    """Return 0..35 points for objective quality (default O weight)."""
+    """Return 0..35 raw objective points, scaled by O weight in each grader."""
+    if not math.isfinite(obj) or not math.isfinite(opt):
+        raise ValueError("objective 和 optimal_value 必须是有限数值")
     max_pts = 35
     if sense == "maximize":
         gap = (opt - obj) / max(1.0, abs(opt))
@@ -75,7 +81,7 @@ def score_objective(
 
 
 def grade_knapsack(result: Mapping[str, Any], instance: Mapping[str, Any], meta: Mapping[str, Any]) -> dict[str, Any]:
-    weights = {"F": 10, "C": 35, "I": 10, "O": 35, "R": 0}
+    weights = {"F": 10, "C": 35, "I": 10, "O": 45, "R": 0}
     weights.update(meta.get("weights") or {})
     breakdown = {k: 0 for k in weights}
     messages: list[str] = []
@@ -137,21 +143,31 @@ def average_scores(reports: Sequence[Mapping[str, Any]], pass_score: int = 90) -
     }
 
 
+def _finite_float(value: Any) -> float:
+    try:
+        number = float(value)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("解包含非数值元素") from exc
+    if not math.isfinite(number):
+        raise ValueError("解包含 NaN 或 Infinity")
+    return number
+
+
 def _as_vector(solution: Mapping[Any, float] | Sequence[float], n: int) -> list[float]:
     if isinstance(solution, Mapping):
         out = []
         for i in range(n):
             if i in solution:
-                out.append(float(solution[i]))
+                out.append(_finite_float(solution[i]))
             elif str(i) in solution:
-                out.append(float(solution[str(i)]))
+                out.append(_finite_float(solution[str(i)]))
             else:
                 out.append(0.0)
         return out
     seq = list(solution)
     if len(seq) != n:
         raise ValueError(f"solution 长度 {len(seq)} != {n}")
-    return [float(v) for v in seq]
+    return [_finite_float(v) for v in seq]
 
 
 def _pack(score: int, passed: bool, breakdown: dict, messages: list[str], meta: Mapping[str, Any]) -> dict[str, Any]:
@@ -204,7 +220,7 @@ def check_assignment_integrality(
 
 
 def grade_assignment(result: Mapping[str, Any], instance: Mapping[str, Any], meta: Mapping[str, Any]) -> dict[str, Any]:
-    weights = {"F": 10, "C": 35, "I": 10, "O": 35, "R": 0}
+    weights = {"F": 10, "C": 35, "I": 10, "O": 45, "R": 0}
     weights.update(meta.get("weights") or {})
     breakdown = {k: 0 for k in weights}
     messages: list[str] = []
@@ -258,17 +274,17 @@ def _as_matrix(solution: Mapping[Any, float] | Sequence[Any], n: int) -> list[li
             for j in range(n):
                 for key in ((i, j), f"{i},{j}", f"{i}-{j}", i * n + j, str(i * n + j)):
                     if key in solution:
-                        mat[i][j] = float(solution[key])
+                        mat[i][j] = _finite_float(solution[key])
                         break
                 else:
                     # nested dict solution[i][j]
                     row = solution.get(i, solution.get(str(i)))
                     if isinstance(row, Mapping) and (j in row or str(j) in row):
-                        mat[i][j] = float(row[j] if j in row else row[str(j)])
+                        mat[i][j] = _finite_float(row[j] if j in row else row[str(j)])
         return mat
     seq = list(solution)
-    if len(seq) == n and all(isinstance(r, (list, tuple)) for r in seq):
-        return [[float(v) for v in row] for row in seq]
+    if len(seq) == n and all(isinstance(r, (list, tuple)) and len(r) == n for r in seq):
+        return [[_finite_float(v) for v in row] for row in seq]
     if len(seq) == n * n:
-        return [[float(seq[i * n + j]) for j in range(n)] for i in range(n)]
+        return [[_finite_float(seq[i * n + j]) for j in range(n)] for i in range(n)]
     raise ValueError(f"solution 形状无法解析为 {n}x{n}")

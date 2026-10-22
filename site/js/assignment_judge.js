@@ -65,7 +65,7 @@ function asMatrix(solution, n) {
 }
 
 function gradeAssignment(result, instance, meta) {
-  const weights = Object.assign({ F: 10, C: 35, I: 10, O: 35 }, meta.weights || {});
+  const weights = Object.assign({ F: 10, C: 35, I: 10, O: 45 }, meta.weights || {});
   const breakdown = { F: 0, C: 0, I: 0, O: 0 };
   const messages = [];
   const eps = meta.eps_feas ?? 1e-5;
@@ -81,6 +81,11 @@ function gradeAssignment(result, instance, meta) {
   } catch (e) {
     messages.push(String(e));
     return packA(breakdown.F, false, breakdown, messages, meta);
+  }
+  if (!Number.isFinite(Number(result.objective)) || x.length !== instance.n ||
+      x.some(row => !Array.isArray(row) || row.length !== instance.n || !row.every(Number.isFinite))) {
+    messages.push("objective 和解矩阵必须包含有限数值且形状正确");
+    return packA(0, false, breakdown, messages, meta);
   }
   for (let i = 0; i < instance.n; i++) {
     for (let j = 0; j < instance.n; j++) {
@@ -146,7 +151,8 @@ async function runL1Assignment(solveFn, meta) {
     const inst = genAssignment(base + i);
     let rep;
     try {
-      const result = await solveFn(inst);
+      const publicInstance = { n: inst.n, costs: inst.costs.map(row => row.slice()) };
+      const result = await solveFn(publicInstance);
       rep = gradeAssignment(result, inst, meta);
     } catch (e) {
       rep = { score: 0, passed: false, breakdown: { F: 0, C: 0, I: 0, O: 0 }, messages: ["运行错误: " + (e?.message || e)] };
