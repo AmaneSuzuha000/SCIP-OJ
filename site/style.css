@@ -806,6 +806,18 @@ textarea#code:focus {
    弹窗与浮层规范 (Modal & Toast)
    ============================================================ */
 
+
+/* ============================================================
+   HOTFIX: hidden must override display:flex/grid
+   Author CSS `.modal-overlay { display:flex }` otherwise beats the
+   UA rule for [hidden], so close buttons that set hidden=true leave
+   the dialog stuck on screen.
+   ============================================================ */
+/* HOTFIX: hidden must override display:flex/grid */
+[hidden] {
+  display: none !important;
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
