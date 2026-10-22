@@ -42,6 +42,13 @@ serve(async (req: Request): Promise<Response> => {
     if (!course_id || !problem_id) {
       return errorResponse("请求缺少必要的 course_id 或 problem_id", 400, "MISSING_PARAMS");
     }
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(course_id))) {
+      return errorResponse("course_id 格式不正确", 400, "INVALID_COURSE_ID");
+    }
+    const cleanProblemId = String(problem_id).trim().toUpperCase();
+    if (!/^[A-Z0-9_-]{1,32}$/.test(cleanProblemId)) {
+      return errorResponse("problem_id 只能包含字母、数字、下划线和短横线（1-32 位）", 400, "INVALID_PROBLEM_ID");
+    }
 
     // 3. 校验教师权限
     const hasPerm = await isTeacherOrAdmin(supabase, user.id, course_id);
@@ -75,7 +82,6 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // 5. 写入 / 更新 assignments 表
-    const cleanProblemId = String(problem_id).trim().toUpperCase();
     const { data: assignment, error: upsertErr } = await supabase
       .from("assignments")
       .upsert(
@@ -94,7 +100,10 @@ serve(async (req: Request): Promise<Response> => {
 
     if (upsertErr) {
       console.error("[PublishAssignment] 保存作业失败:", upsertErr.message);
-      return errorResponse("作业保存失败: " + upsertErr.message, 500, "DB_SAVE_FAILED");
+      if (upsertErr.code === "23503") {
+        return errorResponse("课程不存在或已被删除", 404, "COURSE_NOT_FOUND");
+      }
+      return errorResponse("作业保存失败，请稍后重试", 500, "DB_SAVE_FAILED");
     }
 
     return jsonResponse({
