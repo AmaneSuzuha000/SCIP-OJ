@@ -315,7 +315,7 @@ const ScipOJPlatform = (() => {
     try {
       let query = supabase
         .from("assignments")
-        .select("id, course_id, problem_id, due_at, pass_score, n_instances, score_policy, created_at")
+        .select("*")
         .eq("problem_id", problemId);
 
       if (courseId) {
@@ -344,7 +344,7 @@ const ScipOJPlatform = (() => {
     }
   }
 
-  async function submitAssignment(assignmentId, codeText) {
+  async function submitAssignment(assignmentId, codeText, clientIntegrity = null) {
     if (!isConfigured()) {
       throw new Error("未配置平台后端服务，无法提交正式作业");
     }
@@ -378,7 +378,7 @@ const ScipOJPlatform = (() => {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify({ assignment_id: assignmentId, code_text: codeText }),
+      body: JSON.stringify({ assignment_id: assignmentId, code_text: codeText, client_integrity: clientIntegrity }),
     });
 
     const json = await resp.json().catch(() => ({ error: `HTTP ${resp.status} ${resp.statusText}` }));
@@ -630,7 +630,8 @@ const ScipOJPlatform = (() => {
 
   async function publishAssignment(params) {
     if (!supabase || !currentUser) throw new Error("请先登录教师账号");
-    const { course_id, problem_id, due_at, pass_score = 90, n_instances = 3, score_policy = "highest_before_due" } = params;
+    const { course_id, problem_id, due_at, pass_score = 90, n_instances = 3,
+      score_policy = "highest_before_due", integrity_policy = "standard" } = params;
 
     const cfg = window.SCIP_OJ_CONFIG;
     const { data: { session } } = await supabase.auth.getSession();
@@ -647,7 +648,11 @@ const ScipOJPlatform = (() => {
       });
 
       if (resp.ok) {
-        return await resp.json();
+        const result = await resp.json();
+        if (integrity_policy !== "standard" && result?.assignment?.integrity_policy !== integrity_policy) {
+          throw new Error("服务器未保存考试模式。请先部署数据库迁移 009 和新版 publish-assignment 函数。");
+        }
+        return result;
       } else if (resp.status !== 404) {
         const json = await resp.json().catch(() => ({}));
         throw new Error(json.error || `发布失败 HTTP ${resp.status}`);
@@ -656,6 +661,11 @@ const ScipOJPlatform = (() => {
       if (!e.message.includes("HTTP 404") && !e.message.includes("Failed to fetch")) {
         throw e;
       }
+    }
+
+    // Exam policy requires the server-authorized Edge Function; no legacy fallback.
+    if (integrity_policy !== "standard") {
+      throw new Error("考试模式仅允许通过新版服务端发布接口，请管理员部署迁移 009 与 Edge Functions。");
     }
 
     // 回退直接写入 assignments 表

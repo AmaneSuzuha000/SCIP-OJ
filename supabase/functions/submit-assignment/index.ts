@@ -23,6 +23,7 @@ async function sha256Hex(text: string): Promise<string> {
 interface SubmitBody {
   assignment_id: string;
   code_text: string;
+  client_integrity?: unknown;
 }
 
 serve(async (req: Request): Promise<Response> => {
@@ -52,7 +53,7 @@ serve(async (req: Request): Promise<Response> => {
       return errorResponse("请求体必须为合法 JSON 格式", 400, "INVALID_JSON");
     }
 
-    const { assignment_id, code_text } = body;
+    const { assignment_id, code_text, client_integrity } = body;
     if (!assignment_id || typeof assignment_id !== "string") {
       return errorResponse("缺少有效 assignment_id", 400, "MISSING_ASSIGNMENT_ID");
     }
@@ -67,7 +68,7 @@ serve(async (req: Request): Promise<Response> => {
     // 4. 查询作业及课程信息
     const { data: assignment, error: assignmentError } = await supabase
       .from("assignments")
-      .select("id, course_id, problem_id, due_at, pass_score, n_instances, score_policy")
+      .select("*")
       .eq("id", assignment_id)
       .maybeSingle();
 
@@ -107,6 +108,33 @@ serve(async (req: Request): Promise<Response> => {
     if (isLate) {
       submissionMeta.late = true;
       submissionMeta.submitted_after_due = true;
+    }
+
+    // The policy is read from the DB. Client-side paste blocking is bypassable:
+    // the following bounded counters are self-reported review leads, NOT proof.
+    const configuredPolicy = ["standard", "exam_warn", "exam_block"].includes(assignment.integrity_policy)
+      ? assignment.integrity_policy : "standard";
+    if (configuredPolicy !== "standard") {
+      const raw = client_integrity && typeof client_integrity === "object" && !Array.isArray(client_integrity)
+        ? client_integrity as Record<string, unknown> : {};
+      const counterFields = [
+        "elapsed_seconds", "input_events", "paste_events",
+        "blocked_pastes", "copy_events", "drop_events", "hidden_events",
+      ];
+      const counts: Record<string, number> = {};
+      for (const key of counterFields) {
+        const value = raw[key];
+        counts[key] = typeof value === "number" && Number.isSafeInteger(value)
+          ? Math.min(1_000_000, Math.max(0, value)) : 0;
+      }
+      submissionMeta.integrity = {
+        policy: configuredPolicy,
+        client_reported: true,
+        client_policy_matches: raw.reported_policy === configuredPolicy,
+        received_at: new Date().toISOString(),
+        counters: counts,
+        notice: "浏览器自报；可篡改。禁止仅凭该数据判断作弊。",
+      };
     }
 
     // 8. 计算代码 SHA-256 哈希（仅用于审计/查重）

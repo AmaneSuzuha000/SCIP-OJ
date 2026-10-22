@@ -26,10 +26,13 @@ class UIContractTests(unittest.TestCase):
         required = {
             "index.html": ["problem-list", "workspace", "code", "readme",
                            "btn-grade", "btn-submit-formal", "report", "draft-state",
-                           "problem-search-input", "my-submissions-container"],
+                           "problem-search-input", "my-submissions-container",
+                           "filter-difficulty", "filter-progress", "tab-description",
+                           "tab-history", "editor-font-size", "exam-notice"],
             "teacher.html": ["teacher-panel", "course-select", "roster-area",
                              "tab-gradebook", "tab-roster", "tab-assignments",
-                             "metric-students", "metric-graded", "metric-passrate"],
+                             "metric-students", "metric-graded", "metric-passrate",
+                             "assign-integrity-policy"],
             "doc.html": ["md"],
         }
         for filename, ids in required.items():
@@ -41,6 +44,8 @@ class UIContractTests(unittest.TestCase):
                 self.assertTrue(set(ids).issubset(auditor.ids))
                 self.assertIn("style.css", auditor.styles)
                 self.assertIn("ui-refresh.css", auditor.styles)
+                if filename == "index.html":
+                    self.assertIn("leetcode.css", auditor.styles)
 
     def test_draft_is_local_and_server_submission_remains(self):
         script = (SITE / "js/app.js").read_text(encoding="utf8")
