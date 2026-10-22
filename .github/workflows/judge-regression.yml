@@ -55,5 +55,49 @@ jobs:
               print(pid, report["status"], report["score"], report.get("messages"))
               assert report["status"] == "done" and report["score"] == 100
               assert report["sandbox"] == "isolated_container"
-              assert report["test_set"] == "server_private_random"
+              assert report["test_set"] == "server_private_v2"
+          PY
+      - name: Adversarial execution regression
+        run: |
+          python - <<'PY'
+          import tempfile
+          from pathlib import Path
+          from judge.runner_l2_isolated import _run_isolated, grade_file
+          from judge.private_instances import private_knapsack
+
+          inst = private_knapsack(7026)
+          public = {k: v for k, v in inst.items() if k != "optimal_value"}
+          with tempfile.TemporaryDirectory() as d:
+              d = Path(d)
+              # Host-only environment variables do not cross the container boundary.
+              import os
+              os.environ["SCIP_OJ_TEST_SECRET"] = "must_not_cross_boundary"
+              secret_probe = d / "secret_probe.py"
+              secret_probe.write_text(
+                  'import os\n'
+                  'def solve(instance):\n'
+                  '    if os.environ.get("SCIP_OJ_TEST_SECRET"):\n'
+                  '        raise RuntimeError("HOST_ENV_LEAKED")\n'
+                  '    return {"objective": 0, "solution": [0] * instance["n"]}\n'
+              )
+              res, err = _run_isolated(secret_probe, public, 5)
+              assert err is None and res["objective"] == 0, (res, err)
+
+              # Read-only sandbox filesystem is not writable by student code.
+              write_probe = d / "read_only.py"
+              write_probe.write_text(
+                  'def solve(instance):\n'
+                  '    with open("/sandbox/worker.py", "w") as f:\n'
+                  '        f.write("modified")\n'
+                  '    return {}\n'
+              )
+              res, err = _run_isolated(write_probe, public, 5)
+              assert res is None and "PermissionError" in err, (res, err)
+
+              # Infinite loops must be interrupted and containers cleaned up.
+              loop = d / "loop.py"
+              loop.write_text('def solve(instance):\n    while True: pass\n')
+              res, err = _run_isolated(loop, public, 2)
+              assert res is None and "时间限制" in err, (res, err)
+          print("Adversarial sandbox checks passed")
           PY
