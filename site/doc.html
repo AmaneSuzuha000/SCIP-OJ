@@ -104,21 +104,38 @@
   </footer>
 
   <script src="js/marked.min.js"></script>
+  <script src="js/purify.min.js"></script>
   <script>
     (async () => {
       const params = new URLSearchParams(location.search);
       const path = params.get("path") || ("docs/" + (params.get("f") || "学生指南.md"));
       const name = path.split("/").pop().replace(/\.md$/, "");
       document.title = "SCIP-OJ · " + name;
+      const mdEl = document.getElementById("md");
       try {
         const r = await fetch(path);
         if (!r.ok) {
-          document.getElementById("md").innerHTML = `<p class="fail">文档加载失败: ${path} (HTTP ${r.status})</p>`;
+          mdEl.textContent = `文档加载失败: ${path} (HTTP ${r.status})`;
+          mdEl.className = "fail";
           return;
         }
-        document.getElementById("md").innerHTML = marked.parse(await r.text());
+        const raw = await r.text();
+        const html = marked.parse(raw);
+        // 文档内容来自仓库 Markdown（教师可提交 PR），按 HTML 解析前做一次白名单清洗，
+        // 避免 <img onerror> / <script> 之类的内容在站点同源执行。
+        if (window.DOMPurify) {
+          mdEl.innerHTML = window.DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
+        } else {
+          // 无清洗库时退化为纯文本展示，宁可少渲染也不执行不可信 HTML
+          mdEl.textContent = raw;
+          const note = document.createElement("p");
+          note.className = "fail";
+          note.textContent = "（安全组件未加载，已降级为纯文本显示）";
+          mdEl.prepend(note);
+        }
       } catch (e) {
-        document.getElementById("md").innerHTML = `<p class="fail">网络请求异常: ${e.message}</p>`;
+        mdEl.textContent = "网络请求异常: " + e.message;
+        mdEl.className = "fail";
       }
     })();
   </script>
