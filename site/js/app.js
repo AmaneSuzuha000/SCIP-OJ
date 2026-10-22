@@ -22,6 +22,56 @@ let activeProblemId = null;
 let activeAssignment = null;
 let currentTemplate = "";
 let pollTimer = null;
+let listViewMode = "table";
+
+function getCodeValue() {
+  return window.ScipOJEditor?.getValue() ?? document.getElementById("code").value;
+}
+function setCodeValue(value) {
+  if (window.ScipOJEditor) window.ScipOJEditor.setValue(value);
+  else document.getElementById("code").value = value;
+}
+function getPracticeProgress(id) {
+  try {
+    const raw = localStorage.getItem("scip-oj-practice:" + id);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+function normalizeDifficulty(value) {
+  const text = String(value || "").toLowerCase();
+  if (["easy", "简单"].includes(text)) return "easy";
+  if (["hard", "困难"].includes(text)) return "hard";
+  return "medium";
+}
+function applyProblemFilters() {
+  const query = (document.getElementById("problem-search-input")?.value || "").trim().toLowerCase();
+  const difficulty = document.getElementById("filter-difficulty")?.value || "all";
+  const progress = document.getElementById("filter-progress")?.value || "all";
+  const filtered = problemIndex.filter(p => {
+    const searchable = [p.id, p.title, p.difficulty, ...(p.tags || [])].join(" ").toLowerCase();
+    if (query && !searchable.includes(query)) return false;
+    if (difficulty !== "all" && normalizeDifficulty(p.difficulty) !== difficulty) return false;
+    const solved = !!getPracticeProgress(p.id)?.score && getPracticeProgress(p.id).score >= 90;
+    return progress === "all" || (progress === "solved" ? solved : !solved);
+  });
+  renderProblemList(filtered);
+}
+function showWorkbenchTab(name) {
+  const desc = name === "description";
+  const readme = document.getElementById("readme");
+  const history = document.getElementById("history-tab");
+  const buttons = [
+    [document.getElementById("tab-description"), desc],
+    [document.getElementById("tab-history"), !desc],
+  ];
+  if (readme) readme.hidden = !desc;
+  if (history) history.hidden = desc;
+  for (const [button, active] of buttons) if (button) {
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+  }
+}
+
 
 async function main() {
   // 1. 初始化平台层
@@ -36,7 +86,7 @@ async function main() {
   // 2. 加载题目索引
   try {
     problemIndex = await loadJSON("problems/index.json");
-    renderProblemList(problemIndex);
+    applyProblemFilters();
     const overviewEl = document.getElementById("overview-problems");
     if (overviewEl) overviewEl.textContent = String(problemIndex.length).padStart(2, "0");
   } catch (err) {
@@ -59,24 +109,38 @@ async function main() {
     }
   });
 
-  // 3. 搜索与筛选绑定
-  const searchInput = document.getElementById("problem-search-input");
-  if (searchInput) {
-    searchInput.oninput = () => {
-      const q = searchInput.value.trim().toLowerCase();
-      if (!q) {
-        renderProblemList(problemIndex);
-        return;
-      }
-      const filtered = problemIndex.filter(p =>
-        p.id.toLowerCase().includes(q) ||
-        (p.title && p.title.toLowerCase().includes(q)) ||
-        (p.tags && p.tags.some(t => t.toLowerCase().includes(q))) ||
-        (p.difficulty && p.difficulty.toLowerCase().includes(q))
-      );
-      renderProblemList(filtered);
-    };
-  }
+  // 3. Search, difficulty, progress, layout and workbench tabs
+  document.getElementById("problem-search-input")?.addEventListener("input", applyProblemFilters);
+  document.getElementById("filter-difficulty")?.addEventListener("change", applyProblemFilters);
+  document.getElementById("filter-progress")?.addEventListener("change", applyProblemFilters);
+  try { listViewMode = localStorage.getItem("scipoj:list-view") === "grid" ? "grid" : "table"; } catch { /* blocked storage */ }
+  const switchView = mode => {
+    listViewMode = mode;
+    try { localStorage.setItem("scipoj:list-view", mode); } catch { /* blocked storage */ }
+    for (const [id, selected] of [["view-list", mode === "table"], ["view-grid", mode === "grid"]]) {
+      const button = document.getElementById(id);
+      if (button) { button.classList.toggle("active", selected); button.setAttribute("aria-pressed", String(selected)); }
+    }
+    applyProblemFilters();
+  };
+  document.getElementById("view-list")?.addEventListener("click", () => switchView("table"));
+  document.getElementById("view-grid")?.addEventListener("click", () => switchView("grid"));
+  switchView(listViewMode);
+  document.getElementById("tab-description")?.addEventListener("click", () => showWorkbenchTab("description"));
+  document.getElementById("tab-history")?.addEventListener("click", () => showWorkbenchTab("history"));
+  // Reuse the existing submissions component without duplicating its ID or backend calls.
+  const history = document.getElementById("history-tab");
+  const submissions = document.getElementById("my-submissions-section");
+  if (history && submissions) history.appendChild(submissions);
+  window.ScipOJEditor?.init();
+  window.ScipOJExam?.bind();
+  document.addEventListener("keydown", e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && activeProblemId) {
+      e.preventDefault();
+      const button = document.getElementById(e.shiftKey ? "btn-submit-formal" : "btn-grade");
+      if (button && !button.disabled) button.click();
+    }
+  });
 
   // 4. 返回题单按钮
   const btnBack = document.getElementById("btn-back-to-list");
@@ -219,27 +283,35 @@ function renderProblemList(list) {
     return;
   }
 
-  listEl.innerHTML = list.map(p => {
+  listEl.classList.toggle("problem-list-mode", listViewMode === "table");
+  listEl.classList.toggle("problem-grid-mode", listViewMode !== "table");
+  listEl.innerHTML = (listViewMode === "table" ? `<div class="problem-table-heading" role="row"><span>状态</span><span>题目</span><span>难度</span><span>标签</span><span></span></div>` : "") + list.map(p => {
     let diffClass = "difficulty-medium";
     if (p.difficulty === "简单" || p.difficulty === "Easy") diffClass = "difficulty-easy";
     else if (p.difficulty === "困难" || p.difficulty === "Hard") diffClass = "difficulty-hard";
 
     const tagsHtml = (p.tags || []).map(t => `<span class="topic-tag">${escapeHtml(t)}</span>`).join("");
 
-    return `
-      <a class="problem-card" href="#${p.id}" data-id="${p.id}" data-path="${p.path}">
-        <div>
-          <div class="problem-card-top">
-            <span class="problem-id-tag">${escapeHtml(p.id)}</span>
-            <span class="topic-tag ${diffClass}">${escapeHtml(p.difficulty || "中等")}</span>
-          </div>
-          <div class="problem-card-title">${escapeHtml(p.title)}</div>
-        </div>
-        <div>
-          <div class="problem-tags">${tagsHtml}</div>
-        </div>
-      </a>
-    `;
+    const progress = getPracticeProgress(p.id);
+    const solved = progress && Number(progress.score) >= 90;
+    const state = solved ? "✓" : "○";
+    const difficulty = normalizeDifficulty(p.difficulty);
+    const difficultyLabel = {easy:"简单",medium:"中等",hard:"困难"}[difficulty];
+    if (listViewMode === "table") {
+      return `<a class="problem-card problem-row" href="#${escapeHtml(p.id)}" data-id="${escapeHtml(p.id)}" data-path="${escapeHtml(p.path)}">
+        <span class="problem-progress ${solved ? "solved" : ""}" aria-label="${solved ? "本地练习已通过" : "尚未通过"}">${state}</span>
+        <span class="problem-row-title"><b class="problem-number">${escapeHtml(p.id)}</b><strong>${escapeHtml(p.title)}</strong></span>
+        <span class="problem-row-difficulty ${diffClass}">${difficultyLabel}</span>
+        <span class="problem-tags">${tagsHtml}</span>
+        <span class="problem-row-arrow" aria-hidden="true">↗</span>
+      </a>`;
+    }
+    return `<a class="problem-card" href="#${escapeHtml(p.id)}" data-id="${escapeHtml(p.id)}" data-path="${escapeHtml(p.path)}">
+      <div class="problem-card-top"><span class="problem-id-tag">${escapeHtml(p.id)}</span><span class="topic-tag ${diffClass}">${difficultyLabel}</span></div>
+      <div class="problem-card-title">${escapeHtml(p.title)}</div>
+      <div class="problem-tags">${tagsHtml}</div>
+      <div class="card-progress">${solved ? "✓ 本地练习已通过" : "○ 尚未通过"}</div>
+    </a>`;
   }).join("");
 
   listEl.querySelectorAll("a.problem-card").forEach(a => {
@@ -283,6 +355,8 @@ async function openProblem(path, id) {
     if (seq !== openSeq || activeProblemId !== id) return;
 
     currentTemplate = template;
+    window.ScipOJExam?.activate("standard", id);
+    showWorkbenchTab("description");
 
     document.getElementById("title").textContent = `${meta.id} · ${meta.title || ''}`;
     const readmeHtml = window.marked ? marked.parse(readme) : `<pre>${escapeHtml(readme)}</pre>`;
@@ -292,7 +366,7 @@ async function openProblem(path, id) {
       : `<pre>${escapeHtml(readme)}</pre>`;
     let savedDraft = null;
     try { savedDraft = localStorage.getItem("scipoj:draft:" + id); } catch { /* disabled storage */ }
-    document.getElementById("code").value = savedDraft === null ? currentTemplate : savedDraft;
+    setCodeValue(savedDraft === null ? currentTemplate : savedDraft);
     const draftStatus = document.getElementById("draft-state");
     if (draftStatus) draftStatus.textContent = savedDraft === null
       ? "初始模板 · 输入时会自动保存本地草稿"
@@ -313,7 +387,7 @@ async function openProblem(path, id) {
             })
           : confirm("确定要放弃当前修改并重置为初始模板吗？");
         if (!ok) return;
-        document.getElementById("code").value = currentTemplate;
+        setCodeValue(currentTemplate);
         try { localStorage.removeItem("scipoj:draft:" + id); } catch { /* disabled storage */ }
         const draftStatus = document.getElementById("draft-state");
         if (draftStatus) draftStatus.textContent = "已重置为初始模板 · 本地草稿已清除";
@@ -324,7 +398,7 @@ async function openProblem(path, id) {
     const btnCopy = document.getElementById("btn-copy-template");
     if (btnCopy) {
       btnCopy.onclick = () => {
-        const val = document.getElementById("code").value;
+        const val = getCodeValue();
         navigator.clipboard.writeText(val).then(() => {
           window.ScipOJPlatform?.showToast("代码已复制到剪贴板", "success");
         }).catch(() => {
@@ -400,12 +474,14 @@ async function refreshAssignmentMeta(problemId) {
       </div>
     `;
 
+    window.ScipOJExam?.activate(activeAssignment.integrity_policy || "standard", problemId);
     if (btnSubmitFormal) {
       btnSubmitFormal.disabled = false;
       btnSubmitFormal.title = "提交至服务端触发 PySCIPOpt 权威评测并记入正式成绩";
       btnSubmitFormal.style.opacity = "1";
     }
   } else {
+    window.ScipOJExam?.activate("standard", problemId);
     const configured = !!(window.ScipOJPlatform && window.ScipOJPlatform.isConfigured());
     const loggedIn = !!(window.ScipOJPlatform && window.ScipOJPlatform.getUser());
     const enrollments = (window.ScipOJPlatform && window.ScipOJPlatform.getEnrollments()) || [];
@@ -442,7 +518,7 @@ function setupActionButtons(meta, id) {
 
   // ── L1 练习评分（浏览器 WASM 本地真跑，不写入正式数据库） ──
   btnGradeL1.onclick = async () => {
-    const userCode = document.getElementById("code").value;
+    const userCode = getCodeValue();
     const grader = meta.grader || "knapsack";
     const timeLimitSec = meta.time_limit_sec || 10;
 
@@ -505,7 +581,7 @@ function setupActionButtons(meta, id) {
           : `<span class="badge badge-system_error">✗ L1 练习未通过 · ${report.score} 分</span>`;
 
         // 仅存 localStorage 作为练习缓存，不写正式库
-        localStorage.setItem("scip-oj-practice:" + id, JSON.stringify({ score: report.score, at: Date.now() }));
+        try { localStorage.setItem("scip-oj-practice:" + id, JSON.stringify({ score: report.score, at: Date.now() })); } catch { /* private browsing */ }
         window.ScipOJPlatform?.showToast(isPass ? `L1 练习通过：${report.score} 分` : `L1 练习未及格：${report.score} 分`, isPass ? "success" : "warning");
       }
     } catch (e) {
@@ -565,7 +641,7 @@ function setupActionButtons(meta, id) {
       return;
     }
 
-    const userCode = document.getElementById("code").value.trim();
+    const userCode = getCodeValue().trim();
     if (!userCode) {
       window.ScipOJPlatform.showToast("提交代码不能为空，请先编写算法代码", "warning");
       document.getElementById("code")?.focus();
@@ -576,7 +652,7 @@ function setupActionButtons(meta, id) {
     statusEl.innerHTML = `<span class="badge badge-running">🚀 正在向服务端提交作业代码...</span>`;
 
     try {
-      const res = await window.ScipOJPlatform.submitAssignment(activeAssignment.id, userCode);
+      const res = await window.ScipOJPlatform.submitAssignment(activeAssignment.id, userCode, window.ScipOJExam?.snapshot());
       const codeStr = res.public_code || res.submission_id;
       const isSystemError = res.status === "system_error";
 

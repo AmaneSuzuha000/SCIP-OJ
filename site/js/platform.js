@@ -315,7 +315,7 @@ const ScipOJPlatform = (() => {
     try {
       let query = supabase
         .from("assignments")
-        .select("id, course_id, problem_id, due_at, pass_score, n_instances, score_policy, created_at")
+        .select("*")
         .eq("problem_id", problemId);
 
       if (courseId) {
@@ -344,7 +344,7 @@ const ScipOJPlatform = (() => {
     }
   }
 
-  async function submitAssignment(assignmentId, codeText) {
+  async function submitAssignment(assignmentId, codeText, clientIntegrity = null) {
     if (!isConfigured()) {
       throw new Error("未配置平台后端服务，无法提交正式作业");
     }
@@ -378,7 +378,7 @@ const ScipOJPlatform = (() => {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify({ assignment_id: assignmentId, code_text: codeText }),
+      body: JSON.stringify({ assignment_id: assignmentId, code_text: codeText, client_integrity: clientIntegrity }),
     });
 
     const json = await resp.json().catch(() => ({ error: `HTTP ${resp.status} ${resp.statusText}` }));
