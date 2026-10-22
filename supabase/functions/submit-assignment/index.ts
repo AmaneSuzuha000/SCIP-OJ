@@ -197,8 +197,27 @@ serve(async (req: Request): Promise<Response> => {
     // 11. 触发判分调度（Mock 模式或 GitHub Actions）
     const gradeRunner = await getPlatformSecret(supabase, "GRADE_RUNNER");
 
+    // Mock scoring must be explicitly enabled in a sandbox development project.
+    // Without the opt-in, refuse the request instead of silently granting a
+    // fabricated course score that would corrupt the teacher gradebook.
+    if (gradeRunner === "mock" && Deno.env.get("SCIP_OJ_ALLOW_MOCK_GRADES") !== "true") {
+      await supabase.from("gradings").update({
+        status: "system_error",
+        error_message: "生产环境禁止 Mock 虚拟评分",
+        finished_at: new Date().toISOString(),
+      }).eq("id", grading.id);
+      return jsonResponse({
+        ok: true,
+        submission_id: submission.id,
+        public_code: submission.public_code,
+        attempt_no: submission.attempt_no,
+        status: "system_error",
+        warning: "服务器误配置为 Mock 评分模式；提交已保存，未产生虚拟成绩",
+      });
+    }
+
     if (gradeRunner === "mock") {
-      // Mock 模式：快速出分测试
+      // Mock 模式：仅限显式授权的开发环境
       await supabase
         .from("gradings")
         .update({
