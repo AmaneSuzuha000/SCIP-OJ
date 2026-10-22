@@ -335,7 +335,7 @@
                   <input type="checkbox" class="row-checkbox" data-sub-id="${esc(row.best_submission_id || '')}" ${row.best_submission_id ? '' : 'disabled title="暂无有效提交"'} />
                 </td>
                 <td><strong>${esc(row.student_no || '-')}</strong></td>
-                <td>${esc(row.display_name || '-')}</td>
+                <td>${esc(row.display_name || '-')}${row.enroll_role && row.enroll_role !== 'student' ? ' <span class="tag-pending" title="教师/助教账号的正式提交烟测">试交</span>' : ''}</td>
                 <td><code>${esc(row.problem_id || '-')}</code></td>
                 <td>
                   ${row.best_score != null
