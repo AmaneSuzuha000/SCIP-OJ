@@ -37,6 +37,8 @@ async function main() {
   try {
     problemIndex = await loadJSON("problems/index.json");
     renderProblemList(problemIndex);
+    const overviewEl = document.getElementById("overview-problems");
+    if (overviewEl) overviewEl.textContent = String(problemIndex.length).padStart(2, "0");
   } catch (err) {
     const listEl = document.getElementById("problem-list");
     if (listEl) {
@@ -44,6 +46,18 @@ async function main() {
     }
     return;
   }
+
+  // Local drafts are never used as authoritative grades.
+  document.getElementById("code")?.addEventListener("input", (event) => {
+    if (!activeProblemId) return;
+    const status = document.getElementById("draft-state");
+    try {
+      localStorage.setItem("scipoj:draft:" + activeProblemId, event.target.value);
+      if (status) status.textContent = "草稿已保存到本浏览器 · 尚未正式提交";
+    } catch {
+      if (status) status.textContent = "浏览器存储不可用，请复制代码自行保存";
+    }
+  });
 
   // 3. 搜索与筛选绑定
   const searchInput = document.getElementById("problem-search-input");
@@ -198,6 +212,8 @@ function renderProblemList(list) {
   const listEl = document.getElementById("problem-list");
   if (!listEl) return;
 
+  const countEl = document.getElementById("problem-count");
+  if (countEl) countEl.textContent = String(list.length).padStart(2, "0");
   if (list.length === 0) {
     listEl.innerHTML = `<p style="color:var(--text-secondary); grid-column:span 3; padding:2rem 0; text-align:center;">未找到匹配的题目。</p>`;
     return;
@@ -274,7 +290,13 @@ async function openProblem(path, id) {
     document.getElementById("readme").innerHTML = window.DOMPurify
       ? window.DOMPurify.sanitize(readmeHtml, { USE_PROFILES: { html: true } })
       : `<pre>${escapeHtml(readme)}</pre>`;
-    document.getElementById("code").value = currentTemplate;
+    let savedDraft = null;
+    try { savedDraft = localStorage.getItem("scipoj:draft:" + id); } catch { /* disabled storage */ }
+    document.getElementById("code").value = savedDraft === null ? currentTemplate : savedDraft;
+    const draftStatus = document.getElementById("draft-state");
+    if (draftStatus) draftStatus.textContent = savedDraft === null
+      ? "初始模板 · 输入时会自动保存本地草稿"
+      : "已恢复本浏览器的草稿 · 尚未正式提交";
     document.getElementById("report").textContent = "";
     document.getElementById("status").textContent = "";
 
@@ -292,6 +314,9 @@ async function openProblem(path, id) {
           : confirm("确定要放弃当前修改并重置为初始模板吗？");
         if (!ok) return;
         document.getElementById("code").value = currentTemplate;
+        try { localStorage.removeItem("scipoj:draft:" + id); } catch { /* disabled storage */ }
+        const draftStatus = document.getElementById("draft-state");
+        if (draftStatus) draftStatus.textContent = "已重置为初始模板 · 本地草稿已清除";
         window.ScipOJPlatform?.showToast("已重置为初始代码模板", "info");
       };
     }
