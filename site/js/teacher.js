@@ -129,10 +129,8 @@
       }).join("");
 
       currentCourseId = currentCoursesList[0].courses?.id;
-      updateCourseInviteDisplay();
-      if (currentCourseId) {
-        await loadGradebook(currentCourseId);
-      }
+      // 成绩表 / 邀请码加载必须等下方 rosterArea 等变量初始化后再跑，
+      // 否则会命中 const TDZ，页面永远停在「正在加载班级成绩表...」。
     } catch (err) {
       console.error("[Teacher] 加载授课列表失败:", err);
     }
@@ -286,6 +284,12 @@
         btnRefresh.textContent = original;
       }
     };
+
+    // 首屏加载：必须在 rosterArea / loadGradebook 就绪之后
+    if (currentCourseId) {
+      updateCourseInviteDisplay();
+      loadGradebook(currentCourseId);
+    }
 
     function renderGradebookTable() {
       const filtered = getFilteredRoster();
