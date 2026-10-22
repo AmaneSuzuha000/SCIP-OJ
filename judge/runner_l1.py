@@ -10,11 +10,21 @@ from typing import Any, Callable
 from judge.common import average_scores, grade_assignment, grade_knapsack
 
 
+class SystemJudgeError(RuntimeError):
+    """评测环境故障（如系统缺少求解器/依赖包），不代表学生解答得分 0"""
+    pass
+
+
 def load_solve(path: Path) -> Callable[[dict], dict]:
-    spec = importlib.util.spec_from_file_location("student_submission", path)
-    assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
+    try:
+        spec = importlib.util.spec_from_file_location("student_submission", path)
+        assert spec and spec.loader
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    except (ModuleNotFoundError, ImportError) as e:
+        if "pyscipopt" in str(e).lower() or "scip" in str(e).lower():
+            raise SystemJudgeError(f"评测环境缺失 SCIP/PySCIPOpt 依赖: {e}") from e
+        raise
     if not hasattr(mod, "solve"):
         raise AttributeError("提交文件必须定义 solve(instance)")
     return mod.solve
@@ -73,6 +83,18 @@ def run_l1(
         try:
             result = solve_fn(inst)
             rep = grade(result, inst, meta)
+        except (ModuleNotFoundError, ImportError) as e:
+            if "pyscipopt" in str(e).lower() or "scip" in str(e).lower():
+                raise SystemJudgeError(f"评测环境缺失 SCIP/PySCIPOpt 依赖: {e}") from e
+            rep = {
+                "score": 0,
+                "passed": False,
+                "breakdown": {"F": 0, "C": 0, "I": 0, "O": 0},
+                "messages": [f"运行错误: {e}"],
+                "seed": seed_base + i,
+            }
+        except SystemJudgeError:
+            raise
         except Exception as e:  # noqa: BLE001
             rep = {
                 "score": 0,
