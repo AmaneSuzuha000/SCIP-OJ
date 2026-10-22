@@ -557,7 +557,12 @@ function setupActionButtons(meta, id) {
       }
 
       await refreshSubmissionsList();
-      if (!isSystemError) startSubmissionsPolling();
+      // Mock 模式不会在数据库里生成 grading 记录，轮询只会空转到超时
+      const isMock = !!window.ScipOJPlatform.isMockMode?.();
+      if (!isSystemError && !isMock) startSubmissionsPolling();
+      else if (isMock) {
+        window.ScipOJPlatform.showToast("Mock 模式仅用于本地联调，不会写入评测记录", "info");
+      }
     } catch (err) {
       statusEl.innerHTML = `<span class="badge badge-system_error">❌ 提交失败</span>`;
       window.ScipOJPlatform.showToast("提交失败: " + err.message, "error");
