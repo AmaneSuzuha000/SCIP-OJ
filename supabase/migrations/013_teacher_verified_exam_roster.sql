@@ -23,6 +23,7 @@ BEGIN
   IF NEW.matched_user_id IS DISTINCT FROM OLD.matched_user_id
      OR NEW.student_no IS DISTINCT FROM OLD.student_no
      OR NEW.github_login IS DISTINCT FROM OLD.github_login
+     OR NEW.display_name IS DISTINCT FROM OLD.display_name
      OR NEW.status IS DISTINCT FROM OLD.status
   THEN
     DELETE FROM public.roster_verifications v WHERE v.roster_id=OLD.id;
@@ -75,6 +76,13 @@ BEGIN
     RAISE EXCEPTION 'enrollment and student number mismatch' USING ERRCODE='22023';
   END IF;
 
+  IF NOT EXISTS (
+    SELECT 1 FROM auth.identities i
+    WHERE i.user_id=p_user_id AND i.provider='github'
+  ) THEN
+    RAISE EXCEPTION 'Github OAuth identity missing' USING ERRCODE='22023';
+  END IF;
+
   INSERT INTO public.roster_verifications
      (course_id,roster_id,user_id,verified_by,verified_at)
   VALUES (v_course,p_roster_id,p_user_id,v_actor,clock_timestamp())
@@ -117,6 +125,8 @@ AS $$
    JOIN public.enrollments e ON e.course_id=v.course_id
      AND e.user_id=v.user_id AND e.role='student'
    WHERE v.course_id=p_course_id AND v.user_id=p_user_id
+     AND EXISTS (SELECT 1 FROM auth.identities i
+       WHERE i.user_id=p_user_id AND i.provider='github')
  );
 $$;
 
