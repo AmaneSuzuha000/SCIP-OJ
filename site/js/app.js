@@ -465,13 +465,24 @@ function setupActionButtons(meta, id) {
 
       reportEl.textContent = JSON.stringify(report, null, 2);
       const isPass = report.passed;
-      statusEl.innerHTML = isPass
-        ? `<span class="badge badge-done">✓ L1 练习通过 · ${report.score} 分</span>`
-        : `<span class="badge badge-system_error">✗ L1 练习未通过 · ${report.score} 分</span>`;
+      const isDemoFallback = report.execution_mode === "demo-solve-fallback";
 
-      // 仅存 localStorage 作为练习缓存，不写正式库
-      localStorage.setItem("scip-oj-practice:" + id, JSON.stringify({ score: report.score, at: Date.now() }));
-      window.ScipOJPlatform?.showToast(isPass ? `L1 练习通过：${report.score} 分` : `L1 练习未及格：${report.score} 分`, isPass ? "success" : "warning");
+      if (isDemoFallback) {
+        // 兜底 Demo 跑的不是学生代码，绝不能显示成「练习通过」并写入练习缓存
+        statusEl.innerHTML = `<span class="badge badge-queued">⚠️ 未执行你的代码 · 仅供参考的 Demo 结果（${report.score} 分）</span>`;
+        window.ScipOJPlatform?.showToast(
+          "Python 运行时未启动，本次显示的是内置 Demo 结果，不代表你的代码成绩；请刷新重试或改用 JupyterLab 环境。",
+          "warning",
+        );
+      } else {
+        statusEl.innerHTML = isPass
+          ? `<span class="badge badge-done">✓ L1 练习通过 · ${report.score} 分</span>`
+          : `<span class="badge badge-system_error">✗ L1 练习未通过 · ${report.score} 分</span>`;
+
+        // 仅存 localStorage 作为练习缓存，不写正式库
+        localStorage.setItem("scip-oj-practice:" + id, JSON.stringify({ score: report.score, at: Date.now() }));
+        window.ScipOJPlatform?.showToast(isPass ? `L1 练习通过：${report.score} 分` : `L1 练习未及格：${report.score} 分`, isPass ? "success" : "warning");
+      }
     } catch (e) {
       statusEl.innerHTML = `<span class="badge badge-system_error">评测异常</span>`;
       reportEl.textContent = "执行异常:\n" + String(e?.stack || e?.message || e);
