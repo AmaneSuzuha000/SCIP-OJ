@@ -75,6 +75,12 @@ async function main() {
       }
     });
   }
+
+  // 绑定排行榜按钮
+  const btnLeaderboard = document.getElementById("btn-show-leaderboard");
+  if (btnLeaderboard) {
+    btnLeaderboard.onclick = () => showLeaderboardDialog();
+  }
 }
 
 async function openProblem(path, id) {
@@ -113,7 +119,7 @@ async function openProblem(path, id) {
     metaBar.hidden = false;
     const dueStr = activeAssignment.due_at ? new Date(activeAssignment.due_at).toLocaleString('zh-CN') : '长期有效';
     const policyMap = {
-      highest_before_due: '截止前最高分',
+      highest_before_due: '截止前最高分 (默认)',
       highest: '历史最高分',
       latest: '最新提交分',
     };
@@ -123,8 +129,17 @@ async function openProblem(path, id) {
       <span>⚖️ <strong>计分规则</strong>：${policyMap[activeAssignment.score_policy] || activeAssignment.score_policy}</span>
       <span>🧪 <strong>正式测例</strong>：${activeAssignment.n_instances || 3} 个</span>
     `;
+    btnSubmitFormal.disabled = false;
+    btnSubmitFormal.title = "提交至服务端进行 PySCIPOpt 权威评测，记录为正式作业成绩";
+    btnSubmitFormal.style.opacity = "1";
   } else {
-    metaBar.hidden = true;
+    metaBar.hidden = false;
+    metaBar.innerHTML = `
+      <span style="color:#8b949e;">🌿 <strong>自主练习模式</strong>：本题目当前未作为任何选修课程的正式作业发布，您可在此进行 L1 练习评分与算法调试。</span>
+    `;
+    btnSubmitFormal.disabled = true;
+    btnSubmitFormal.title = "当前题目未作为课程正式作业开放提交（教师尚未发布）";
+    btnSubmitFormal.style.opacity = "0.5";
   }
 
   // ── L1 练习评分（浏览器 WASM 本地执行，不记入正式成绩） ──
@@ -186,7 +201,6 @@ async function openProblem(path, id) {
         statusEl.textContent += "（Demo 兜底）";
         statusEl.className = "warn";
       }
-      // 仅用于学生本地记录练习历史，绝不作为正式成绩
       localStorage.setItem("scip-oj-practice:" + id, JSON.stringify({ score: report.score, at: Date.now() }));
     } catch (e) {
       statusEl.textContent = "练习判分异常: " + (e?.message || e);
@@ -209,8 +223,35 @@ async function openProblem(path, id) {
       return;
     }
 
+    // 检查学号门禁
+    const profile = window.ScipOJPlatform.getProfile();
+    const isTeacher = window.ScipOJPlatform.isTeacher();
+    if (!isTeacher && (!profile?.student_no || !profile.student_no.trim())) {
+      window.ScipOJPlatform.showStudentNoDialog({
+        forced: true,
+        onComplete: () => {
+          btnSubmitFormal.click();
+        }
+      });
+      return;
+    }
+
+    // 检查选课门禁
+    const enrollments = window.ScipOJPlatform.getEnrollments();
+    if (!isTeacher && enrollments.length === 0) {
+      window.ScipOJPlatform.showJoinCourseDialog({
+        forced: true,
+        onComplete: async () => {
+          // 重新查询该题目在该课下的作业
+          activeAssignment = await window.ScipOJPlatform.getAssignmentForProblem(id);
+          btnSubmitFormal.click();
+        }
+      });
+      return;
+    }
+
     if (!activeAssignment) {
-      alert(`题目 ${id} 暂未在当前课程中开放正式作业提交。`);
+      alert(`题目 ${id} 暂未在您选修的课程中开放正式作业提交。`);
       return;
     }
 
@@ -243,7 +284,13 @@ async function openProblem(path, id) {
   };
 
   // 刷新提交记录按钮
-  btnRefreshSubmissions.onclick = () => refreshSubmissionsList();
+  btnRefreshSubmissions.onclick = async () => {
+    btnRefreshSubmissions.disabled = true;
+    btnRefreshSubmissions.textContent = "刷新中…";
+    await refreshSubmissionsList();
+    btnRefreshSubmissions.disabled = false;
+    btnRefreshSubmissions.textContent = "刷新提交记录";
+  };
 
   // 初始加载提交记录
   await refreshSubmissionsList();
@@ -268,7 +315,7 @@ async function refreshSubmissionsList() {
   if (!user) {
     container.innerHTML = `
       <p style="color:#8b949e; font-size:0.9rem;">
-        请 <a href="javascript:void(0)" id="link-login-prompt" style="font-weight:600;">登录账号</a> 以查看您在该题目的历史提交、评测状态与正式成绩。
+        请 <a href="javascript:void(0)" id="link-login-prompt" style="font-weight:600;">用 GitHub 登录账号</a> 以查看您在该题目的历史提交、评测状态与正式成绩。
       </p>
     `;
     const link = document.getElementById("link-login-prompt");
@@ -285,13 +332,26 @@ async function refreshSubmissionsList() {
     if (submissions.length === 0) {
       container.innerHTML = `
         <p style="color:#8b949e; font-size:0.88rem;">
-          您尚未对该题目提交正式作业。编写完成后点击「🚀 提交正式作业」即可发起服务端评测。
+          您尚未对该题目提交正式作业。编写完成后点击「🚀 提交正式作业」即可发起权威评测。
         </p>
       `;
       return;
     }
 
     renderSubmissionsTable(container, submissions);
+
+    // 检查是否仍有未完成的评测，若有则维持轮询
+    const hasPending = submissions.some(s => {
+      const g = Array.isArray(s.gradings) ? s.gradings[0] : s.gradings;
+      return g?.status === 'queued' || g?.status === 'running';
+    });
+
+    if (hasPending && !pollTimer) {
+      startSubmissionsPolling();
+    } else if (!hasPending && pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
   } catch (err) {
     container.innerHTML = `<p class="fail" style="font-size:0.88rem;">加载提交记录失败: ${escapeHtml(err.message)}</p>`;
   }
@@ -329,7 +389,7 @@ function renderSubmissionsTable(container, list) {
           } else if (status === "done") {
             statusBadge = '<span class="badge badge-done">已完成</span>';
           } else if (status === "system_error") {
-            statusBadge = '<span class="badge badge-system_error" title="评测系统故障，不扣除学生分数">⚠️ 系统故障</span>';
+            statusBadge = '<span class="badge badge-system_error" title="系统环境故障，不扣除学生分数">⚠️ 系统故障</span>';
           }
 
           let scoreDisplay = "-";
@@ -346,11 +406,12 @@ function renderSubmissionsTable(container, list) {
             passDisplay = '<span class="warn">等待重试</span>';
           }
 
+          const isLate = sub.metadata?.late;
           const timeStr = sub.created_at ? new Date(sub.created_at).toLocaleString('zh-CN') : '-';
 
           return `
             <tr>
-              <td><code>${escapeHtml(sub.public_code || sub.id.slice(0, 8))}</code></td>
+              <td><code>${escapeHtml(sub.public_code || sub.id.slice(0, 8))}</code> ${isLate ? '<span class="tag-late" style="font-size:0.7rem;">迟交</span>' : ''}</td>
               <td>第 ${sub.attempt_no || 1} 次</td>
               <td>${statusBadge}</td>
               <td>${scoreDisplay}</td>
@@ -374,7 +435,7 @@ function renderSubmissionsTable(container, list) {
   // 绑定详情点击
   table.querySelectorAll(".btn-view-report").forEach((btn) => {
     btn.onclick = () => {
-      const sub = list[parseInt(btn.dataset.idx)];
+      const sub = list[parseInt(btn.dataset.idx, 10)];
       showReportDialog(sub);
     };
   });
@@ -400,12 +461,13 @@ function showReportDialog(sub) {
       <h3 style="margin-top:0;">提交详情 · <code>${escapeHtml(sub.public_code || sub.id)}</code></h3>
       <p style="font-size:0.85rem;color:#8b949e;margin-bottom:0.75rem;">
         提交时间: ${new Date(sub.created_at).toLocaleString('zh-CN')} · 
+        轮次: 第 ${sub.attempt_no || 1} 次 · 
         状态: <strong>${grading?.status || 'queued'}</strong> · 
         得分: <strong>${grading?.score != null ? grading.score : '无'}</strong>
       </p>
       <div style="margin-bottom:0.75rem;">
         <label style="font-size:0.8rem;color:#8b949e;">评测报告 / 详细信息：</label>
-        <pre style="background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:0.75rem;max-height:240px;overflow:auto;font-size:12px;">${escapeHtml(reportText)}</pre>
+        <pre style="background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:0.75rem;max-height:260px;overflow:auto;font-size:12px;">${escapeHtml(reportText)}</pre>
       </div>
       <div class="modal-actions">
         <button type="button" id="btn-close-report-dialog" class="btn-secondary">关闭</button>
@@ -419,19 +481,114 @@ function showReportDialog(sub) {
   };
 }
 
-/** 自动轮询未完成的评测状态 */
+/** 智能轮询未完成的评测状态 */
 function startSubmissionsPolling() {
   if (pollTimer) clearInterval(pollTimer);
-  let attempts = 0;
+  let pollCount = 0;
+
   pollTimer = setInterval(async () => {
-    attempts++;
-    if (attempts > 12) {
+    pollCount++;
+    if (pollCount > 25) { // 超过限制自动停止
       clearInterval(pollTimer);
       pollTimer = null;
       return;
     }
     await refreshSubmissionsList();
-  }, 4000);
+  }, 3000);
+}
+
+/** 弹窗: 只读课程排行榜 */
+async function showLeaderboardDialog() {
+  let dialog = document.getElementById("leaderboard-dialog");
+  if (!dialog) {
+    dialog = document.createElement("div");
+    dialog.id = "leaderboard-dialog";
+    dialog.className = "modal-overlay";
+    document.body.appendChild(dialog);
+  }
+
+  dialog.innerHTML = `
+    <div class="modal-content" style="max-width:540px;">
+      <h3 style="margin-top:0;">🏆 课程排行榜 · <code>${escapeHtml(activeProblemId || '当前题目')}</code></h3>
+      <p style="color:#8b949e;font-size:0.82rem;margin-bottom:0.75rem;">仅已加入该课程的学生与教师可见。为保护同学隐私，学号已脱敏处理。</p>
+      <div id="leaderboard-body" style="max-height:360px; overflow-y:auto;">
+        <p style="color:#8b949e;">正在加载排行榜...</p>
+      </div>
+      <div class="modal-actions" style="margin-top:1rem;">
+        <button type="button" id="btn-close-leaderboard" class="btn-secondary">关闭</button>
+      </div>
+    </div>
+  `;
+
+  dialog.hidden = false;
+  document.getElementById("btn-close-leaderboard").onclick = () => { dialog.hidden = true; };
+
+  const bodyEl = document.getElementById("leaderboard-body");
+  if (!window.ScipOJPlatform || !window.ScipOJPlatform.isConfigured()) {
+    bodyEl.innerHTML = '<p style="color:#8b949e;">离线练习模式下暂无在线排行榜。</p>';
+    return;
+  }
+
+  const sb = window.ScipOJPlatform.getSupabase();
+  try {
+    let query = sb
+      .from('course_gradebook')
+      .select('student_no, display_name, problem_id, best_score, passed, attempt_count')
+      .not('best_score', 'is', null)
+      .order('best_score', { ascending: false });
+
+    if (activeProblemId) {
+      query = query.eq('problem_id', activeProblemId);
+    }
+
+    const { data, error } = await query.limit(30);
+    if (error || !data || data.length === 0) {
+      bodyEl.innerHTML = '<p style="color:#8b949e;">暂无榜单数据或您未选修对应课程。</p>';
+      return;
+    }
+
+    // 格式化脱敏学号
+    function maskStudentNo(s) {
+      if (!s || s.length <= 4) return s || '***';
+      return s.slice(0, 4) + '****' + s.slice(-2);
+    }
+
+    bodyEl.innerHTML = `
+      <table class="roster-table" style="font-size:0.85rem;">
+        <thead>
+          <tr>
+            <th>名次</th>
+            <th>学号</th>
+            <th>姓名</th>
+            <th>最高分</th>
+            <th>判定</th>
+            <th>提交数</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.map((r, i) => {
+            let rankBadge = `${i + 1}`;
+            if (i === 0) rankBadge = '🥇 1';
+            else if (i === 1) rankBadge = '🥈 2';
+            else if (i === 2) rankBadge = '🥉 3';
+
+            return `
+              <tr>
+                <td><strong>${rankBadge}</strong></td>
+                <td><code>${escapeHtml(maskStudentNo(r.student_no))}</code></td>
+                <td>${escapeHtml(r.display_name || '-')}</td>
+                <td><strong class="pass">${r.best_score} 分</strong></td>
+                <td>${r.passed ? '<span class="tag-normal">通过</span>' : '<span class="tag-late">未过</span>'}</td>
+                <td>${r.attempt_count || 1} 次</td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch (err) {
+    bodyEl.innerHTML = `<p class="fail">获取榜单失败: ${escapeHtml(err.message)}</p>`;
+  }
 }
 
 function escapeHtml(s) {

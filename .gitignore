@@ -10,3 +10,4 @@ _output/
 site/config.js
 _grading_tmp/
 
+supabase/.temp/

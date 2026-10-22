@@ -8,36 +8,210 @@
 </head>
 <body>
   <header>
-    <h1><a href="index.html" style="color:inherit;text-decoration:none">scip-oj</a> · 教师面板</h1>
-    <div id="auth-area"></div>
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+      <div>
+        <h1 style="margin-bottom:0.25rem;"><a href="index.html" style="color:inherit;text-decoration:none;">scip-oj</a> · 教师控制台</h1>
+        <p style="margin-top:0;">
+          <a href="index.html">← 返回题目大厅</a> · 
+          课程管理 · 成绩复核 · 花名册对齐 · 作业发布
+        </p>
+      </div>
+      <div id="auth-area"></div>
+    </div>
   </header>
   <main>
     <section id="teacher-no-config" hidden>
-      <p class="warn">⚠️ 未配置后端（Supabase），教师面板不可用。</p>
+      <p class="warn">⚠️ 未配置后端服务（Supabase），教师面板不可用。</p>
     </section>
     <section id="teacher-no-auth" hidden>
-      <p class="warn">请先登录教师账号。</p>
+      <p class="warn">⚠️ 请先使用教师或助教 GitHub 账号登录系统。</p>
     </section>
+    <section id="teacher-forbidden" hidden>
+      <div style="background:#da36331a; border:1px solid #da363366; border-radius:8px; padding:1.5rem; margin:1.5rem 0;">
+        <h3 style="color:#f85149; margin-top:0;">⛔ 访问受限：无教师管理权限</h3>
+        <p style="color:#c9d1d9;">
+          检测到您已登录，但当前账号（<span id="forbidden-user-name"></span>）未被分配为任何课程的任课教师、助教或管理员角色。<br/>
+          如果您是本课程学生，请返回主页面进行作业练习与提交；如果您是教师，请联系教务管理员在数据库 <code>enrollments</code> 表中分配 <code>teacher</code> 权限。
+        </p>
+        <a href="index.html" class="btn-secondary" style="display:inline-block; padding:0.4rem 0.8rem; text-decoration:none; margin-top:0.5rem;">返回题目练习</a>
+      </div>
+    </section>
+
     <section id="teacher-panel" hidden>
-      <h2>课程选择</h2>
-      <select id="course-select"><option>加载中...</option></select>
-
-      <h2>班级成绩表</h2>
-      <div class="actions">
-        <button id="btn-refresh" type="button">刷新</button>
-        <button id="btn-export-csv" type="button" style="background:#1f6feb">导出 CSV</button>
+      <!-- 课程信息与邀请码卡片 -->
+      <div class="course-info-card">
+        <div>
+          <label style="font-size:0.85rem; color:#8b949e; display:block; margin-bottom:0.25rem;">当前教学班级 / 课程：</label>
+          <select id="course-select" style="font-size:0.95rem; font-weight:600; padding:0.4rem 0.75rem; background:#0d1117; color:#e6edf3; border:1px solid #30363d; border-radius:6px;">
+            <option>加载课程中...</option>
+          </select>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+          <div>
+            <span style="font-size:0.85rem; color:#8b949e;">学生选课邀请码：</span>
+            <span id="course-invite-code" class="invite-code-tag">加载中...</span>
+          </div>
+          <button id="btn-copy-invite" type="button" class="btn-secondary" style="font-size:0.8rem; padding:0.35rem 0.65rem;">复制邀请码</button>
+          <button id="btn-rotate-invite" type="button" class="btn-secondary" style="font-size:0.8rem; padding:0.35rem 0.65rem;" title="更换新的邀请码，原有未选课学生将使用新码">轮换邀请码</button>
+        </div>
       </div>
-      <div id="roster-area" style="overflow-x:auto">
-        <p style="color:#9aa0a6">选择课程后加载...</p>
+
+      <!-- 功能导航标签栏 -->
+      <div class="teacher-tabs">
+        <button type="button" class="tab-btn active" data-tab="gradebook">📊 班级成绩与证据台</button>
+        <button type="button" class="tab-btn" data-tab="roster">📋 花名册与导入</button>
+        <button type="button" class="tab-btn" data-tab="assignments">🚀 发布 / 调整作业</button>
       </div>
 
-      <h2>提交详情</h2>
-      <div id="submission-detail" hidden>
-        <h3 id="detail-title"></h3>
-        <pre id="detail-code" style="max-height:400px;overflow:auto"></pre>
-        <pre id="detail-report"></pre>
-        <div class="actions">
-          <button id="btn-regrade" type="button" style="background:#d29922;color:#000">复判</button>
+      <!-- TAB 1: 班级成绩表与证据台 -->
+      <div id="tab-gradebook" class="tab-content">
+        <!-- 筛选与操作工具栏 -->
+        <div class="filter-bar">
+          <div>
+            <label style="font-size:0.8rem; color:#8b949e; margin-right:0.3rem;">题目：</label>
+            <select id="filter-problem">
+              <option value="">全部题目</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.8rem; color:#8b949e; margin-right:0.3rem;">搜索：</label>
+            <input type="text" id="filter-keyword" placeholder="按学号或姓名检索…" style="width:160px;" />
+          </div>
+          <div style="margin-left:auto; display:flex; gap:0.5rem; flex-wrap:wrap;">
+            <button id="btn-refresh" type="button" class="btn-secondary">刷新</button>
+            <button id="btn-batch-regrade" type="button" style="background:#d29922; color:#000;">批量复判选中项</button>
+            <button id="btn-regrade-problem" type="button" class="btn-secondary" title="重判当前筛选题目的全班提交">整题一键重判</button>
+            <button id="btn-export-csv" type="button" style="background:#1f6feb;">导出成绩 CSV</button>
+          </div>
+        </div>
+
+        <!-- 批量复判进度提示条 -->
+        <div id="batch-progress-bar" style="background:#161b22; border:1px solid #30363d; border-radius:6px; padding:0.5rem 1rem; margin-bottom:0.75rem; font-size:0.85rem;" hidden>
+          <span id="batch-progress-text">正在处理批量复判…</span>
+        </div>
+
+        <div id="roster-area" style="overflow-x:auto;">
+          <p style="color:#9aa0a6;">正在加载班级成绩表...</p>
+        </div>
+
+        <!-- 提交证据台（只读代码 + report_json + 时间线） -->
+        <div id="submission-detail" class="form-card" style="margin-top:2rem;" hidden>
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; border-bottom:1px solid #30363d; padding-bottom:0.75rem;">
+            <h3 id="detail-title" style="margin:0;">提交详情与评测证据</h3>
+            <button id="btn-close-detail" type="button" class="btn-secondary" style="font-size:0.8rem; padding:0.25rem 0.5rem;">收起证据台</button>
+          </div>
+
+          <!-- 评测状态时间线 -->
+          <div style="margin:1rem 0;">
+            <label style="font-size:0.85rem; color:#8b949e; font-weight:600;">⏱️ 评测状态时间线</label>
+            <ul id="detail-timeline" class="timeline"></ul>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:1rem;">
+            <div>
+              <label style="font-size:0.85rem; color:#8b949e; font-weight:600;">💻 学生提交源码（只读证据）：</label>
+              <pre id="detail-code" style="max-height:420px; overflow:auto; background:#0d1117; border:1px solid #30363d; border-radius:6px; padding:0.75rem; font-size:12px; font-family:ui-monospace,monospace;"></pre>
+            </div>
+            <div>
+              <label style="font-size:0.85rem; color:#8b949e; font-weight:600;">🧪 结构化评测报告 (report_json)：</label>
+              <pre id="detail-report" style="max-height:420px; overflow:auto; background:#0d1117; border:1px solid #30363d; border-radius:6px; padding:0.75rem; font-size:12px; font-family:ui-monospace,monospace;"></pre>
+            </div>
+          </div>
+
+          <div class="actions" style="margin-top:1rem; display:flex; justify-content:flex-end; gap:0.75rem;">
+            <button id="btn-regrade" type="button" style="background:#d29922; color:#000;">🔄 发起单条复判</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: 花名册管理与 CSV 导入 -->
+      <div id="tab-roster" class="tab-content" hidden>
+        <div class="form-card">
+          <h3 style="margin-top:0;">📤 导入班级学生花名册 (CSV)</h3>
+          <p style="color:#8b949e; font-size:0.88rem; margin:0.5rem 0 1rem;">
+            教师可预先上传本班学生名单。学生随后使用 GitHub OAuth 登录并在个人资料中填入<strong>同名学号</strong>，系统将自动对齐并完成正式成绩归属。
+          </p>
+          <div class="form-group">
+            <label>格式示例（支持带表头，列顺序：<code>学号, 真实姓名, 可选GitHub登录名</code>）：</label>
+            <textarea id="csv-input-text" rows="5" placeholder="学号,姓名,GitHub用户名&#10;20260001,张三,zhangsan&#10;20260002,李四,lisi&#10;20260003,王五," style="font-size:13px;"></textarea>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+            <div>
+              <input type="file" id="csv-file-picker" accept=".csv,.txt" style="display:none;" />
+              <button type="button" id="btn-trigger-file" class="btn-secondary">从文件导入 (.csv)</button>
+            </div>
+            <button type="button" id="btn-submit-csv" class="btn-blue">确认导入名单</button>
+          </div>
+          <p id="csv-import-status" style="margin-top:0.5rem; font-size:0.88rem;"></p>
+        </div>
+
+        <div style="margin-top:2rem;">
+          <h3>📋 花名册对齐状态明细</h3>
+          <div id="pending-roster-area" style="overflow-x:auto;">
+            <p style="color:#9aa0a6;">加载花名册状态中...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: 发布与调整作业 -->
+      <div id="tab-assignments" class="tab-content" hidden>
+        <div class="form-card">
+          <h3 style="margin-top:0;">🚀 发布 / 调整课程作业</h3>
+          <p style="color:#8b949e; font-size:0.88rem; margin:0.5rem 0 1rem;">
+            出题本身依然保存在仓库 <code>problems/&lt;id&gt;</code> 中；此界面用于配置该题进入当前班级的具体考核要求（截止时间、及格线与计分策略）。
+          </p>
+          <form id="form-publish-assignment">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+              <div class="form-group">
+                <label for="assign-problem-select">题目编号 (problem_id)：</label>
+                <select id="assign-problem-select">
+                  <option value="P001">P001 - 0-1背包问题</option>
+                  <option value="P002">P002 - 指派问题</option>
+                  <option value="__custom__">+ 手动输入其它题号...</option>
+                </select>
+                <input type="text" id="assign-custom-problem" placeholder="输入题号如 P003" style="margin-top:0.4rem;" hidden />
+              </div>
+
+              <div class="form-group">
+                <label for="assign-due-at">截止时间 (留空为长期有效)：</label>
+                <input type="datetime-local" id="assign-due-at" />
+                <small>超过截止时间的提交将被打上「迟交」标记并依策略计分。</small>
+              </div>
+
+              <div class="form-group">
+                <label for="assign-pass-score">及格分数线 (0-100)：</label>
+                <input type="number" id="assign-pass-score" min="0" max="100" value="90" />
+                <small>默认及格线为 90 分。</small>
+              </div>
+
+              <div class="form-group">
+                <label for="assign-instances">测试实例数量 (n_instances)：</label>
+                <input type="number" id="assign-instances" min="1" max="20" value="3" />
+                <small>每次提交服务端所运行的随机算例数（多实例算术平均）。</small>
+              </div>
+
+              <div class="form-group" style="grid-column: span 2;">
+                <label for="assign-policy">计分策略 (score_policy)：</label>
+                <select id="assign-policy">
+                  <option value="highest_before_due" selected>截止前最高分（默认，截止后的提交不覆盖更早的合规最高分）</option>
+                  <option value="latest">最新提交分（以最后一次有效评测为准）</option>
+                  <option value="highest">历史最高分（允许截止后刷分覆盖最高分）</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+              <button type="submit" id="btn-save-assignment" class="btn-blue">发布 / 保存作业配置</button>
+            </div>
+            <p id="publish-status" style="margin-top:0.5rem; font-size:0.88rem;"></p>
+          </form>
+        </div>
+
+        <div style="margin-top:2rem;">
+          <h3>📚 当前课程已开放作业列表</h3>
+          <div id="course-assignments-area" style="overflow-x:auto;">
+            <p style="color:#9aa0a6;">加载已开放作业中...</p>
+          </div>
         </div>
       </div>
     </section>
