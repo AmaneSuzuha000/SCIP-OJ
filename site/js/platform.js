@@ -81,7 +81,7 @@ const ScipOJPlatform = (() => {
         currentProfile = {
           user_id: currentUser.id,
           student_no: meta.student_no || null,
-          display_name: meta.display_name || currentUser.email.split('@')[0],
+          display_name: meta.display_name || meta.user_name || meta.preferred_username || (currentUser.email ? currentUser.email.split('@')[0] : 'GitHub User'),
           role: meta.role || 'student',
         };
       }
@@ -107,33 +107,28 @@ const ScipOJPlatform = (() => {
     });
   }
 
-  // --- 身份认证 ---
-  async function signInWithEmail(email, password) {
+  // --- 身份认证（GitHub OAuth only） ---
+  async function signInWithGitHub() {
     if (!supabase) throw new Error('平台未配置');
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    currentUser = data.user;
-    await refreshProfile();
-    updateAuthUI();
-    notifyAuthListeners();
-    return data;
-  }
-
-  async function signUp(email, password, studentNo, displayName) {
-    if (!supabase) throw new Error('平台未配置');
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'github',
       options: {
-        data: {
-          student_no: studentNo || null,
-          display_name: displayName || email.split('@')[0],
-          role: 'student',
-        },
+        redirectTo: window.location.href.split('#')[0],
+        scopes: 'read:user user:email',
       },
     });
     if (error) throw error;
     return data;
+  }
+
+  /** @deprecated email/password disabled — github-only */
+  async function signInWithEmail() {
+    throw new Error('已改为 GitHub 登录，请使用「用 GitHub 登录」');
+  }
+
+  /** @deprecated */
+  async function signUp() {
+    throw new Error('已改为 GitHub 登录，请使用「用 GitHub 登录」');
   }
 
   async function signOut() {
@@ -310,9 +305,11 @@ const ScipOJPlatform = (() => {
     }
 
     if (currentUser) {
-      const name = currentProfile?.display_name || currentUser.user_metadata?.display_name || currentUser.email;
-      const sNo = currentProfile?.student_no || currentUser.user_metadata?.student_no;
-      const role = currentProfile?.role || currentUser.user_metadata?.role || 'student';
+      const meta = currentUser.user_metadata || {};
+      const name = currentProfile?.display_name || meta.display_name || meta.user_name || meta.preferred_username || currentUser.email || 'GitHub 用户';
+      const sNo = currentProfile?.student_no || meta.student_no;
+      const role = currentProfile?.role || meta.role || 'student';
+      const tip = currentUser.email || meta.user_name || currentUser.id;
 
       let roleBadge = '';
       if (role === 'teacher') {
@@ -322,7 +319,7 @@ const ScipOJPlatform = (() => {
       }
 
       authArea.innerHTML = `
-        <span class="user-info" title="${escapeHtml(currentUser.email)}">
+        <span class="user-info" title="${escapeHtml(tip)}">
           👤 ${escapeHtml(name)}${sNo ? ` (${escapeHtml(sNo)})` : ''}${roleBadge}
         </span>
         <button id="btn-signout" type="button" class="btn-secondary" style="font-size:0.8rem;padding:0.35rem 0.7rem">登出</button>
@@ -335,7 +332,7 @@ const ScipOJPlatform = (() => {
         teacherLink.hidden = (role !== 'teacher' && role !== 'admin');
       }
     } else {
-      authArea.innerHTML = `<button id="btn-signin" type="button" style="font-size:0.85rem;padding:0.35rem 0.8rem">登录 / 注册</button>`;
+      authArea.innerHTML = `<button id="btn-signin" type="button" style="font-size:0.85rem;padding:0.35rem 0.8rem">用 GitHub 登录</button>`;
       const btnIn = document.getElementById('btn-signin');
       if (btnIn) btnIn.onclick = () => showLoginDialog();
 
@@ -358,80 +355,42 @@ const ScipOJPlatform = (() => {
       dialog.innerHTML = `
         <div class="modal-content">
           <h3>登录 SCIP-OJ 作业平台</h3>
-          <div id="login-tabs">
-            <button class="tab active" data-tab="login" type="button">已有账号登录</button>
-            <button class="tab" data-tab="register" type="button">学生账号注册</button>
+          <p style="color:#8b949e;font-size:0.9rem;margin:0.5rem 0 1rem">使用 GitHub 账号登录（无需提交 PR，仅用于身份认证）。</p>
+          <p id="login-error" class="fail" style="font-size:0.85rem;margin:0.5rem 0" hidden></p>
+          <div class="modal-actions" style="justify-content:flex-end;gap:0.5rem">
+            <button type="button" id="login-cancel" class="btn-secondary">取消</button>
+            <button type="button" id="login-github">用 GitHub 登录</button>
           </div>
-          <form id="login-form">
-            <input type="email" id="login-email" placeholder="邮箱 (如 student@univ.edu.cn)" required autocomplete="email" />
-            <input type="password" id="login-password" placeholder="密码" required autocomplete="current-password" />
-            <div id="register-fields" hidden>
-              <input type="text" id="login-student-no" placeholder="学号 (如 20260001)" />
-              <input type="text" id="login-display-name" placeholder="真实姓名 (如 李同学)" />
-            </div>
-            <p id="login-error" class="fail" style="font-size:0.85rem;margin:0.5rem 0" hidden></p>
-            <div class="modal-actions">
-              <button type="button" id="login-cancel" class="btn-secondary">取消</button>
-              <button type="submit" id="login-submit">确定</button>
-            </div>
-          </form>
         </div>
       `;
       document.body.appendChild(dialog);
-
-      let isRegister = false;
-      const tabs = dialog.querySelectorAll('.tab');
-      tabs.forEach((btn) => {
-        btn.onclick = () => {
-          isRegister = btn.dataset.tab === 'register';
-          tabs.forEach((b) => b.classList.toggle('active', b === btn));
-          document.getElementById('register-fields').hidden = !isRegister;
-          document.getElementById('login-error').hidden = true;
-        };
-      });
 
       document.getElementById('login-cancel').onclick = () => {
         dialog.hidden = true;
       };
 
-      dialog.querySelector('form').onsubmit = async (e) => {
-        e.preventDefault();
+      document.getElementById('login-github').onclick = async () => {
         const errEl = document.getElementById('login-error');
-        const submitBtn = document.getElementById('login-submit');
+        const btn = document.getElementById('login-github');
         errEl.hidden = true;
-        submitBtn.disabled = true;
-        submitBtn.textContent = '请稍候...';
-
+        btn.disabled = true;
+        btn.textContent = '跳转 GitHub…';
         try {
-          const email = document.getElementById('login-email').value.trim();
-          const password = document.getElementById('login-password').value;
-          if (isRegister) {
-            const studentNo = document.getElementById('login-student-no').value.trim();
-            const displayName = document.getElementById('login-display-name').value.trim();
-            if (!displayName) throw new Error('请填写真实姓名');
-            await signUp(email, password, studentNo, displayName);
-            errEl.textContent = '注册成功！若开启了邮箱验证请前往确认，或直接尝试登录。';
-            errEl.className = 'pass';
-            errEl.hidden = false;
-            // 切换回登录页
-            tabs[0].click();
-          } else {
-            await signInWithEmail(email, password);
-            dialog.hidden = true;
-          }
+          await signInWithGitHub();
+          // Browser redirects away on success
         } catch (err) {
-          errEl.textContent = err.message || '操作失败';
+          errEl.textContent = err.message || '登录失败';
           errEl.className = 'fail';
           errEl.hidden = false;
-        } finally {
-          submitBtn.disabled = false;
-          submitBtn.textContent = '确定';
+          btn.disabled = false;
+          btn.textContent = '用 GitHub 登录';
         }
       };
     }
 
     dialog.hidden = false;
-    document.getElementById('login-error').hidden = true;
+    const errEl = document.getElementById('login-error');
+    if (errEl) errEl.hidden = true;
   }
 
   function escapeHtml(s) {
@@ -453,6 +412,7 @@ const ScipOJPlatform = (() => {
     getProfile,
     getSupabase,
     onAuthChange,
+    signInWithGitHub,
     signInWithEmail,
     signUp,
     signOut,
