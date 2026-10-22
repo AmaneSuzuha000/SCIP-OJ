@@ -102,9 +102,30 @@ serve(async (req: Request): Promise<Response> => {
       }
     }
 
+    // Do NOT accept a student-number self-claim as invigilated exam ID proof.
+    // Standard coursework remains available without manual attestation.
+    const isExam = ["exam_warn", "exam_block"].includes(assignment.integrity_policy);
+    if (isExam && !isTeacher) {
+      const { data: verified, error: verificationErr } = await supabase.rpc(
+        "is_verified_course_student",
+        { p_course_id: assignment.course_id, p_user_id: user.id },
+      );
+      if (verificationErr) {
+        console.error("[Submit] verified-roster RPC unavailable:", verificationErr.code || "unknown");
+        return errorResponse("考试身份核验服务暂不可用", 503, "VERIFICATION_SERVICE_UNAVAILABLE");
+      }
+      if (verified !== true) {
+        return errorResponse(
+          "考试作业要求教师线下核验本人及 GitHub 登录账号，请联系本课程教师",
+          403, "IDENTITY_VERIFICATION_REQUIRED",
+        );
+      }
+    }
+
     // 7. 检查截止时间（允许迟交但打上 late 标记）
     const isLate = assignment.due_at ? new Date() > new Date(assignment.due_at) : false;
     const submissionMeta: Record<string, unknown> = {};
+    if (isExam && !isTeacher) submissionMeta.identity = { teacher_attested: true, checked_at: new Date().toISOString() };
     if (isLate) {
       submissionMeta.late = true;
       submissionMeta.submitted_after_due = true;
