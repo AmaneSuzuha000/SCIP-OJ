@@ -49,7 +49,9 @@ export async function isTeacherOrAdmin(
       .eq("user_id", userId)
       .maybeSingle();
 
-    if (profile?.role === "teacher" || profile?.role === "admin") {
+    // Only platform admins bypass course enrollment checks. A global teacher
+    // profile does not grant authority to change *other* teachers' courses.
+    if (profile?.role === "admin") {
       return true;
     }
 
