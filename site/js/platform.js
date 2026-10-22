@@ -860,34 +860,27 @@ const ScipOJPlatform = (() => {
 
   async function rotateCourseInviteCode(courseId, newCode = null) {
     if (!supabase || !currentUser) throw new Error("请先登录");
-    const code = newCode
-      ? newCode.trim().toUpperCase()
-      : "SCIP-" + Math.random().toString(36).substring(2, 8).toUpperCase();
-
-    if (!/^[A-Z0-9_-]{4,32}$/.test(code)) {
-      throw new Error("邀请码只能包含字母、数字、下划线或短横线（4-32 位）");
+    const requested = typeof newCode === "string" && newCode.trim()
+      ? newCode.trim().toUpperCase() : null;
+    if (requested && !/^[A-Z0-9_-]{4,32}$/.test(requested)) {
+      throw new Error("邀请码格式必须为 4–32 位字母、数字、下划线或短横线");
     }
-
-    const { error: updateErr } = await supabase
-      .from("courses")
-      .update({ invite_code: code })
-      .eq("id", courseId);
-
-    if (updateErr) {
-      if (updateErr.code === "23505") throw new Error("该邀请码已被其他课程占用，请重试");
-      throw new Error("更新课程邀请码失败：" + updateErr.message);
+    // The RPC atomically revokes older student invitations and installs a
+    // new, server-generated high-entropy code. Never fall back to direct
+    // UPDATE/INSERT; a split request would re-enable revoked codes.
+    const { data, error } = await supabase.rpc("rotate_course_invite_code", {
+      p_course_id: courseId, p_new_code: requested,
+    });
+    if (error) {
+      if (error.code === "23505") throw new Error("该邀请码已被使用，请更换后重试");
+      if (error.code === "42501") throw new Error("只有本课程教师可以轮换邀请码");
+      throw new Error("邀请码轮换失败（请检查数据库迁移 012 是否已部署）");
     }
-
-    const { error: insertErr } = await supabase
-      .from("course_invites")
-      .insert({ course_id: courseId, code, role: "student" });
-
-    if (insertErr && insertErr.code !== "23505") {
-      throw new Error("写入邀请码记录失败：" + insertErr.message);
+    if (typeof data !== "string" || !data) {
+      throw new Error("服务器没有返回新的邀请码，轮换结果不可确认");
     }
-
     await refreshEnrollments();
-    return code;
+    return data;
   }
 
   // ── UI 渲染与弹窗系统 ──
