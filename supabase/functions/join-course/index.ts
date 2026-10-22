@@ -145,13 +145,37 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // 6. 仅在新选课时递增邀请码使用计数（避免重复点击/重复加入把次数刷满）
+    //    用「读取值相等」做乐观并发控制，避免并发选课时 read-modify-write 丢计数
     if (inviteId && newlyEnrolled) {
-      const { error: countErr } = await supabase
-        .from("course_invites")
-        .update({ uses_count: inviteUsesCount + 1 })
-        .eq("id", inviteId);
-      if (countErr) {
-        console.error("[JoinCourse] 更新邀请码使用次数失败:", countErr.message);
+      let expected = inviteUsesCount;
+      let counted = false;
+      for (let attempt = 0; attempt < 2 && !counted; attempt++) {
+        const { data: updated, error: countErr } = await supabase
+          .from("course_invites")
+          .update({ uses_count: expected + 1 })
+          .eq("id", inviteId)
+          .eq("uses_count", expected)
+          .select("uses_count");
+
+        if (countErr) {
+          console.error("[JoinCourse] 更新邀请码使用次数失败:", countErr.message);
+          break;
+        }
+        if (updated && updated.length > 0) {
+          counted = true;
+          break;
+        }
+        // 计数已被其他请求修改：重读后重试一次
+        const { data: fresh } = await supabase
+          .from("course_invites")
+          .select("uses_count")
+          .eq("id", inviteId)
+          .maybeSingle();
+        if (!fresh) break;
+        expected = fresh.uses_count ?? expected;
+      }
+      if (!counted) {
+        console.warn("[JoinCourse] 邀请码使用次数未更新（并发冲突或记录已删除）:", inviteId);
       }
     }
 
