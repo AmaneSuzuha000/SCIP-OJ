@@ -33,12 +33,21 @@ python platform/scripts/audit_similarity.py submissions.json \
 
 **Manual review checklist**: remove common template/algorithm conventions; inspect both solutions and chronological submissions; ask students to explain modeling choices in a fair, consistent procedure; apply the course's published collaboration/AI policy; allow appeals. Never auto-fail or publicly accuse based on a similarity score.
 
-## Security that is NOT provided yet (release blockers)
+## Formal L2 grading protection now implemented
 
-1. **Student execution sandbox**: current L2 still loads arbitrary student Python in the trusted scoring process on GitHub Actions. Use a separately sandboxed non-root process/container with no network or secrets and strict CPU/wall-time/memory constraints, with grading logic outside that sandbox. Until this is fixed, official exam results are not securely trustworthy.
-2. **Server-private test sets**: predictable public `seed_base`, tiny datasets, and reuse of public L1/L2 tests allow adaptive overfitting. Formal L2 must draw undisclosed per-submission seeds/test suites.
-3. **Callback integrity**: bind signed callback to a specific `grading_id`, runner/attempt and code digest, enforce state transition atomically and detect replays. Existing callbacks select latest queued/running row, which is ambiguous.
-4. **Identity and fairness**: course enrollment/claimed student number alone does not prove identity. Teacher-verified roster identity plus clearly published assessment rules are needed.
-5. **Operational controls**: submit throttling, grading cost limits, similarity review access controls, privacy/retention policy and fair accommodations; legitimate code reuse/AI guidance may be authorized depending on course policy.
+- Formal `grade-submission.yml` builds a pinned non-root PySCIPOpt image, runs one public instance per **network-disabled, read-only** Docker execution with CPU, memory, process and wall-time limits. Private optimal values and scoring code are kept in a separate trusted host process.
+- Formal L2 generates unpredictable server-side seeds, independent from browser practice seeds. Each assignment's pass-score and instance count come from a trusted Supabase row.
+- Each Actions dispatch binds an explicit `grading_id` and its `runner_ref` to a signed callback, rather than updating the latest queued row.
+- CI includes actual Docker execution of both available starter solutions. The retired PR grader should never run untrusted Python in the trusted process.
 
-These security gates matter more than visual similarity to any other online judge.
+These protections reduce tampering and grading leakage substantially, **but they are not an independent penetration test or a mathematical proof of isolation**. Docker shares a kernel with the host, and an attacker may exploit implementation bugs. Use disposable workers without unrelated secrets, patch the runner image, and monitor for suspicious behavior.
+
+## Remaining risks / release decisions
+
+1. **Question depth and grading rigor**: P001/P002 formal instances are very small; the private seed prevents simple hardcoding of public instance values but is not enough to ensure a student actually builds a MIP or generalizes to large instances. Add harder hidden distributions and boundary tests per question.
+2. **Identity/fairness**: a self-entered student number and course membership do not independently establish the student's identity. Verify student-to-roster ownership, publish permitted collaboration/AI assistance, offer accommodations and a fair appeals process.
+3. **Infrastructure hardening**: Docker resource limits and no-network mode are defense in depth; perform adversarial testing (infinite loops, fork bombs, import manipulation, I/O and output floods), dependency version pinning, operational monitoring and cost/rate limits.
+4. **Integrity telemetry**: browser counts can be spoofed. Similarity signals must be confidential, accompanied by human review and never automatically penalized.
+5. **Score versioning**: historic grades under the older 90-point maximum are not directly comparable with the corrected 100-point rubric; establish a controlled rescore policy.
+
+A GitHub Pages deployment does not automatically deploy Supabase migrations or Edge Functions. Check each layer's deployed version before conducting formal assessments.
