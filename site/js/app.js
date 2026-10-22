@@ -269,7 +269,11 @@ async function openProblem(path, id) {
     currentTemplate = template;
 
     document.getElementById("title").textContent = `${meta.id} · ${meta.title || ''}`;
-    document.getElementById("readme").innerHTML = window.marked ? marked.parse(readme) : `<pre>${escapeHtml(readme)}</pre>`;
+    const readmeHtml = window.marked ? marked.parse(readme) : `<pre>${escapeHtml(readme)}</pre>`;
+    // 题面来自仓库 Markdown（可能经 PR 提交），渲染前做白名单清洗
+    document.getElementById("readme").innerHTML = window.DOMPurify
+      ? window.DOMPurify.sanitize(readmeHtml, { USE_PROFILES: { html: true } })
+      : `<pre>${escapeHtml(readme)}</pre>`;
     document.getElementById("code").value = currentTemplate;
     document.getElementById("report").textContent = "";
     document.getElementById("status").textContent = "";
