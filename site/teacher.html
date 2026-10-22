@@ -5,17 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>SCIP-OJ · 教师控制台</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="ui-refresh.css" />
 </head>
-<body>
+<body class="teacher-page">
+  <a class="skip-link" href="#main-content">跳转到主要内容</a>
   <!-- 顶部主导航栏 -->
   <header class="navbar">
     <div class="navbar-container">
       <div class="brand-section">
         <a href="index.html" class="brand-logo">
-          <div class="brand-logo-icon">S</div>
+          <div class="brand-logo-icon" aria-hidden="true">∑</div>
           <span>SCIP-OJ</span>
         </a>
-        <span class="brand-tag" style="background:var(--color-purple-bg); color:var(--color-purple); border-color:var(--color-purple-border);">教师工作台</span>
+        <span class="brand-tag">FACULTY WORKSPACE</span>
       </div>
 
       <nav class="nav-links">
@@ -32,7 +34,13 @@
 
   <div id="toast-container"></div>
 
-  <main class="main-content">
+  <main class="main-content" id="main-content">
+    <section class="faculty-hero" aria-labelledby="faculty-title">
+      <div><span class="section-kicker">ACADEMIC OPERATIONS / TEACHER DESK</span>
+      <h1 id="faculty-title">把课程管理<span>集中在一处。</span></h1>
+      <p>班级名单、作业发布、正式成绩与复判审计，沿同一条教学工作流追踪。</p></div>
+      <div class="faculty-hero-art" aria-hidden="true">∑<small>MODEL / ASSESS / IMPROVE</small></div>
+    </section>
     <!-- 未配置后端服务提示 -->
     <section id="teacher-no-config" hidden>
       <div class="card" style="border-left:4px solid var(--color-warn);">
@@ -71,6 +79,11 @@
 
     <!-- 教师主操作面板 -->
     <section id="teacher-panel" hidden>
+      <div class="faculty-stats" aria-label="当前课程成绩概况">
+        <div><span>课程学生数</span><strong id="metric-students">—</strong><small>已选课的学生账号</small></div>
+        <div><span>已出分项目</span><strong id="metric-graded">—</strong><small>学生与作业的评分记录</small></div>
+        <div><span>已出分项目通过率</span><strong id="metric-passrate">—</strong><small>不含未出分与教师试交</small></div>
+      </div>
       <!-- 教学班级与邀请码状态卡片 -->
       <div class="course-banner">
         <div>
@@ -97,7 +110,7 @@
       </div>
 
       <!-- 功能选项卡导航 -->
-      <div class="teacher-tabs">
+      <div class="teacher-tabs" role="tablist" aria-label="教师管理功能">
         <button type="button" class="tab-btn active" data-tab="gradebook">📊 班级成绩与证据台</button>
         <button type="button" class="tab-btn" data-tab="roster">📋 花名册与导入</button>
         <button type="button" class="tab-btn" data-tab="assignments">🚀 发布 / 调整作业</button>
@@ -279,8 +292,8 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="config.js?v=gb3" onerror="console.log('[SCIP-OJ] config.js not found')"></script>
-  <script src="js/platform.js?v=gb3"></script>
-  <script src="js/teacher.js?v=gb3"></script>
+  <script src="config.js?v=ui2" onerror="console.log('[SCIP-OJ] config.js not found')"></script>
+  <script src="js/platform.js?v=ui2"></script>
+  <script src="js/teacher.js?v=ui2"></script>
 </body>
 </html>
