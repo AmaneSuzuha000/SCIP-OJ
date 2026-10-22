@@ -5,23 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>SCIP-OJ · 系统建模与优化评测平台</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="ui-refresh.css" />
 </head>
-<body>
+<body class="student-page">
+  <a class="skip-link" href="#main-content">跳转到主要内容</a>
   <!-- 顶部主导航栏 -->
   <header class="navbar">
     <div class="navbar-container">
       <div class="brand-section">
         <a href="index.html" class="brand-logo">
-          <div class="brand-logo-icon">S</div>
+          <div class="brand-logo-icon" aria-hidden="true">∑</div>
           <span>SCIP-OJ</span>
         </a>
-        <span class="brand-tag">双轨优化平台</span>
+        <span class="brand-tag">OPTIMIZATION LAB</span>
       </div>
 
-      <nav class="nav-links">
-        <a href="index.html" class="nav-item active">题单大厅</a>
-        <a href="lab/index.html" target="_blank" class="nav-item" title="全功能 PySCIPOpt 交互式 JupyterLab 环境">JupyterLab</a>
-        <a href="repl/index.html" target="_blank" class="nav-item">REPL</a>
+      <nav class="nav-links" aria-label="主导航">
+        <a href="index.html" class="nav-item active" aria-current="page">探索题库</a>
+        <a href="lab/index.html" target="_blank" rel="noopener noreferrer" class="nav-item" title="全功能 PySCIPOpt 交互式 JupyterLab 环境">JupyterLab</a>
+        <a href="repl/index.html" target="_blank" rel="noopener noreferrer" class="nav-item">REPL</a>
         <a href="teacher.html" id="teacher-link" class="nav-item nav-item-highlight" hidden><strong>教师控制台</strong></a>
         <a href="doc.html?f=学生指南.md" class="nav-item">学生指南</a>
         <a href="doc.html?f=教师指南.md" class="nav-item">教师指南</a>
@@ -38,10 +40,35 @@
   <div id="toast-container"></div>
 
   <!-- 主体工作区 -->
-  <main class="main-content">
+  <main class="main-content" id="main-content">
+    <section class="hero-panel" aria-labelledby="hero-heading">
+      <div class="hero-copy">
+        <p class="hero-eyebrow">● &nbsp; SCIP-OJ / MODEL · SOLVE · VERIFY</p>
+        <h1 id="hero-heading">从数学模型<br>到<span>可验证的最优解</span></h1>
+        <p class="hero-description">面向运筹优化与工业工程的在线实训空间。读懂约束、实现求解器、在浏览器验证，再将代码提交给服务端正式评测。</p>
+        <div class="hero-cta">
+          <a class="hero-primary-link" href="#problem-list-section">开始解题 <span aria-hidden="true">↗</span></a>
+          <a class="hero-secondary-link" href="lab/index.html" target="_blank" rel="noopener noreferrer">进入 JupyterLab ↗</a>
+        </div>
+        <p class="hero-footnote">本地练习分数不计入正式成绩 · 正式评分以服务端记录为准</p>
+      </div>
+      <div class="hero-visual" aria-label="建模求解工作流程">
+        <div class="flow-top">WORKFLOW / 01—03 <span>•••</span></div>
+        <div class="flow-step"><span>01</span><div><strong>定义问题</strong><small>理解目标、变量与约束</small></div><em>↗</em></div>
+        <div class="flow-step"><span>02</span><div><strong>构建求解器</strong><small>Python · solve(instance)</small></div><em>↗</em></div>
+        <div class="flow-step"><span>03</span><div><strong>验证与提交</strong><small>L1 本地检查 · L2 正式计分</small></div><em>✓</em></div>
+        <div class="flow-bottom"><span>PYTHON / SCIP</span><span>READY TO SOLVE</span></div>
+      </div>
+    </section>
+    <section class="overview-strip" aria-label="平台功能概览">
+      <div><strong id="overview-problems">—</strong><span>可练习题目</span></div>
+      <div><strong>Python</strong><span>求解接口语言</span></div>
+      <div><strong>L1 + L2</strong><span>练习与正式评测分离</span></div>
+    </section>
     <!-- 1. 题单大厅区域 -->
     <section id="problem-list-section">
       <div class="course-banner" id="current-course-banner">
+        <div class="course-icon" aria-hidden="true">◎</div>
         <div class="course-title-group">
           <h2 id="banner-course-title">系统建模与优化课程</h2>
           <p id="banner-course-desc">正式作业认准服务端权威评测 · 练习模式由浏览器 Python WASM 本地真跑</p>
@@ -54,9 +81,10 @@
       </div>
 
       <div class="section-header">
-        <h2>📚 题目清单</h2>
+        <div class="section-heading-group"><span class="section-kicker">PROBLEM LIBRARY</span><h2>探索题库 <small id="problem-count" aria-live="polite"></small></h2><p>选择一道题目，从理解约束开始完成优化求解。</p></div>
         <div style="display:flex; align-items:center; gap:0.5rem;">
-          <input type="text" id="problem-search-input" placeholder="按题目编号或名称检索..." style="width:220px;" />
+          <label class="sr-only" for="problem-search-input">搜索题目</label>
+          <input type="search" id="problem-search-input" placeholder="搜索编号、名称、标签…" autocomplete="off" />
         </div>
       </div>
 
@@ -76,13 +104,14 @@
         </div>
       </div>
 
-      <h2 id="title" style="margin:0.25rem 0 0.5rem; font-size:1.45rem;"></h2>
+      <div class="workspace-intro"><span class="section-kicker">PROBLEM WORKBENCH / PYTHON</span><h2 id="title"></h2><p>左侧阅读题目与约束，右侧编写、练习和提交求解代码。</p></div>
 
       <!-- 作业元数据状态栏（截止时间、及格线、计分规则） -->
       <div id="assignment-meta-bar" class="meta-bar"></div>
 
-      <!-- 题目描述卡片 -->
-      <article id="readme"></article>
+      <div class="workspace-layout">
+        <div class="workspace-problem"><div class="workbench-kicker">01 / 问题与约束</div><article id="readme"></article></div>
+        <div class="workspace-solution"><div class="workbench-kicker">02 / 编写与验证</div>
 
       <!-- 代码编写器容器 -->
       <div class="editor-container">
@@ -100,7 +129,9 @@
           </div>
         </div>
 
+        <label class="sr-only" for="code">Python 解题代码</label>
         <textarea id="code" spellcheck="false" placeholder="# 在此编写你的 solve(instance) 实现..."></textarea>
+        <div id="draft-state" class="draft-state" role="status" aria-live="polite">草稿自动保存在此浏览器；正式成绩以提交记录为准</div>
       </div>
 
       <!-- 执行与提交操作栏 -->
@@ -111,7 +142,7 @@
         <button id="btn-submit-formal" type="button" class="btn-blue" title="提交至服务端触发 PySCIPOpt 权威评测并记入正式成绩">
           🚀 提交正式作业（服务端评测）
         </button>
-        <div id="status" class="status-badge"></div>
+        <div id="status" class="status-badge" role="status" aria-live="polite"></div>
       </div>
 
       <!-- 评测报告终端控制台 -->
@@ -123,10 +154,12 @@
         <pre id="report"></pre>
       </div>
 
+        </div>
+      </div>
       <!-- 我的提交记录卡片 -->
       <section id="my-submissions-section" style="margin-top:2.5rem; padding-top:1.5rem; border-top:1px solid var(--border-default);">
         <div class="section-header">
-          <h3 style="margin:0; font-size:1.15rem;">📜 我的正式提交记录</h3>
+          <div class="section-heading-group"><span class="section-kicker">SUBMISSION HISTORY</span><h3>我的正式提交记录</h3><p>正式成绩以服务端自动评测记录为准。</p></div>
           <div style="display:flex; gap:0.5rem;">
             <button id="btn-show-leaderboard" type="button" class="btn-secondary" style="font-size:0.8rem; padding:0.35rem 0.65rem;">
               🏆 课程排行榜
@@ -157,13 +190,13 @@
 
   <!-- 依赖脚本 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="config.js?v=gb3" onerror="console.log('[SCIP-OJ] config.js not found, fallback to defaults')"></script>
-  <script src="js/platform.js?v=gb3"></script>
+  <script src="config.js?v=ui2" onerror="console.log('[SCIP-OJ] config.js not found, fallback to defaults')"></script>
+  <script src="js/platform.js?v=ui2"></script>
   <script src="js/marked.min.js"></script>
   <script src="js/purify.min.js"></script>
   <script src="js/knapsack_judge.js"></script>
   <script src="js/assignment_judge.js"></script>
   <script src="js/python_runtime.js"></script>
-  <script src="js/app.js?v=gb3"></script>
+  <script src="js/app.js?v=ui2"></script>
 </body>
 </html>
