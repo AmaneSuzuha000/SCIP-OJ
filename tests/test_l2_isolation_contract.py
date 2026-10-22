@@ -30,7 +30,7 @@ class SandboxContractTests(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertEqual(len(recorded), 2)
         self.assertEqual(len(result["instances"]), 2)
-        self.assertEqual(result["test_set"], "server_private_random")
+        self.assertEqual(result["test_set"], "server_private_v2")
         self.assertNotIn("seed", str(result))
 
     def test_callback_and_workflow_bind_specific_grading_and_runner(self):

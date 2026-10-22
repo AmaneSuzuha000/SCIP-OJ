@@ -61,8 +61,8 @@ serve(async (req: Request): Promise<Response> => {
       return errorResponse("提交代码不能为空", 400, "EMPTY_CODE");
     }
     // 限制单次提交体积，防止超大 payload 拖垮数据库与评测队列
-    if (code_text.length > 200_000) {
-      return errorResponse("提交代码过长（上限 200000 字符）", 413, "CODE_TOO_LARGE");
+    if (new TextEncoder().encode(code_text).byteLength > 200_000) {
+      return errorResponse("提交代码过长（上限 200 KB UTF-8）", 413, "CODE_TOO_LARGE");
     }
 
     // 4. 查询作业及课程信息
@@ -157,7 +157,23 @@ serve(async (req: Request): Promise<Response> => {
       .single();
 
     if (insertSubErr || !submission) {
-      console.error("[Submit] 插入 submission 失败:", insertSubErr?.message);
+      // The PostgreSQL trigger is the authoritative, transaction-safe
+      // quota gate, including requests that bypass UI cooldowns.
+      const rejection = String(insertSubErr?.message || "");
+      const quotaReason = [
+        "SUBMISSION_RATE_LIMIT_COOLDOWN",
+        "SUBMISSION_RATE_LIMIT_HOURLY",
+        "SUBMISSION_RATE_LIMIT_DAILY",
+      ].find(reason => rejection.includes(reason));
+      if (quotaReason) {
+        const message = quotaReason.endsWith("COOLDOWN")
+          ? "两次正式提交需至少间隔 20 秒，请检查代码后再提交"
+          : quotaReason.endsWith("HOURLY")
+          ? "本作业一小时内正式提交已达到 12 次，请稍后重试"
+          : "今日正式提交已达到 60 次，请明天再试";
+        return errorResponse(message, 429, quotaReason);
+      }
+      console.error("[Submit] 插入 submission 失败:", insertSubErr?.code || "unknown");
       return errorResponse("提交记录保存失败，请稍后重试", 500, "DB_INSERT_FAILED");
     }
 
@@ -181,8 +197,27 @@ serve(async (req: Request): Promise<Response> => {
     // 11. 触发判分调度（Mock 模式或 GitHub Actions）
     const gradeRunner = await getPlatformSecret(supabase, "GRADE_RUNNER");
 
+    // Mock scoring must be explicitly enabled in a sandbox development project.
+    // Without the opt-in, refuse the request instead of silently granting a
+    // fabricated course score that would corrupt the teacher gradebook.
+    if (gradeRunner === "mock" && Deno.env.get("SCIP_OJ_ALLOW_MOCK_GRADES") !== "true") {
+      await supabase.from("gradings").update({
+        status: "system_error",
+        error_message: "生产环境禁止 Mock 虚拟评分",
+        finished_at: new Date().toISOString(),
+      }).eq("id", grading.id);
+      return jsonResponse({
+        ok: true,
+        submission_id: submission.id,
+        public_code: submission.public_code,
+        attempt_no: submission.attempt_no,
+        status: "system_error",
+        warning: "服务器误配置为 Mock 评分模式；提交已保存，未产生虚拟成绩",
+      });
+    }
+
     if (gradeRunner === "mock") {
-      // Mock 模式：快速出分测试
+      // Mock 模式：仅限显式授权的开发环境
       await supabase
         .from("gradings")
         .update({
