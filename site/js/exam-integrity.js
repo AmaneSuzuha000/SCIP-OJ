@@ -28,6 +28,10 @@
     }
     const notice = document.getElementById("exam-notice");
     const copyBtn = document.getElementById("btn-copy-template");
+    if (policy !== "standard" && problemId) {
+      // Exam drafts must not survive logout or be exposed on a shared machine.
+      try { localStorage.removeItem("scipoj:draft:" + problemId); } catch { /* private mode */ }
+    }
     if (notice) {
       notice.hidden = policy === "standard";
       notice.textContent = policy === "exam_block"
@@ -97,5 +101,5 @@
     };
   }
 
-  window.ScipOJExam = { bind, activate, snapshot };
+  window.ScipOJExam = { bind, activate, snapshot, getPolicy: () => policy };
 })();

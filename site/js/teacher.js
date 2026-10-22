@@ -512,6 +512,11 @@
           detailReport.textContent = "暂无评分记录";
         }
 
+        if (subData.metadata?.integrity) {
+          detailReport.textContent += "\n\n--- 考试模式记录（浏览器自报；不可直接认定作弊） ---\n" +
+            JSON.stringify(subData.metadata.integrity, null, 2);
+        }
+
         renderTimeline(detailTimeline, subData, latestGrading);
 
         // 绑定单条复判

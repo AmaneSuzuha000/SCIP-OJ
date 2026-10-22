@@ -56,6 +56,25 @@ function applyProblemFilters() {
   });
   renderProblemList(filtered);
 }
+function showConsoleTab(name) {
+  const result = name === "result";
+  for (const [id, active] of [["tab-result", result], ["tab-testcase", !result]]) {
+    const b = document.getElementById(id);
+    if (b) { b.classList.toggle("active", active); b.setAttribute("aria-selected", String(active)); }
+  }
+  const resultPanel = document.getElementById("result-panel");
+  const testcasePanel = document.getElementById("testcase-panel");
+  if (resultPanel) resultPanel.hidden = !result;
+  if (testcasePanel) testcasePanel.hidden = result;
+}
+function publicSampleInstance(meta) {
+  const seed = Number(meta.seed_base || 20261021);
+  const instance = (meta.grader === "assignment"
+    ? window.ScipOJAssignment?.genAssignment(seed)
+    : window.ScipOJJudge?.genKnapsack(seed)) || {};
+  const { optimal_value: unusedOracle, ...publicInstance } = instance;
+  return publicInstance;
+}
 function showWorkbenchTab(name) {
   const desc = name === "description";
   const readme = document.getElementById("readme");
@@ -101,6 +120,10 @@ async function main() {
   document.getElementById("code")?.addEventListener("input", (event) => {
     if (!activeProblemId) return;
     const status = document.getElementById("draft-state");
+    if (window.ScipOJExam?.getPolicy() !== "standard") {
+      if (status) status.textContent = "考试模式：本地草稿存储已停用。请通过正式提交保存答案。";
+      return;
+    }
     try {
       localStorage.setItem("scipoj:draft:" + activeProblemId, event.target.value);
       if (status) status.textContent = "草稿已保存到本浏览器 · 尚未正式提交";
@@ -134,6 +157,8 @@ async function main() {
   if (history && submissions) history.appendChild(submissions);
   window.ScipOJEditor?.init();
   window.ScipOJExam?.bind();
+  document.getElementById("tab-testcase")?.addEventListener("click", () => showConsoleTab("testcase"));
+  document.getElementById("tab-result")?.addEventListener("click", () => showConsoleTab("result"));
   document.addEventListener("keydown", e => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && activeProblemId) {
       e.preventDefault();
@@ -210,6 +235,7 @@ async function main() {
     btnClearConsole.onclick = () => {
       const rep = document.getElementById("report");
       if (rep) rep.textContent = "";
+      showConsoleTab("result");
     };
   }
 }
@@ -257,6 +283,7 @@ function closeWorkspace() {
   openSeq++;
   activeProblemId = null;
   activeAssignment = null;
+  window.ScipOJExam?.activate("standard", null);
   if (pollTimer) {
     clearInterval(pollTimer);
     pollTimer = null;
@@ -358,7 +385,7 @@ async function openProblem(path, id) {
     window.ScipOJExam?.activate("standard", id);
     showWorkbenchTab("description");
 
-    document.getElementById("title").textContent = `${meta.id} · ${meta.title || ''}`;
+    document.getElementById("title").textContent = `${meta.id} · ${meta.title || problemIndex.find(p => p.id === id)?.title || ""}`;
     const readmeHtml = window.marked ? marked.parse(readme) : `<pre>${escapeHtml(readme)}</pre>`;
     // 题面来自仓库 Markdown（可能经 PR 提交），渲染前做白名单清洗
     document.getElementById("readme").innerHTML = window.DOMPurify
@@ -374,6 +401,10 @@ async function openProblem(path, id) {
       : "已恢复本浏览器的草稿 · 尚未正式提交";
     document.getElementById("report").textContent = "";
     document.getElementById("status").textContent = "";
+    showConsoleTab("testcase");
+    const sample = publicSampleInstance(meta);
+    const customInput = document.getElementById("testcase-input");
+    if (customInput) customInput.value = JSON.stringify(sample, null, 2);
 
     // 绑定重置与复制代码按钮
     const btnReset = document.getElementById("btn-reset-template");
@@ -521,8 +552,52 @@ function setupActionButtons(meta, id) {
   const reportEl = document.getElementById("report");
   const btnRefreshSubmissions = document.getElementById("btn-refresh-submissions");
 
+  // Run a single student-authored test case locally. Never count it as a formal grade.
+  const btnRunCustom = document.getElementById("btn-run-testcase");
+  const customInput = document.getElementById("testcase-input");
+  const btnResetCustom = document.getElementById("btn-reset-testcase");
+  if (btnResetCustom) btnResetCustom.onclick = () => {
+    if (customInput) customInput.value = JSON.stringify(publicSampleInstance(meta), null, 2);
+  };
+  if (btnRunCustom) btnRunCustom.onclick = async () => {
+    const raw = customInput?.value || "";
+    if (raw.length > 20000) {
+      window.ScipOJPlatform?.showToast("测试输入不能超过 20000 字符", "warning");
+      return;
+    }
+    let instance;
+    try {
+      instance = JSON.parse(raw);
+      if (!instance || Array.isArray(instance) || typeof instance !== "object") {
+        throw new Error("输入必须为 JSON 对象");
+      }
+      // Students never receive the authoritative optimal objective.
+      delete instance.optimal_value;
+    } catch (error) {
+      window.ScipOJPlatform?.showToast("输入 JSON 无效: " + error.message, "warning");
+      return;
+    }
+    showConsoleTab("result");
+    btnRunCustom.disabled = true;
+    reportEl.textContent = "执行自定义测试…";
+    try {
+      if (!window.ScipOJRuntime?.ensureReady) throw new Error("Python WASM 运行环境不可用");
+      await window.ScipOJRuntime.ensureReady();
+      const result = await window.ScipOJRuntime.runSolve(
+        getCodeValue(), instance, Math.min(Number(meta.time_limit_sec) || 15, 30)
+      );
+      reportEl.textContent = JSON.stringify({ kind: "custom_test", result,
+        note: "仅运行用户自定义输入；不验证最优性、不影响正式成绩。" }, null, 2);
+    } catch (error) {
+      reportEl.textContent = "运行错误（不计正式分）：\n" + String(error?.message || error);
+    } finally {
+      btnRunCustom.disabled = false;
+    }
+  };
+
   // ── L1 练习评分（浏览器 WASM 本地真跑，不写入正式数据库） ──
   btnGradeL1.onclick = async () => {
+    showConsoleTab("result");
     const userCode = getCodeValue();
     const grader = meta.grader || "knapsack";
     const timeLimitSec = meta.time_limit_sec || 10;

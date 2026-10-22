@@ -75,3 +75,14 @@
  .editor-title small,.console-shortcut{display:none}
  .CodeMirror{height:370px}
 }
+
+/* Custom test-runner and output tabs */
+.console-tabs{display:flex;align-items:center;gap:4px}
+.console-tab{background:transparent;color:#6d8098;border:none;border-radius:8px;font-size:.82rem;padding:8px 12px}
+.console-tab.active{background:#e9f1fe;color:#2756a2}
+.testcase-caption{font-size:.83rem;font-weight:720;color:#435d77;padding:10px 0}
+.testcase-caption span{font-weight:400;font-size:.73rem;color:#8193a6;margin-left:8px}
+#testcase-input{display:block;width:100%;min-height:160px;resize:vertical;box-sizing:border-box;border:1px solid #dae5f1;border-radius:10px;background:#f9fbfe;color:#233b55;padding:16px;font:13px/1.65 var(--font-mono)}
+.testcase-actions{display:flex;justify-content:flex-end;gap:9px;flex-wrap:wrap;padding-top:12px}
+#result-panel #report{margin-top:12px}
+@media(max-width:640px){.testcase-actions button{flex:1 1 auto}.testcase-caption span{display:block;margin:3px 0 0}}
