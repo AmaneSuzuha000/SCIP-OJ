@@ -22,6 +22,7 @@ class CourseInviteTests(unittest.TestCase):
         self.assertIn('.rpc("rotate_course_invite_code"',block)
         self.assertNotIn('.from("course_invites")',block)
         self.assertNotIn('.from("courses")',block)
+        self.assertIn("REVOKE UPDATE (invite_code) ON public.courses FROM authenticated", (ROOT/"supabase/migrations/012_atomic_revocable_course_invites.sql").read_text())
 
 if __name__ == "__main__":
     unittest.main()
