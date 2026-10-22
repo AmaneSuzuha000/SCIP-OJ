@@ -919,7 +919,8 @@ async function showLeaderboardDialog() {
     `;
   } catch (err) {
     const msg = err?.message || String(err);
-    if (/does not exist|schema cache|42P01|PGRST205|permission denied|could not find the function/i.test(msg)) {
+    if (err?.missingRpc || window.ScipOJPlatform?.isMissingRpcError?.(err) ||
+        /does not exist|schema cache|42P01|PGRST205|permission denied|could not find the function/i.test(msg)) {
       bodyEl.innerHTML = '<p class="fail" style="padding:1rem;">排行榜服务尚未部署（缺少 <code>get_course_leaderboard</code> 函数）。请联系管理员执行 <code>supabase/migrations/006_security_hardening_and_leaderboard.sql</code> 后重试。</p>';
     } else {
       bodyEl.innerHTML = `<p class="fail" style="padding:1rem;">获取榜单异常: ${escapeHtml(msg)}</p>`;

@@ -450,21 +450,65 @@ const ScipOJPlatform = (() => {
     return await refreshEnrollments();
   }
 
+  /** 把「RPC 未部署」类错误翻译成可执行的提示，避免前端只看到 PGRST202 */
+  const MIGRATION_006 = "supabase/migrations/006_security_hardening_and_leaderboard.sql";
+  function isMissingRpcError(err) {
+    const msg = String(err?.message || err || "");
+    const code = String(err?.code || "");
+    return code === "PGRST202" || code === "42883" || code === "404" ||
+      /could not find the function|does not exist|schema cache/i.test(msg);
+  }
+  function describeRpcError(err, action) {
+    if (isMissingRpcError(err)) {
+      const e = new Error(`服务端缺少「${action}」所需的数据库函数，请管理员执行 ${MIGRATION_006} 后重试`);
+      e.missingRpc = true;
+      e.code = err?.code;
+      return e;
+    }
+    const e = new Error(`${action}失败：${err?.message || err || "未知错误"}`);
+    e.code = err?.code;
+    return e;
+  }
+
   async function getTeacherRoster(courseId) {
     if (!supabase) return [];
-    // 通过受控 RPC 读取：course_gradebook 已撤销 authenticated 直接 SELECT，
+    // 通过受控 RPC 读取：006 起 course_gradebook 已撤销 authenticated 直接 SELECT，
     // 由数据库函数校验 is_teacher_of(course_id) 后返回本课程数据。
     const { data, error } = await supabase.rpc("get_teacher_gradebook", { p_course_id: courseId });
 
-    if (error) throw error;
-    return data || [];
+    if (!error) return data || [];
+
+    // 迁移 006 尚未执行时的兼容回退：旧版视图对 authenticated 仍可读。
+    // 006 执行后 RPC 存在，不会再走这里。
+    if (isMissingRpcError(error)) {
+      console.warn("[Platform] get_teacher_gradebook 缺失，回退旧版视图查询（请尽快执行 006）");
+      const legacy = await supabase
+        .from("course_gradebook")
+        .select("*")
+        .eq("course_id", courseId);
+
+      if (!legacy.error) return legacy.data || [];
+      throw describeRpcError(error, "加载班级成绩簿");
+    }
+    throw describeRpcError(error, "加载班级成绩簿");
   }
 
   async function getCourseInviteCode(courseId) {
     if (!supabase) return null;
     const { data, error } = await supabase.rpc("get_course_invite_code", { p_course_id: courseId });
-    if (error) throw error;
-    return data || null;
+    if (!error) return data || null;
+
+    if (isMissingRpcError(error)) {
+      // 006 之前 invite_code 列对 authenticated 可读；006 之后此回退会因列权限失败，
+      // 但那时 RPC 已经存在，正常路径不会走到这里。
+      const legacy = await supabase
+        .from("courses")
+        .select("invite_code")
+        .eq("id", courseId)
+        .maybeSingle();
+      if (!legacy.error) return legacy.data?.invite_code || null;
+    }
+    throw describeRpcError(error, "读取课程邀请码");
   }
 
   async function getLeaderboard(courseId, problemId = null, limit = 30) {
@@ -475,12 +519,45 @@ const ScipOJPlatform = (() => {
       p_problem_id: problemId || null,
     });
 
-    if (error) {
-      const err = new Error(error.message || "排行榜查询失败");
-      err.code = error.code;
-      throw err;
+    if (!error) {
+      return (data || []).slice(0, Math.max(1, Math.min(100, Number(limit) || 30)));
     }
-    return (data || []).slice(0, Math.max(1, Math.min(100, Number(limit) || 30)));
+
+    if (isMissingRpcError(error)) {
+      // 006 未执行时的兼容回退：旧视图可读，前端脱敏后再展示。
+      const legacy = await supabase
+        .from("course_gradebook")
+        .select("course_id, student_no, display_name, problem_id, best_score, passed, attempt_count, last_submitted_at")
+        .eq("course_id", courseId)
+        .not("best_score", "is", null)
+        .order("best_score", { ascending: false })
+        .limit(100);
+
+      if (!legacy.error) {
+        const rows = (legacy.data || []);
+        const filtered = problemId
+          ? rows.filter((r) => r.problem_id === problemId)
+          : rows;
+        const mask = (sno) => {
+          const v = String(sno || "");
+          return v.length < 6 ? "***" : v.slice(0, 4) + "****" + v.slice(-2);
+        };
+        return filtered.slice(0, Math.max(1, Math.min(100, Number(limit) || 30))).map((r) => ({
+          course_id: r.course_id,
+          problem_id: problemId ? r.problem_id : null,
+          student_no_masked: mask(r.student_no),
+          display_name: r.display_name,
+          best_score: r.best_score,
+          passed: r.passed,
+          attempt_count: r.attempt_count,
+          last_submitted_at: r.last_submitted_at,
+        }));
+      }
+    }
+
+    const err = describeRpcError(error, "查询排行榜");
+    err.code = error.code;
+    throw err;
   }
 
   async function getPendingRoster(courseId) {
@@ -1486,6 +1563,7 @@ const ScipOJPlatform = (() => {
     init,
     isConfigured,
     isMockMode,
+    isMissingRpcError,
     getUser,
     getProfile,
     getSupabase,
