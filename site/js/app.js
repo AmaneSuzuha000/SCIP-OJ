@@ -193,7 +193,7 @@ async function main() {
   // 4. 返回题单按钮
   const btnBack = document.getElementById("btn-back-to-list");
   if (btnBack) {
-    btnBack.onclick = (e) => {
+    btnBack.onclick = async (e) => {
       e.preventDefault();
       if (await confirmLeaveIfExamDraft()) closeWorkspace();
     };
