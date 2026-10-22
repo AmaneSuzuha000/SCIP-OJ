@@ -1,19 +1,61 @@
-:root { font-family: system-ui, sans-serif; color: #e8eaed; background: #0f1115; }
-body { max-width: 920px; margin: 0 auto; padding: 1.5rem; line-height: 1.5; }
+:root { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #e8eaed; background: #0f1115; }
+body { max-width: 960px; margin: 0 auto; padding: 1.5rem; line-height: 1.5; }
 header p, footer { color: #9aa0a6; font-size: 0.95rem; }
 a { color: #8ab4f8; }
-.card { display: block; padding: 1rem; margin: 0.75rem 0; border: 1px solid #30363d; border-radius: 8px; text-decoration: none; color: inherit; }
-.card:hover { border-color: #8ab4f8; }
-textarea { width: 100%; font-family: ui-monospace, monospace; font-size: 13px; background: #161b22; color: #e6edf3; border: 1px solid #30363d; border-radius: 8px; padding: 0.75rem; }
-button { background: #238636; color: #fff; border: 0; border-radius: 6px; padding: 0.55rem 1rem; cursor: pointer; font-weight: 600; }
+.card { display: block; padding: 1rem; margin: 0.75rem 0; border: 1px solid #30363d; border-radius: 8px; text-decoration: none; color: inherit; background: #161b22; }
+.card:hover { border-color: #8ab4f8; background: #1c2128; }
+textarea { width: 100%; box-sizing: border-box; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; background: #161b22; color: #e6edf3; border: 1px solid #30363d; border-radius: 8px; padding: 0.75rem; }
+button { background: #238636; color: #fff; border: 0; border-radius: 6px; padding: 0.55rem 1rem; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: background 0.15s ease; }
 button:hover { background: #2ea043; }
-#report { background: #161b22; padding: 1rem; border-radius: 8px; overflow: auto; min-height: 4rem; }
-.pass { color: #3fb950; } .fail { color: #f85149; } .warn { color: #d29922; }
-.links a{margin-right:.5rem}
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+button.btn-secondary { background: #30363d; color: #c9d1d9; }
+button.btn-secondary:hover { background: #3c444d; }
+button.btn-blue { background: #1f6feb; }
+button.btn-blue:hover { background: #388bfd; }
 
-#readme { background:#161b22; border:1px solid #30363d; border-radius:8px; padding:1rem 1.25rem; margin:1rem 0; }
-#readme pre { background:#0d1117; padding:.75rem 1rem; border-radius:6px; overflow:auto; }
-#readme code { font-family: ui-monospace, monospace; background:#0d1117; padding:.1em .35em; border-radius:4px; }
-#readme pre code { background:transparent; padding:0; }
-#readme table { border-collapse:collapse; width:100%; }
-#readme th,#readme td { border:1px solid #30363d; padding:.4rem .6rem; }
+#report { background: #161b22; padding: 1rem; border-radius: 8px; border: 1px solid #30363d; overflow: auto; min-height: 4rem; font-family: ui-monospace, monospace; font-size: 13px; }
+.pass { color: #3fb950; font-weight: 600; }
+.fail { color: #f85149; font-weight: 600; }
+.warn { color: #d29922; font-weight: 600; }
+.links a { margin-right: .5rem; }
+
+#readme { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1rem 1.25rem; margin: 1rem 0; }
+#readme pre { background: #0d1117; padding: .75rem 1rem; border-radius: 6px; overflow: auto; }
+#readme code { font-family: ui-monospace, monospace; background: #0d1117; padding: .1em .35em; border-radius: 4px; }
+#readme pre code { background: transparent; padding: 0; }
+#readme table { border-collapse: collapse; width: 100%; }
+#readme th, #readme td { border: 1px solid #30363d; padding: .4rem .6rem; }
+
+/* Auth Header */
+#auth-area { display: flex; align-items: center; gap: 0.75rem; }
+.user-info { font-size: 0.85rem; color: #c9d1d9; background: #21262d; padding: 0.35rem 0.7rem; border-radius: 6px; border: 1px solid #30363d; }
+.user-badge { display: inline-block; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.75rem; background: #388bfd33; color: #58a6ff; margin-left: 0.3rem; }
+
+/* Assignment Meta Bar */
+.meta-bar { background: #1c2128; border: 1px solid #30363d; border-radius: 6px; padding: 0.6rem 1rem; margin: 0.75rem 0; font-size: 0.88rem; color: #8b949e; display: flex; flex-wrap: wrap; gap: 1rem; }
+.meta-bar strong { color: #e6edf3; }
+
+/* Status Badges */
+.badge { display: inline-block; padding: 0.2rem 0.55rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+.badge-queued { background: #bb800933; color: #d29922; border: 1px solid #bb800966; }
+.badge-running { background: #1f6feb33; color: #58a6ff; border: 1px solid #1f6feb66; }
+.badge-done { background: #23863633; color: #3fb950; border: 1px solid #23863666; }
+.badge-system_error { background: #da363333; color: #f85149; border: 1px solid #da363366; }
+
+/* Tables */
+.submissions-table, .roster-table { width: 100%; border-collapse: collapse; margin-top: 0.75rem; font-size: 0.88rem; background: #161b22; border-radius: 8px; overflow: hidden; border: 1px solid #30363d; }
+.submissions-table th, .submissions-table td,
+.roster-table th, .roster-table td { padding: 0.65rem 0.85rem; text-align: left; border-bottom: 1px solid #21262d; }
+.submissions-table th, .roster-table th { background: #21262d; color: #8b949e; font-weight: 600; }
+.submissions-table tr:hover, .roster-table tr:hover { background: #1c2128; }
+
+/* Modal Dialog */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(2px); }
+.modal-content { background: #161b22; border: 1px solid #30363d; border-radius: 10px; width: 90%; max-width: 420px; padding: 1.5rem; box-shadow: 0 16px 32px rgba(0,0,0,0.5); }
+.modal-content h3 { margin-top: 0; margin-bottom: 1rem; color: #e6edf3; }
+#login-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; border-bottom: 1px solid #30363d; padding-bottom: 0.5rem; }
+#login-tabs button.tab { background: transparent; border: 0; color: #8b949e; padding: 0.4rem 0.8rem; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; }
+#login-tabs button.tab.active { color: #58a6ff; border-bottom: 2px solid #58a6ff; }
+.modal-content input { width: 100%; box-sizing: border-box; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 0.55rem 0.75rem; color: #e6edf3; margin-bottom: 0.85rem; font-size: 0.9rem; }
+.modal-content input:focus { border-color: #58a6ff; outline: none; }
+.modal-content .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }

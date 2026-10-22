@@ -3,38 +3,60 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>scip-oj · L1 练习</title>
+  <title>scip-oj · 系统建模与优化作业平台</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header>
-    <h1>scip-oj</h1>
-    <p>GitHub Pages · L1 浏览器 Python WASM 判分（练习，不作正式成绩）· 通过线 90 · 多实例平均分</p>
-    <p class="links">
-      <a href="lab/index.html" target="_blank"><strong>JupyterLab (PySCIPOpt)</strong></a> · 
-      <a href="repl/index.html" target="_blank">REPL</a> · 
-      <a href="doc.html?f=出题指南.md">出题指南</a> · 
-      <a href="doc.html?f=学生指南.md">学生指南</a> · 
-      <a href="doc.html?path=README.md">README</a>
-    </p>
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+      <div>
+        <h1 style="margin-bottom:0.25rem;"><a href="index.html" style="color:inherit;text-decoration:none;">scip-oj</a></h1>
+        <p style="margin-top:0;">双轨作业平台 · L1 浏览器 Python WASM 练习 · 正式作业服务端评测</p>
+        <p class="links">
+          <a href="lab/index.html" target="_blank"><strong>JupyterLab (PySCIPOpt)</strong></a> · 
+          <a href="repl/index.html" target="_blank">REPL</a> · 
+          <a href="teacher.html" id="teacher-link" hidden><strong>教师面板</strong></a> · 
+          <a href="doc.html?f=出题指南.md">出题指南</a> · 
+          <a href="doc.html?f=学生指南.md">学生指南</a> · 
+          <a href="doc.html?path=README.md">README</a>
+        </p>
+      </div>
+      <div id="auth-area"></div>
+    </div>
   </header>
   <main>
     <section id="problem-list"></section>
     <section id="workspace" hidden>
       <h2 id="title"></h2>
+      <div id="assignment-meta-bar" class="meta-bar" hidden></div>
       <article id="readme"></article>
-      <label for="code">你的 solve 实现（Python 浏览器 WASM 真实执行；含 SCIP 求解器的题目请在上方 JupyterLab 打开；正式作业走 L2 PR）</label>
+      <label for="code">你的 solve 实现（Python 浏览器 WASM 练习 / 平台正式提交；含 SCIP 求解器的题目可先在上方 JupyterLab 交互验证）</label>
       <textarea id="code" rows="22" spellcheck="false"></textarea>
-      <div class="actions">
-        <button id="btn-grade" type="button">提交评分（L1）</button>
+      <div class="actions" style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap; margin:1rem 0;">
+        <button id="btn-grade" type="button" title="在浏览器内通过 WASM 快速验证（练习，不计入正式成绩）">⚡ L1 练习评分（浏览器 WASM）</button>
+        <button id="btn-submit-formal" type="button" class="btn-blue" title="提交至服务端进行 PySCIPOpt 权威评测，记录为正式作业成绩">🚀 提交正式作业（服务端评测）</button>
         <span id="status"></span>
       </div>
       <pre id="report"></pre>
+
+      <!-- 我的提交记录 -->
+      <section id="my-submissions-section" style="margin-top:2.5rem; border-top:1px solid #30363d; padding-top:1.5rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+          <h3 style="margin:0;">📜 我的提交记录（正式作业）</h3>
+          <button id="btn-refresh-submissions" type="button" class="btn-secondary" style="font-size:0.8rem; padding:0.3rem 0.7rem;">刷新提交记录</button>
+        </div>
+        <div id="my-submissions-container" style="margin-top:1rem;">
+          <p style="color:#9aa0a6;">正在检查提交记录...</p>
+        </div>
+      </section>
     </section>
   </main>
   <footer>
-    <p>scip-oj · L1 浏览器内由 WebAssembly 真跑学生 Python 代码；全功能 PySCIPOpt 内核请使用 <a href="lab/index.html" target="_blank">JupyterLab</a>。正式作业成绩认 L2（PR + Actions）。</p>
+    <p>scip-oj · L1 浏览器内由 WebAssembly 真跑学生 Python 代码；全功能 PySCIPOpt 内核请使用 <a href="lab/index.html" target="_blank">JupyterLab</a>。正式作业成绩认服务端自动化评测（成绩中心）。</p>
   </footer>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="config.js" onerror="console.log('[SCIP-OJ] config.js not found')"></script>
+  <script src="js/platform.js"></script>
   <script src="js/marked.min.js"></script>
   <script src="js/knapsack_judge.js"></script>
   <script src="js/assignment_judge.js"></script>

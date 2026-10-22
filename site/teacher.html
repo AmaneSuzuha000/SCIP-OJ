@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>scip-oj · 教师面板</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1><a href="index.html" style="color:inherit;text-decoration:none">scip-oj</a> · 教师面板</h1>
+    <div id="auth-area"></div>
+  </header>
+  <main>
+    <section id="teacher-no-config" hidden>
+      <p class="warn">⚠️ 未配置后端（Supabase），教师面板不可用。</p>
+    </section>
+    <section id="teacher-no-auth" hidden>
+      <p class="warn">请先登录教师账号。</p>
+    </section>
+    <section id="teacher-panel" hidden>
+      <h2>课程选择</h2>
+      <select id="course-select"><option>加载中...</option></select>
+
+      <h2>班级成绩表</h2>
+      <div class="actions">
+        <button id="btn-refresh" type="button">刷新</button>
+        <button id="btn-export-csv" type="button" style="background:#1f6feb">导出 CSV</button>
+      </div>
+      <div id="roster-area" style="overflow-x:auto">
+        <p style="color:#9aa0a6">选择课程后加载...</p>
+      </div>
+
+      <h2>提交详情</h2>
+      <div id="submission-detail" hidden>
+        <h3 id="detail-title"></h3>
+        <pre id="detail-code" style="max-height:400px;overflow:auto"></pre>
+        <pre id="detail-report"></pre>
+        <div class="actions">
+          <button id="btn-regrade" type="button" style="background:#d29922;color:#000">复判</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="config.js" onerror="console.log('[SCIP-OJ] config.js not found')"></script>
+  <script src="js/platform.js"></script>
+  <script src="js/teacher.js"></script>
+</body>
+</html>
