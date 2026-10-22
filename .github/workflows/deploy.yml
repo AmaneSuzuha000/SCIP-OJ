@@ -39,27 +39,19 @@ jobs:
 
       - name: Merge LeetCode Shell and Assets into dist
         shell: bash
+        env:
+          SCIP_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SCIP_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          # Preserve JupyterLite's original launcher as lite.html
           cp dist/index.html dist/lite.html 2>/dev/null || true
-          # Overlay LeetCode shell onto dist root
           cp -r site/* dist/
-          # Inject frontend config from Actions secrets (anon key is public by design)
-          if [ -n "${{ secrets.SUPABASE_URL }}" ] && [ -n "${{ secrets.SUPABASE_ANON_KEY }}" ]; then
-            cat > dist/config.js <<EOF
-window.SCIP_OJ_CONFIG = {
-  SUPABASE_URL: "${{ secrets.SUPABASE_URL }}",
-  SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}",
-  MOCK_MODE: false,
-};
-EOF
+          if [ -n "$SCIP_SUPABASE_URL" ] && [ -n "$SCIP_SUPABASE_ANON_KEY" ]; then
+            python3 -c 'import json,os,pathlib; pathlib.Path("dist/config.js").write_text("window.SCIP_OJ_CONFIG = " + json.dumps({"SUPABASE_URL": os.environ["SCIP_SUPABASE_URL"], "SUPABASE_ANON_KEY": os.environ["SCIP_SUPABASE_ANON_KEY"], "MOCK_MODE": False}, indent=2) + ";\n")'
           fi
-          # Ensure problems, docs and README are in dist
           mkdir -p dist/problems dist/docs
           cp -r problems/* dist/problems/
           cp -r docs/* dist/docs/
           cp README.md dist/README.md
-          # Ensure GitHub Pages does not filter files via Jekyll
           touch dist/.nojekyll
 
       - name: Upload Pages artifact
