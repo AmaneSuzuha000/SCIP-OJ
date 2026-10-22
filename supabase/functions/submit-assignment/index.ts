@@ -61,8 +61,8 @@ serve(async (req: Request): Promise<Response> => {
       return errorResponse("提交代码不能为空", 400, "EMPTY_CODE");
     }
     // 限制单次提交体积，防止超大 payload 拖垮数据库与评测队列
-    if (code_text.length > 200_000) {
-      return errorResponse("提交代码过长（上限 200000 字符）", 413, "CODE_TOO_LARGE");
+    if (new TextEncoder().encode(code_text).byteLength > 200_000) {
+      return errorResponse("提交代码过长（上限 200 KB UTF-8）", 413, "CODE_TOO_LARGE");
     }
 
     // 4. 查询作业及课程信息
@@ -157,7 +157,23 @@ serve(async (req: Request): Promise<Response> => {
       .single();
 
     if (insertSubErr || !submission) {
-      console.error("[Submit] 插入 submission 失败:", insertSubErr?.message);
+      // The PostgreSQL trigger is the authoritative, transaction-safe
+      // quota gate, including requests that bypass UI cooldowns.
+      const rejection = String(insertSubErr?.message || "");
+      const quotaReason = [
+        "SUBMISSION_RATE_LIMIT_COOLDOWN",
+        "SUBMISSION_RATE_LIMIT_HOURLY",
+        "SUBMISSION_RATE_LIMIT_DAILY",
+      ].find(reason => rejection.includes(reason));
+      if (quotaReason) {
+        const message = quotaReason.endsWith("COOLDOWN")
+          ? "两次正式提交需至少间隔 20 秒，请检查代码后再提交"
+          : quotaReason.endsWith("HOURLY")
+          ? "本作业一小时内正式提交已达到 12 次，请稍后重试"
+          : "今日正式提交已达到 60 次，请明天再试";
+        return errorResponse(message, 429, quotaReason);
+      }
+      console.error("[Submit] 插入 submission 失败:", insertSubErr?.code || "unknown");
       return errorResponse("提交记录保存失败，请稍后重试", 500, "DB_INSERT_FAILED");
     }
 
