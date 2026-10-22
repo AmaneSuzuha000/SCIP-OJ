@@ -7,6 +7,7 @@ export async function dispatchGitHubWorkflow(
   callbackUrl: string,
   token: string,
   repo: string,
+  gradingId: string,
 ): Promise<void> {
   if (!token || !repo) {
     throw new Error("GitHub 配置缺失：GITHUB_TOKEN 或 GITHUB_REPO 未设置");
@@ -25,6 +26,7 @@ export async function dispatchGitHubWorkflow(
       ref: "main",
       inputs: {
         submission_id: submissionId,
+        grading_id: gradingId,
         problem_id: problemId,
         callback_url: callbackUrl,
       },
