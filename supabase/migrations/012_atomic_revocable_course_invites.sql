@@ -172,6 +172,8 @@ $$;
 -- Prevent direct REST writes from bypassing the revocation/usage lock.
 REVOKE INSERT,UPDATE,DELETE ON public.course_invites FROM authenticated;
 REVOKE UPDATE ON public.courses FROM authenticated;
+-- Earlier migration 006 explicitly granted this COLUMN privilege. Revoke both.
+REVOKE UPDATE (invite_code) ON public.courses FROM authenticated;
 REVOKE ALL ON FUNCTION public.rotate_course_invite_code(uuid,text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.rotate_course_invite_code(uuid,text) TO authenticated;
 REVOKE ALL ON FUNCTION public.join_course_by_code(text) FROM PUBLIC, anon;
