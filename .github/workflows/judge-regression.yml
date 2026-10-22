@@ -25,3 +25,6 @@ jobs:
           node --check site/js/app.js
           node --check site/js/teacher.js
           node --check site/js/platform.js
+          node --check site/js/editor.js
+          node --check site/js/exam-integrity.js
+          node --check site/js/teacher.js

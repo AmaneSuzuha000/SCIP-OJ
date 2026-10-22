@@ -37,6 +37,7 @@ serve(async (req: Request): Promise<Response> => {
       pass_score = 90,
       n_instances = 3,
       score_policy = "highest_before_due",
+      integrity_policy = "standard",
     } = body;
 
     if (!course_id || !problem_id) {
@@ -60,6 +61,10 @@ serve(async (req: Request): Promise<Response> => {
     const validPolicies = ["highest_before_due", "latest", "highest"];
     if (!validPolicies.includes(score_policy)) {
       return errorResponse(`计分规则无效，必须为 ${validPolicies.join(", ")} 之一`, 400, "INVALID_POLICY");
+    }
+
+    if (!["standard", "exam_warn", "exam_block"].includes(integrity_policy)) {
+      return errorResponse("考试完整性策略无效", 400, "INVALID_INTEGRITY_POLICY");
     }
 
     const passScoreNum = parseInt(String(pass_score), 10);
@@ -92,6 +97,7 @@ serve(async (req: Request): Promise<Response> => {
           pass_score: passScoreNum,
           n_instances: nInstancesNum,
           score_policy,
+          integrity_policy,
         },
         { onConflict: "course_id,problem_id" },
       )

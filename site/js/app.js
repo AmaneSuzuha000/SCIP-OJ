@@ -367,6 +367,7 @@ async function openProblem(path, id) {
     let savedDraft = null;
     try { savedDraft = localStorage.getItem("scipoj:draft:" + id); } catch { /* disabled storage */ }
     setCodeValue(savedDraft === null ? currentTemplate : savedDraft);
+    window.ScipOJEditor?.refresh();
     const draftStatus = document.getElementById("draft-state");
     if (draftStatus) draftStatus.textContent = savedDraft === null
       ? "初始模板 · 输入时会自动保存本地草稿"
@@ -475,6 +476,10 @@ async function refreshAssignmentMeta(problemId) {
     `;
 
     window.ScipOJExam?.activate(activeAssignment.integrity_policy || "standard", problemId);
+    if (activeAssignment.integrity_policy && activeAssignment.integrity_policy !== "standard") {
+      const badge = activeAssignment.integrity_policy === "exam_block" ? "考试 · 限制粘贴" : "考试 · 操作提示";
+      metaBar.insertAdjacentHTML("beforeend", `<div class="meta-item"><strong class="tag-pending">${badge}</strong></div>`);
+    }
     if (btnSubmitFormal) {
       btnSubmitFormal.disabled = false;
       btnSubmitFormal.title = "提交至服务端触发 PySCIPOpt 权威评测并记入正式成绩";
