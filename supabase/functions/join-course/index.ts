@@ -59,7 +59,7 @@ serve(async (req: Request): Promise<Response> => {
     const { data: inviteRows, error: inviteErr } = await supabase
       .from("course_invites")
       .select("id, course_id, code, role, expires_at, max_uses, uses_count, courses(id, name, code)")
-      .ilike("code", code)
+      .ilike("code", escapeLike(code))
       .limit(1);
 
     if (inviteErr) {
@@ -93,7 +93,7 @@ serve(async (req: Request): Promise<Response> => {
       const { data: courseRows, error: courseErr } = await supabase
         .from("courses")
         .select("id, name, code, invite_code")
-        .ilike("invite_code", code)
+        .ilike("invite_code", escapeLike(code))
         .limit(1);
 
       if (courseErr) {

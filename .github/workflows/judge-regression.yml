@@ -2,7 +2,7 @@ name: Judge Regression Tests
 
 on:
   push:
-    branches: [main, 'fix/**']
+    branches: [main, 'fix/**', 'feat/**']
   pull_request:
 
 permissions:
@@ -20,3 +20,8 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_*.py' -v
       - name: Browser scoring regressions
         run: node tests/test_browser_judge.cjs
+      - name: Check frontend JavaScript syntax
+        run: |
+          node --check site/js/app.js
+          node --check site/js/teacher.js
+          node --check site/js/platform.js
