@@ -39,6 +39,7 @@ function asMatrix(solution, n) {
       for (let i = 0; i < n; i++) m.push(solution.slice(i * n, (i + 1) * n).map(Number));
       return m;
     }
+    throw new Error("solution 形状无法解析为 nxn");
   }
   if (solution && typeof solution === "object") {
     const m = Array.from({ length: n }, () => Array(n).fill(0));
@@ -80,7 +81,7 @@ function gradeAssignment(result, instance, meta) {
     x = asMatrix(result.solution, instance.n);
   } catch (e) {
     messages.push(String(e));
-    return packA(breakdown.F, false, breakdown, messages, meta);
+    return packA(0, false, breakdown, messages, meta);
   }
   if (!Number.isFinite(Number(result.objective)) || x.length !== instance.n ||
       x.some(row => !Array.isArray(row) || row.length !== instance.n || !row.every(Number.isFinite))) {
