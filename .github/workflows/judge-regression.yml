@@ -92,7 +92,7 @@ jobs:
                   '    return {}\n'
               )
               res, err = _run_isolated(write_probe, public, 5)
-              assert res is None and "PermissionError" in err, (res, err)
+              assert res is None and ("PermissionError" in err or "Read-only file system" in err), (res, err)
 
               # Infinite loops must be interrupted and containers cleaned up.
               loop = d / "loop.py"
