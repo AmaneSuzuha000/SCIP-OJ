@@ -33,6 +33,18 @@ class SandboxContractTests(unittest.TestCase):
         self.assertEqual(result["test_set"], "server_private_random")
         self.assertNotIn("seed", str(result))
 
+    def test_callback_and_workflow_bind_specific_grading_and_runner(self):
+        root = Path(__file__).resolve().parents[1]
+        workflow = (root / ".github/workflows/grade-submission.yml").read_text()
+        callback = (root / "supabase/functions/grade-callback/index.ts").read_text()
+        github = (root / "supabase/functions/_shared/github.ts").read_text()
+        self.assertIn("grading_id: gradingId", github)
+        self.assertIn("GRADING_ID: ${{ inputs.grading_id }}", workflow)
+        self.assertIn('"grading_id": os.environ["GRADING_ID"]', workflow)
+        self.assertIn('.eq("id", grading_id)', callback)
+        self.assertIn("pending.runner_ref !== runner_ref", callback)
+        self.assertNotIn('.order("created_at", { ascending: false })', callback)
+
     def test_missing_docker_marks_system_error_not_zero_score(self):
         with patch("judge.runner_l2_isolated.subprocess.run", side_effect=FileNotFoundError()):
             report = grade_file(Path("problems/P002_assignment/template.py"), "P002")

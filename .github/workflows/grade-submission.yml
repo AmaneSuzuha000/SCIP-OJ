@@ -292,4 +292,5 @@ jobs:
         if: always()
         with:
           name: grading-report-${{ inputs.submission_id }}
-          path: _grading_tmp/
+          path: _grading_tmp/report.json
+          if-no-files-found: warn
