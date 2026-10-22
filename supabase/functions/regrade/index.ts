@@ -8,6 +8,13 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
+const CORS_HEADERS: Record<string, string> = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
+
 /** Resolve secret: Deno.env first, then platform_secrets (service_role only). */
 async function getPlatformSecret(
   supabase: ReturnType<typeof createClient>,
@@ -34,7 +41,7 @@ function jsonResponse(
 ): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
   });
 }
 
@@ -82,6 +89,10 @@ interface RegradeBody {
 }
 
 serve(async (req: Request): Promise<Response> => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: CORS_HEADERS });
+  }
+
   if (req.method !== "POST") {
     return jsonResponse({ error: "仅支持 POST 请求" }, 405);
   }
@@ -138,29 +149,27 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // 从关联查询中提取作业信息
-    // deno-lint-ignore no-explicit-any
-    const assignmentData = (submission as any).assignments;
-    const courseId: string = assignmentData.course_id;
-    const problemId: string = assignmentData.problem_id;
+    const assignment = (submission as any).assignments;
+    const courseId = assignment.course_id;
+    const problemId = assignment.problem_id;
 
-    // ── 4. 校验教师权限：用户必须以 teacher 角色选课 ──
-    const { data: teacherEnrollment, error: enrollError } = await supabase
+    // ── 4. 校验当前用户是否为该课程的教师或助教 ──
+    const { data: enrollment, error: enrollError } = await supabase
       .from("enrollments")
-      .select("id, role")
+      .select("role")
       .eq("user_id", user.id)
       .eq("course_id", courseId)
-      .eq("role", "teacher")
       .single();
 
-    if (enrollError || !teacherEnrollment) {
-      return jsonResponse(
-        { error: "权限不足：您不是该课程的教师" },
-        403,
-      );
+    const isTeacher = enrollment &&
+      (enrollment.role === "teacher" || enrollment.role === "ta" || enrollment.role === "admin");
+
+    if (enrollError || !isTeacher) {
+      return jsonResponse({ error: "无权限：仅该课程的教师可发起复判" }, 403);
     }
 
-    // ── 5. 获取上一次评分记录（用于审计） ──
-    const { data: previousGrading } = await supabase
+    // ── 5. 查询最近一次评分记录（用于审计日志记录 old_score） ──
+    const { data: lastGrading } = await supabase
       .from("gradings")
       .select("id, score")
       .eq("submission_id", submission_id)
@@ -168,10 +177,10 @@ serve(async (req: Request): Promise<Response> => {
       .limit(1)
       .single();
 
-    const oldScore = previousGrading?.score ?? null;
+    const oldScore = lastGrading?.score ?? null;
 
-    // ── 6. 创建新的 grading 行（状态为 queued） ──
-    const { data: newGrading, error: gradingInsertErr } = await supabase
+    // ── 6. 插入新的 grading 行（状态 queued） ──
+    const { data: newGrading, error: insertGradingErr } = await supabase
       .from("gradings")
       .insert({
         submission_id,
@@ -180,26 +189,26 @@ serve(async (req: Request): Promise<Response> => {
       .select("id")
       .single();
 
-    if (gradingInsertErr || !newGrading) {
-      console.error("创建重评分记录失败:", gradingInsertErr);
-      return jsonResponse({ error: "重评分记录创建失败" }, 500);
+    if (insertGradingErr || !newGrading) {
+      console.error("插入新 grading 失败:", insertGradingErr);
+      return jsonResponse({ error: "创建新评分记录失败" }, 500);
     }
 
-    // ── 7. 写入 grade_audit 审计记录 ──
-    const { error: auditInsertErr } = await supabase
+    // ── 7. 插入 grade_audits 审计日志 ──
+    const { error: insertAuditErr } = await supabase
       .from("grade_audits")
       .insert({
         grading_id: newGrading.id,
         submission_id,
-        old_score: oldScore,
-        new_score: null, // 重评分尚未完成
-        reason,
         actor_id: user.id,
+        old_score: oldScore,
+        new_score: null, // 尚未评出新分
+        reason,
       });
 
-    if (auditInsertErr) {
-      console.error("写入审计记录失败:", auditInsertErr);
-      // 审计失败不阻断重评分流程，但记录错误
+    if (insertAuditErr) {
+      // 审计日志写入失败仅记录日志，不阻断复判流程
+      console.error("写入 grade_audits 失败:", insertAuditErr);
     }
 
     // ── 8. 触发判分（Mock 模式或 GitHub Actions） ──
@@ -211,12 +220,18 @@ serve(async (req: Request): Promise<Response> => {
         .from("gradings")
         .update({
           status: "done",
-          score: 85,
-          passed: false,
-          report_json: { message: "Mock 重评分结果（非真实评分）" },
+          score: 95,
+          passed: true,
+          report_json: { message: "Mock 复判结果：分数更新为 95" },
           finished_at: new Date().toISOString(),
         })
         .eq("id", newGrading.id);
+
+      // 更新审计日志的新分数
+      await supabase
+        .from("grade_audits")
+        .update({ new_score: 95 })
+        .eq("grading_id", newGrading.id);
     } else {
       // 真实模式：触发 GitHub Actions workflow
       const callbackUrl = `${supabaseUrl}/functions/v1/grade-callback`;
@@ -236,16 +251,18 @@ serve(async (req: Request): Promise<Response> => {
           .from("gradings")
           .update({
             status: "system_error",
-            error_message: "重评分任务触发失败，请稍后重试",
+            error_message: "复判任务触发失败，请重试",
             finished_at: new Date().toISOString(),
           })
           .eq("id", newGrading.id);
       }
     }
 
-    // ── 9. 返回结果 ──
+    // ── 9. 返回成功响应 ──
     return jsonResponse({
+      message: "复判已提交，已进入评测队列",
       grading_id: newGrading.id,
+      submission_id,
       status: "queued",
     });
   } catch (err) {

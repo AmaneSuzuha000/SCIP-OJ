@@ -59,3 +59,41 @@ button.btn-blue:hover { background: #388bfd; }
 .modal-content input { width: 100%; box-sizing: border-box; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 0.55rem 0.75rem; color: #e6edf3; margin-bottom: 0.85rem; font-size: 0.9rem; }
 .modal-content input:focus { border-color: #58a6ff; outline: none; }
 .modal-content .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
+
+/* Teacher Tabs */
+.teacher-tabs { display: flex; gap: 0.5rem; margin: 1.25rem 0 1rem; border-bottom: 1px solid #30363d; padding-bottom: 0.5rem; }
+.teacher-tabs button.tab-btn { background: #21262d; border: 1px solid #30363d; color: #8b949e; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; }
+.teacher-tabs button.tab-btn.active { background: #1f6feb; color: #ffffff; border-color: #388bfd; }
+
+/* Course Info Card */
+.course-info-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; }
+.invite-code-tag { background: #8957e533; color: #d2a8ff; border: 1px solid #8957e566; padding: 0.25rem 0.6rem; border-radius: 6px; font-family: ui-monospace, monospace; font-size: 1rem; font-weight: 700; letter-spacing: 0.05em; }
+
+/* Timeline */
+.timeline { list-style: none; padding: 0; margin: 1rem 0; position: relative; }
+.timeline-item { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1.25rem; position: relative; }
+.timeline-item::before { content: ''; position: absolute; left: 11px; top: 24px; bottom: -20px; width: 2px; background: #30363d; }
+.timeline-item:last-child::before { display: none; }
+.timeline-icon { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; background: #30363d; color: #c9d1d9; flex-shrink: 0; z-index: 1; }
+.timeline-icon.done { background: #238636; color: #fff; }
+.timeline-icon.running { background: #1f6feb; color: #fff; }
+.timeline-icon.error { background: #da3633; color: #fff; }
+.timeline-content { flex: 1; background: #1c2128; border: 1px solid #30363d; border-radius: 6px; padding: 0.6rem 0.85rem; font-size: 0.85rem; }
+.timeline-time { color: #8b949e; font-size: 0.75rem; margin-top: 0.2rem; }
+
+/* Tags */
+.tag-late { display: inline-block; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.75rem; background: #da363333; color: #f85149; border: 1px solid #da363366; font-weight: 600; }
+.tag-normal { display: inline-block; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.75rem; background: #23863633; color: #3fb950; border: 1px solid #23863666; font-weight: 600; }
+.tag-pending { display: inline-block; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.75rem; background: #bb800933; color: #d29922; border: 1px solid #bb800966; font-weight: 600; }
+.tag-matched { display: inline-block; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.75rem; background: #23863633; color: #3fb950; border: 1px solid #23863666; font-weight: 600; }
+
+/* Filter & Action Bar */
+.filter-bar { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin: 1rem 0; background: #161b22; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #30363d; }
+.filter-bar input, .filter-bar select { background: #0d1117; border: 1px solid #30363d; color: #e6edf3; border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.85rem; }
+
+/* Form Card */
+.form-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1.25rem; margin-top: 1rem; }
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; font-size: 0.85rem; color: #8b949e; margin-bottom: 0.35rem; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; box-sizing: border-box; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 0.55rem 0.75rem; color: #e6edf3; font-size: 0.9rem; }
+.form-group small { color: #8b949e; font-size: 0.75rem; }

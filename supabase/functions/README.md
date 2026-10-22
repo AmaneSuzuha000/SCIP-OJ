@@ -10,7 +10,10 @@
 |--------|------|------|
 | `submit-assignment` | `/functions/v1/submit-assignment` | 学生提交作业代码，触发自动判分 |
 | `grade-callback` | `/functions/v1/grade-callback` | 接收 GitHub Actions 判分结果的回调 |
-| `regrade` | `/functions/v1/regrade` | 教师发起重新评分 |
+| `regrade` | `/functions/v1/regrade` | 教师发起单条提交重新评分 |
+| `join-course` | `/functions/v1/join-course` | 学生使用邀请码选课并关联预置花名册 |
+| `publish-assignment` | `/functions/v1/publish-assignment` | 教师发布/更新课程作业及截止时间 |
+| `regrade-batch` | `/functions/v1/regrade-batch` | 教师批量重判选中的提交或整题一键重判 |
 
 ---
 
