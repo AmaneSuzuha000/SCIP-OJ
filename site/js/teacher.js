@@ -232,6 +232,7 @@
       try {
         const data = await ScipOJPlatform.getTeacherRoster(courseId);
         currentRosterData = data || [];
+        updateFacultyMetrics(currentRosterData);
 
         await loadCourseAssignments(courseId);
         updateProblemFilterOptions();
@@ -240,6 +241,22 @@
       } catch (err) {
         console.error("[Teacher] loadGradebook failed:", err);
         rosterArea.innerHTML = `<p class="fail" style="padding:1rem;">加载成绩簿失败: ${esc(err.message)}</p>`;
+      }
+    }
+
+    function updateFacultyMetrics(rows) {
+      const students = rows.filter(r => r.enroll_role === "student");
+      const studentCount = new Set(students.map(r => r.user_id).filter(Boolean)).size;
+      const graded = students.filter(r => r.best_score != null && Number.isFinite(Number(r.best_score)));
+      const passCount = graded.filter(r => r.passed === true).length;
+      const values = {
+        "metric-students": studentCount,
+        "metric-graded": graded.length,
+        "metric-passrate": graded.length ? Math.round(passCount / graded.length * 100) + "%" : "—",
+      };
+      for (const [id, value] of Object.entries(values)) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = String(value);
       }
     }
 
