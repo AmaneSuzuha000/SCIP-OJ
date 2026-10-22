@@ -393,6 +393,10 @@ const ScipOJPlatform = (() => {
       if (code === "STUDENT_NO_REQUIRED") {
         throw new Error("请先在个人资料中绑定真实学号与姓名再提交作业");
       }
+      if (code === "IDENTITY_VERIFICATION_REQUIRED")
+        throw new Error("考试提交要求教师核验学号与 GitHub 账号，请联系本课程教师在花名册确认");
+      if (code === "VERIFICATION_SERVICE_UNAVAILABLE")
+        throw new Error("考试身份核验服务暂不可用，本次代码尚未提交，请联系教师");
       if (code === "CODE_TOO_LARGE") {
         throw new Error("提交代码过长，请精简后重试（上限 200 KB UTF-8）");
       }
@@ -584,6 +588,20 @@ const ScipOJPlatform = (() => {
     }
   }
 
+  async function getVerifiedRoster(courseId) {
+    if (!supabase || !currentUser) throw new Error("请先登录");
+    const { data, error } = await supabase.rpc("get_course_verified_roster", { p_course_id: courseId });
+    if (error) throw new Error("读取教师核验记录失败；请检查迁移 013 是否部署");
+    return data || [];
+  }
+  async function confirmRosterIdentity(rosterId, userId) {
+    if (!supabase || !currentUser) throw new Error("请先登录");
+    const { data, error } = await supabase.rpc("confirm_student_identity", {
+      p_roster_id: rosterId, p_user_id: userId,
+    });
+    if (error || !data?.ok) throw new Error("身份核验失败：检查是否为本课程教师，学生是否已匹配并选课");
+    return data;
+  }
   async function importRosterCSV(courseId, csvText) {
     if (!supabase || !currentUser) throw new Error("请先登录教师账号");
     if (!csvText || !csvText.trim()) throw new Error("CSV 内容不能为空");
@@ -1590,6 +1608,8 @@ const ScipOJPlatform = (() => {
     getCourseInviteCode,
     getLeaderboard,
     getPendingRoster,
+    getVerifiedRoster,
+    confirmRosterIdentity,
     importRosterCSV,
     publishAssignment,
     requestRegrade,
