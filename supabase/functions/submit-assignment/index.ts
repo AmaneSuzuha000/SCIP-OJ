@@ -36,14 +36,33 @@ async function sha256Hex(text: string): Promise<string> {
   return encodeHex(new Uint8Array(hashBuffer));
 }
 
+/** Resolve secret: Deno.env first, then platform_secrets (service_role only). */
+async function getPlatformSecret(
+  supabase: ReturnType<typeof createClient>,
+  name: string,
+): Promise<string | null> {
+  const fromEnv = Deno.env.get(name);
+  if (fromEnv) return fromEnv;
+  const { data, error } = await supabase
+    .from("platform_secrets")
+    .select("value")
+    .eq("key", name)
+    .maybeSingle();
+  if (error) {
+    console.error(`platform_secrets read failed for ${name}:`, error.message);
+    return null;
+  }
+  return data?.value ?? null;
+}
+
 /** 触发 GitHub Actions workflow_dispatch */
 async function dispatchGitHubWorkflow(
   submissionId: string,
   problemId: string,
   callbackUrl: string,
+  token: string,
+  repo: string,
 ): Promise<void> {
-  const token = Deno.env.get("GITHUB_TOKEN");
-  const repo = Deno.env.get("GITHUB_REPO"); // 格式: owner/repo
   if (!token || !repo) {
     throw new Error("GitHub 配置缺失：GITHUB_TOKEN 或 GITHUB_REPO 未设置");
   }
@@ -193,7 +212,7 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // ── 10. 触发判分（Mock 模式或 GitHub Actions） ──
-    const gradeRunner = Deno.env.get("GRADE_RUNNER");
+    const gradeRunner = await getPlatformSecret(supabase, "GRADE_RUNNER");
 
     if (gradeRunner === "mock") {
       // Mock 模式：直接更新为完成状态，方便前端开发调试
@@ -211,11 +230,15 @@ serve(async (req: Request): Promise<Response> => {
     } else {
       // 真实模式：触发 GitHub Actions workflow
       const callbackUrl = `${supabaseUrl}/functions/v1/grade-callback`;
+      const ghToken = await getPlatformSecret(supabase, "GITHUB_TOKEN");
+      const ghRepo = await getPlatformSecret(supabase, "GITHUB_REPO");
       try {
         await dispatchGitHubWorkflow(
           submission.id,
           assignment.problem_id,
           callbackUrl,
+          ghToken ?? "",
+          ghRepo ?? "",
         );
       } catch (dispatchErr) {
         // 触发失败不影响提交记录，但记录错误并通知用户
