@@ -1,6 +1,7 @@
 """L1 multi-instance runner (desktop smoke + future L2)."""
 from __future__ import annotations
 
+import copy
 import importlib.util
 import itertools
 import random
@@ -81,7 +82,9 @@ def run_l1(
     for i in range(n_inst):
         inst = gen(seed_base + i)
         try:
-            result = solve_fn(inst)
+            # Keep the oracle and grading state private from the solve(instance) API.
+            public_instance = copy.deepcopy({k: v for k, v in inst.items() if k != "optimal_value"})
+            result = solve_fn(public_instance)
             rep = grade(result, inst, meta)
         except (ModuleNotFoundError, ImportError) as e:
             if "pyscipopt" in str(e).lower() or "scip" in str(e).lower():
