@@ -2,142 +2,74 @@
 // 教师批量重新评分 Edge Function
 // ────────────────────────────────────────────
 // POST { submission_ids: string[], reason?: string }
-//   或 { course_id: string, problem_id: string, reason?: string } (整题重判)
+//   或 { course_id: string, problem_id: string, reason?: string } (整题一键重判)
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
-const CORS_HEADERS: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
-
-async function getPlatformSecret(
-  supabase: ReturnType<typeof createClient>,
-  name: string,
-): Promise<string | null> {
-  const fromEnv = Deno.env.get(name);
-  if (fromEnv) return fromEnv;
-  const { data, error } = await supabase
-    .from("platform_secrets")
-    .select("value")
-    .eq("key", name)
-    .maybeSingle();
-  if (error) {
-    console.error(`platform_secrets read failed for ${name}:`, error.message);
-    return null;
-  }
-  return data?.value ?? null;
-}
-
-function jsonResponse(body: Record<string, unknown>, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-  });
-}
-
-async function dispatchGitHubWorkflow(
-  submissionId: string,
-  problemId: string,
-  callbackUrl: string,
-  token: string,
-  repo: string,
-): Promise<void> {
-  if (!token || !repo) {
-    throw new Error("GitHub 配置缺失：GITHUB_TOKEN 或 GITHUB_REPO 未设置");
-  }
-
-  const url = `https://api.github.com/repos/${repo}/actions/workflows/grade-submission.yml/dispatches`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      ref: "main",
-      inputs: {
-        submission_id: submissionId,
-        problem_id: problemId,
-        callback_url: callbackUrl,
-      },
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`GitHub Actions 触发失败 (${res.status}): ${errText}`);
-  }
-}
+import { handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
+import { createServiceClient, getPlatformSecret } from "../_shared/secrets.ts";
+import { getAuthenticatedUser, isTeacherOrAdmin } from "../_shared/auth.ts";
+import { dispatchGitHubWorkflow } from "../_shared/github.ts";
 
 serve(async (req: Request): Promise<Response> => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: CORS_HEADERS });
-  }
+  const corsResp = handleCors(req);
+  if (corsResp) return corsResp;
 
   if (req.method !== "POST") {
-    return jsonResponse({ error: "仅支持 POST 请求" }, 405);
+    return errorResponse("仅支持 POST 请求", 405);
   }
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return jsonResponse({ error: "缺少 Authorization 头" }, 401);
+    const { supabase, supabaseUrl } = createServiceClient();
+
+    // 1. 身份认证
+    const auth = await getAuthenticatedUser(req, supabase);
+    if (!auth) {
+      return errorResponse("请先使用教师或助教账号登录系统", 401, "UNAUTHORIZED");
     }
+    const user = auth.user;
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
-
-    const jwt = authHeader.replace(/^Bearer\s+/i, "");
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(jwt);
-
-    if (authError || !user) {
-      return jsonResponse({ error: "身份认证失败" }, 401);
-    }
-
+    // 2. 解析请求体
     const body = await req.json().catch(() => ({}));
-    const reason = body.reason || "教师批量复判";
+    const reason = String(body.reason || "教师批量复判").slice(0, 500);
+
     let targetSubmissionIds: string[] = [];
 
     if (Array.isArray(body.submission_ids) && body.submission_ids.length > 0) {
       targetSubmissionIds = body.submission_ids;
     } else if (body.course_id && body.problem_id) {
-      // 整题重判模式：查询该课程该题目的所有学生的最新或全部提交
-      const { data: assignments } = await supabase
+      // 整题重判模式
+      const isTeacher = await isTeacherOrAdmin(supabase, user.id, body.course_id);
+      if (!isTeacher) {
+        return errorResponse("权限不足：仅任课教师可发起整题重判", 403, "FORBIDDEN");
+      }
+
+      const { data: assignment } = await supabase
         .from("assignments")
         .select("id")
         .eq("course_id", body.course_id)
-        .eq("problem_id", body.problem_id)
+        .eq("problem_id", String(body.problem_id).toUpperCase())
         .maybeSingle();
 
-      if (!assignments) {
-        return jsonResponse({ error: "未找到该课程对应的作业" }, 404);
+      if (!assignment) {
+        return errorResponse("该课程尚未配置该作业", 404, "ASSIGNMENT_NOT_FOUND");
       }
 
       const { data: subs } = await supabase
         .from("submissions")
         .select("id")
-        .eq("assignment_id", assignments.id);
+        .eq("assignment_id", assignment.id);
 
       targetSubmissionIds = (subs || []).map((s: any) => s.id);
     }
 
     if (targetSubmissionIds.length === 0) {
-      return jsonResponse({ error: "未指定待复判的提交记录" }, 400);
+      return errorResponse("未找到任何待复判的提交记录", 400, "NO_SUBMISSIONS");
     }
 
-    // 限制单次批量上限，防止 runner 超载
+    // 限制单次批量调度上限，防止超载
     if (targetSubmissionIds.length > 50) {
-      return jsonResponse({ error: "单次批量复判上限为 50 条" }, 400);
+      return errorResponse("单次批量复判上限为 50 条，请缩小筛选范围", 400, "BATCH_LIMIT_EXCEEDED");
     }
 
     const gradeRunner = await getPlatformSecret(supabase, "GRADE_RUNNER");
@@ -149,12 +81,11 @@ serve(async (req: Request): Promise<Response> => {
 
     for (const subId of targetSubmissionIds) {
       try {
-        // 校验权限与作业信息
         const { data: submission } = await supabase
           .from("submissions")
           .select("id, assignment_id, assignments!inner(id, course_id, problem_id)")
           .eq("id", subId)
-          .single();
+          .maybeSingle();
 
         if (!submission) {
           results.push({ id: subId, success: false, error: "提交记录不存在" });
@@ -165,15 +96,9 @@ serve(async (req: Request): Promise<Response> => {
         const courseId = assignment.course_id;
         const problemId = assignment.problem_id;
 
-        // 校验操作者是否为教师
-        const { data: enrollment } = await supabase
-          .from("enrollments")
-          .select("role")
-          .eq("user_id", user.id)
-          .eq("course_id", courseId)
-          .single();
-
-        if (!enrollment || (enrollment.role !== "teacher" && enrollment.role !== "admin" && enrollment.role !== "ta")) {
+        // 校验权限
+        const hasPerm = await isTeacherOrAdmin(supabase, user.id, courseId);
+        if (!hasPerm) {
           results.push({ id: subId, success: false, error: "无权限操作该提交" });
           continue;
         }
@@ -201,7 +126,7 @@ serve(async (req: Request): Promise<Response> => {
           continue;
         }
 
-        // 记录审计
+        // 记录审计日志
         await supabase.from("grade_audits").insert({
           grading_id: newGrading.id,
           submission_id: subId,
@@ -235,7 +160,7 @@ serve(async (req: Request): Promise<Response> => {
 
         results.push({ id: subId, success: true });
       } catch (e: any) {
-        results.push({ id: subId, success: false, error: e.message || String(e) });
+        results.push({ id: subId, success: false, error: e?.message || String(e) });
       }
     }
 
@@ -246,7 +171,7 @@ serve(async (req: Request): Promise<Response> => {
       results,
     });
   } catch (err: any) {
-    console.error("regrade-batch 未捕获错误:", err);
-    return jsonResponse({ error: "服务器内部错误: " + (err.message || String(err)) }, 500);
+    console.error("[RegradeBatch] 未捕获异常:", err?.message || err);
+    return errorResponse("服务器内部处理异常", 500, "INTERNAL_ERROR");
   }
 });

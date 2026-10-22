@@ -5,44 +5,13 @@
 // 安全：通过 HMAC-SHA256 签名验证请求来源
 // 更新 gradings 表的评分结果
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
-/** Resolve secret: Deno.env first, then platform_secrets (service_role only). */
-async function getPlatformSecret(
-  supabase: ReturnType<typeof createClient>,
-  name: string,
-): Promise<string | null> {
-  const fromEnv = Deno.env.get(name);
-  if (fromEnv) return fromEnv;
-  const { data, error } = await supabase
-    .from("platform_secrets")
-    .select("value")
-    .eq("key", name)
-    .maybeSingle();
-  if (error) {
-    console.error(`platform_secrets read failed for ${name}:`, error.message);
-    return null;
-  }
-  return data?.value ?? null;
-}
-
-/** 统一 JSON 响应 */
-function jsonResponse(
-  body: Record<string, unknown>,
-  status = 200,
-): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
+import { handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
+import { createServiceClient, getPlatformSecret } from "../_shared/secrets.ts";
 
 /**
- * 使用 Web Crypto API 验证 HMAC-SHA256 签名（Deno 兼容）
- * @param body   原始请求体（字符串）
- * @param signature 请求头中的 hex 签名
- * @param secret  共享密钥
+ * 使用 Web Crypto API 验证 HMAC-SHA256 签名
  */
 async function verifyHmacSignature(
   body: string,
@@ -50,8 +19,8 @@ async function verifyHmacSignature(
   secret: string,
 ): Promise<boolean> {
   const encoder = new TextEncoder();
+  const cleanSig = signature.trim().toLowerCase();
 
-  // 导入密钥
   const key = await crypto.subtle.importKey(
     "raw",
     encoder.encode(secret),
@@ -60,30 +29,28 @@ async function verifyHmacSignature(
     ["sign"],
   );
 
-  // 计算 HMAC
   const signatureBuffer = await crypto.subtle.sign(
     "HMAC",
     key,
     encoder.encode(body),
   );
 
-  // 将计算结果转为 hex 字符串
   const computedHex = Array.from(new Uint8Array(signatureBuffer))
     .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+    .join("")
+    .toLowerCase();
 
-  // 常量时间比较，防止 timing attack
-  if (computedHex.length !== signature.length) {
+  // 常量时间比对，防止时序攻击
+  if (computedHex.length !== cleanSig.length) {
     return false;
   }
   let mismatch = 0;
   for (let i = 0; i < computedHex.length; i++) {
-    mismatch |= computedHex.charCodeAt(i) ^ signature.charCodeAt(i);
+    mismatch |= computedHex.charCodeAt(i) ^ cleanSig.charCodeAt(i);
   }
   return mismatch === 0;
 }
 
-// ── 回调请求体类型 ──
 interface GradeCallbackBody {
   submission_id: string;
   score: number | null;
@@ -94,103 +61,94 @@ interface GradeCallbackBody {
 }
 
 serve(async (req: Request): Promise<Response> => {
+  // 1. CORS 处理（支持 OPTIONS 探测）
+  const corsResp = handleCors(req);
+  if (corsResp) return corsResp;
+
   if (req.method !== "POST") {
-    return jsonResponse({ error: "仅支持 POST 请求" }, 405);
+    return errorResponse("仅支持 POST 请求", 405);
   }
 
   try {
-    // ── 1. 构建 service client（用于读取 platform_secrets） ──
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    const { supabase } = createServiceClient();
 
     const callbackSecret = await getPlatformSecret(supabase, "GRADE_CALLBACK_SECRET");
     if (!callbackSecret) {
-      console.error("GRADE_CALLBACK_SECRET 未配置");
-      return jsonResponse({ error: "服务器配置错误" }, 500);
+      console.error("[GradeCallback] 致命：GRADE_CALLBACK_SECRET 密钥未配置");
+      return errorResponse("服务器密钥配置缺失", 500, "SECRET_MISSING");
     }
 
-    // ── 2. 验证 HMAC 签名 ──
+    // 2. 验证 HMAC 签名
     const signature = req.headers.get("X-Grade-Signature");
     if (!signature) {
-      return jsonResponse({ error: "缺少签名头 X-Grade-Signature" }, 403);
+      return errorResponse("缺少请求签名头 X-Grade-Signature", 403, "MISSING_SIGNATURE");
     }
 
-    // 必须先读取原始文本用于签名验证，再解析 JSON
     const rawBody = await req.text();
-
     const isValid = await verifyHmacSignature(rawBody, signature, callbackSecret);
     if (!isValid) {
-      console.warn("HMAC 签名验证失败");
-      return jsonResponse({ error: "签名验证失败" }, 403);
+      console.warn("[GradeCallback] 签名验证不通过，可能被篡改或密钥不一致");
+      return errorResponse("签名校验失败，拒绝处理", 403, "INVALID_SIGNATURE");
     }
 
-    // ── 3. 解析请求体 ──
-    const body: GradeCallbackBody = JSON.parse(rawBody);
+    // 3. 解析请求体
+    let body: GradeCallbackBody;
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return errorResponse("请求体不是有效 JSON", 400, "INVALID_JSON");
+    }
+
     const { submission_id, score, passed, report, status, error_message } = body;
-
     if (!submission_id || !status) {
-      return jsonResponse(
-        { error: "请求体缺少 submission_id 或 status" },
-        400,
-      );
+      return errorResponse("缺少必要参数 submission_id 或 status", 400, "INVALID_PARAMS");
     }
 
-    // 校验 status 取值
     if (status !== "done" && status !== "system_error") {
-      return jsonResponse(
-        { error: "status 取值必须为 done 或 system_error" },
-        400,
-      );
+      return errorResponse("status 必须为 'done' 或 'system_error'", 400, "INVALID_STATUS");
     }
 
-    // ── 4. 构建更新数据 ──
-
-    // 根据 status 构造不同的更新内容
-    // 系统错误时不设置 score 为 0，保留为 null
+    // 4. 构建入库更新
     const updateData: Record<string, unknown> = {
       status,
       finished_at: new Date().toISOString(),
     };
 
     if (status === "done") {
-      // 正常完成：写入分数和报告
       updateData.score = score;
-      updateData.passed = passed;
-      updateData.report_json = report;
+      updateData.passed = !!passed;
+      updateData.report_json = report || null;
+      updateData.error_message = null;
     } else {
-      // system_error：仅设置错误信息，score 必须为 null（系统错误 ≠ 学生 0 分）
+      // 核心硬边界：系统故障 != 学生 0 分，score 必须置为 null
       updateData.score = null;
       updateData.passed = false;
-      updateData.error_message = error_message || "未知系统错误";
-      if (report) {
-        updateData.report_json = report;
-      }
+      updateData.error_message = error_message || "评测环境系统故障";
+      if (report) updateData.report_json = report;
     }
 
-    // ── 5. 更新 gradings 行（匹配 submission_id + queued/running 状态） ──
-    const { error: updateError, count } = await supabase
+    // 5. 更新待评分行（幂等处理：优先更新 queued/running）
+    const { data: updated, error: updateError } = await supabase
       .from("gradings")
       .update(updateData)
       .eq("submission_id", submission_id)
       .in("status", ["queued", "running"])
-      .select("id", { count: "exact" });
+      .select("id");
 
     if (updateError) {
-      console.error("更新 grading 失败:", updateError);
-      return jsonResponse({ error: "评分更新失败" }, 500);
+      console.error("[GradeCallback] 更新 grading 记录失败:", updateError.message);
+      return errorResponse("更新评测结果失败", 500, "DB_UPDATE_FAILED");
     }
 
-    if (count === 0) {
-      console.warn(
-        `未找到 submission_id=${submission_id} 对应的待评分记录（queued/running）`,
-      );
-      // 仍返回 200，因为签名验证已通过，可能是重复回调
+    if (!updated || updated.length === 0) {
+      // 若未找到处于 queued/running 的记录，可能是重复回调或已被人工复判
+      console.info(`[GradeCallback] 提交 ${submission_id} 未找到等待中的评分记录，幂等返回`);
+      return jsonResponse({ ok: true, duplicate: true });
     }
 
-    return jsonResponse({ ok: true });
-  } catch (err) {
-    console.error("grade-callback 未捕获错误:", err);
-    return jsonResponse({ error: "服务器内部错误" }, 500);
+    return jsonResponse({ ok: true, grading_id: updated[0].id });
+  } catch (err: any) {
+    console.error("[GradeCallback] 未捕获异常:", err?.message || err);
+    return errorResponse("服务器内部处理异常", 500, "INTERNAL_ERROR");
   }
 });
