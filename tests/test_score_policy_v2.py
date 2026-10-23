@@ -11,7 +11,7 @@ from judge.score_policy_v2 import (
 
 
 def policy(mode="exact", pass_score=90):
-    return {
+    contract = {
         "schemaVersion": SCHEMA,
         "mode": mode,
         "passScore": pass_score,
@@ -21,6 +21,9 @@ def policy(mode="exact", pass_score=90):
             {"id": "stress", "weight": 50, "cases": ["s1", "s2", "s3", "s4", "s5"]},
         ],
     }
+    if mode == "approximate":
+        contract["referenceKind"] = "certified_optimum"
+    return contract
 
 
 def all_cases(pol, quality=None):
@@ -176,9 +179,32 @@ class ScoringContractV2Tests(unittest.TestCase):
                 with self.assertRaises(PolicyError):
                     score_subtasks(bad, all_cases(pol))
 
+    def test_approximate_reference_provenance_is_mandatory(self):
+        pol = policy("approximate")
+        data = all_cases(pol, 1)
+        for bad_kind in (None, "", "best_known", "claimed_optimal"):
+            p = copy.deepcopy(pol)
+            if bad_kind is None:
+                p.pop("referenceKind")
+            else:
+                p["referenceKind"] = bad_kind
+            with self.subTest(reference=bad_kind):
+                with self.assertRaises(PolicyError):
+                    score_subtasks(p, data)
+        p = copy.deepcopy(pol)
+        p["referenceKind"] = "frozen_target"
+        result = score_subtasks(p, data)
+        self.assertEqual(result["referenceKind"], "frozen_target")
+        self.assertTrue(result["passed"])
+        exact = policy()
+        exact["referenceKind"] = "frozen_target"
+        with self.assertRaises(PolicyError):
+            score_subtasks(exact, all_cases(exact))
+
     def test_round_half_up_once(self):
         pol = {
             "schemaVersion": SCHEMA, "mode": "approximate", "passScore": 90,
+            "referenceKind": "frozen_target",
             "groups": [{"id": "all", "weight": 100, "cases": ["x"]}],
         }
         result = score_subtasks(pol, {"x": {"verdict": "AC", "quality": 0.995}})
