@@ -48,4 +48,26 @@ assert.match(css, /@media\s*\(max-width:840px\)/, "Missing navigation mobile ada
 assert.match(css, /@media\s*\(max-width:650px\)/, "Missing small-screen layout");
 assert.equal((html.match(/<main\b/g)||[]).length, (html.match(/<\/main>/g)||[]).length,
   "Unbalanced main landmark");
+// Every page must keep its original interactive contracts while sharing visual identity.
+const app = fs.readFileSync(path.join(root, "js", "app.js"), "utf8");
+assert.match(html, /id="nav-to-assessment"/, "Sidebar assessment link needs an explicit guarded handler");
+assert.match(app, /getElementById\("nav-to-assessment"\)[\s\S]*?confirmLeaveIfExamDraft\(\)/,
+  "Exam draft can be lost when the sidebar navigates away");
+const faculty = fs.readFileSync(path.join(root, "teacher.html"), "utf8");
+const facultyCss = fs.readFileSync(path.join(root, "faculty-v3.css"), "utf8");
+assert.ok(faculty.includes('href="faculty-v3.css"'), "Faculty theme not loaded");
+assert.match(faculty, /id="teacher-panel" hidden/, "Teacher panel must remain behind auth checks");
+for (const id of ["auth-area", "metric-students", "metric-graded", "metric-passrate",
+  "course-select", "tab-gradebook", "tab-roster", "tab-assignments", "btn-export-csv",
+  "form-publish-assignment", "assign-pass-score"]) {
+  assert.ok(faculty.includes('id="' + id + '"'), "Missing teacher contract: " + id);
+}
+assert.match(facultyCss, /\.teacher-page \.faculty-content/, "Faculty desk should share the course system");
+for (const filename of ["case-studio.html", "inventory-lab.html", "flow-lab.html", "official-examples.html"]) {
+  const page = fs.readFileSync(path.join(root, filename), "utf8");
+  assert.ok(page.includes('href="course-case-v3.css"'), "Case theme missing: " + filename);
+  assert.ok(page.includes('SCIP/LAB'), "Course brand missing: " + filename);
+  assert.ok(page.includes('href="index.html#problem-list-section"'), "Broken OJ route: " + filename);
+}
+
 console.log("Independent SCIP/LAB course UI contract: PASS");
