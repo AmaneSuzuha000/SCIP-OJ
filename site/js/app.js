@@ -205,7 +205,10 @@ async function main() {
   if (btnBack) {
     btnBack.onclick = async (e) => {
       e.preventDefault();
-      if (await confirmLeaveIfExamDraft()) closeWorkspace();
+      if (await confirmLeaveIfExamDraft()) {
+        closeWorkspace();
+        document.getElementById("problem-list-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
     };
   }
   // Keep exam navigation explicit; switching discards unsaved exam source.
