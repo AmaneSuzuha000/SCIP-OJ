@@ -47,6 +47,7 @@
     setText("stability-note", warning + " 预热后至终点统计利用率、在制品与完成量；到达于观察区间内任务的等待时间允许延伸到终点之后。");
     setText("run-status", "已完成 " + p.replications + " 组独立配对实验 · 相同输入及种子可重复生成相同结果");
     field("export-button").disabled = false;
+    field("export-json-button").disabled = false;
   }
 
   function exportCsv() {
@@ -84,6 +85,33 @@
     setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
   }
 
+  function exportJson() {
+    if (!last) return;
+    const report = {
+      schemaVersion: "ie-des01-experiment/1",
+      caseId: "IE-DES-01",
+      provenance: "Synthetic teaching simulation; local-only; not a formal grade",
+      params: last.params,
+      summary: {
+        baseline: last.baseline,
+        alternative: last.alternative,
+        waitDiffCI: last.waitDiffCI
+      },
+      runs: last.runs
+    };
+    const blob = new Blob([JSON.stringify(report, null, 2) + "\n"], {
+      type: "application/json;charset=utf-8"
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "IE-DES-01-verifiable-experiment.json";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
+  }
+
   function run() {
     const error = field("form-error");
     error.hidden = true;
@@ -93,6 +121,9 @@
       last = result;
       render(result);
     } catch (err) {
+      last = null;
+      field("export-button").disabled = true;
+      field("export-json-button").disabled = true;
       error.textContent = String(err.message || err);
       error.hidden = false;
       setText("run-status", "参数有误，上一轮结果仅供参考");
@@ -109,6 +140,15 @@
       run();
     });
     field("export-button").addEventListener("click", exportCsv);
+    field("export-json-button").addEventListener("click", exportJson);
+    field("experiment-form").addEventListener("input", function () {
+      if (last) {
+        last = null;
+        field("export-button").disabled = true;
+        field("export-json-button").disabled = true;
+        setText("run-status", "实验设置已改变；请重新运行后再导出新证据。");
+      }
+    });
     run();
   });
 })();
