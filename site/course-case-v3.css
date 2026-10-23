@@ -1,0 +1,54 @@
+/* SCIP/LAB case experience — unified with the independent course workbench. */
+:root{color:#203238;background:#f5f7f6}
+body{background:#f5f7f6}
+.site-header{
+  position:sticky;top:0;z-index:70;min-height:70px;padding:10px max(3%,calc((100% - 1390px)/2));
+  background:rgba(255,255,255,.97);border-bottom:1px solid #e0eae7;
+  backdrop-filter:saturate(145%) blur(14px);
+}
+.identity{font-size:1.12rem;gap:11px;color:#1b383b;white-space:nowrap}
+.identity-icon{background:linear-gradient(150deg,#146f70,#103e56);box-shadow:0 4px 13px #19595725;width:37px;height:37px;font-size:1.6rem}
+.identity small{font-size:.58rem;color:#819592;letter-spacing:.08em}
+.site-header nav a{font-size:.8rem;padding:8px 12px;color:#617a79}
+.site-header nav a.active,.site-header nav a:hover{background:#e6f6f0;color:#126f67}
+main{max-width:1470px;padding:25px 35px 70px}
+.hero{min-height:0;gap:26px;padding:30px 37px;border-radius:22px;grid-template-columns:1.19fr .81fr;background:radial-gradient(circle at 95% -45%,#3f88805c,transparent 43%),linear-gradient(118deg,#132f39,#1c4d51);box-shadow:none}
+.hero h1{font-size:clamp(1.95rem,3vw,2.75rem);line-height:1.19;margin:11px 0 12px}
+.eyebrow{font-size:.64rem;letter-spacing:.13em;color:#9bdec9}
+.lead{font-size:.88rem;line-height:1.75;color:#c3dcda}
+.hero-buttons{margin:18px 0 10px}
+.primary-link,.secondary-link{padding:10px 16px;font-size:.82rem}
+.scope-note{font-size:.7rem;margin:12px 0 0}
+.hero-card{padding:18px 20px;border-radius:14px;background:#0b2b33a8}
+.hero-card-title{font-size:.61rem;padding-bottom:9px}
+.hero-card li{padding:8px 0}
+.hero-card li b{font-size:.78rem}
+.hero-card li span{font-size:.67rem}
+.overview{margin:-9px 15px 24px;box-shadow:0 7px 16px #1c564710;border-color:#e0eae7}
+.overview div{padding:11px 10px}
+.section-heading{margin-top:17px}
+.section-heading h2{letter-spacing:-.035em}
+.panel{border-color:#e0eae7;box-shadow:0 4px 18px #1b4a4306}
+.primary-button{background:#adedd9;color:#16443c}
+.primary-button:hover{background:#c8f8e8}
+#experiment{scroll-margin-top:95px}
+input:focus-visible,select:focus-visible{outline-color:#238e81}
+@media(max-width:1000px){
+  .hero{grid-template-columns:1fr;padding:28px}
+  .hero-card{display:none}
+}
+@media(max-width:700px){
+  .site-header{position:relative;padding:10px 14px;gap:8px;align-items:flex-start;flex-wrap:wrap}
+  .identity{font-size:1.04rem}
+  .identity small{display:none}
+  .site-header nav{display:flex;overflow-x:auto;flex-wrap:nowrap;max-width:100%;width:100%;padding:0 0 3px}
+  .site-header nav a{white-space:nowrap}
+  main{padding:13px 12px 44px}
+  .hero{padding:23px 21px;border-radius:17px}
+  .hero h1{font-size:2rem}
+  .overview{margin:-6px 6px 21px}
+  .overview div{padding:9px 4px}
+  .overview span{font-size:.61rem}
+  #experiment{scroll-margin-top:18px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important}}
