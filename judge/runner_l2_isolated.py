@@ -173,7 +173,7 @@ def grade_file(path: Path, problem_id: str | None = None,
         aggregate.update({"ok": True, "status": "done", "problem_id": pid,
                           "path": str(path), "layer": "L2",
                           "test_set": "server_private_v2",
-                          "seed_protocol": PRIVATE_SEED_PROTOCOL if replayable else "ephemeral_random",
+                          "test_protocol": PRIVATE_SEED_PROTOCOL if replayable else "ephemeral_random",
                           "judge_commit": os.environ.get("GITHUB_SHA") or None,
                           "sandbox": "isolated_container"})
         return aggregate
