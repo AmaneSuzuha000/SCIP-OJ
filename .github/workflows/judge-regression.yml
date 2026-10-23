@@ -22,9 +22,13 @@ jobs:
         run: node tests/test_browser_judge.cjs
       - name: Exam-mode browser regression tests
         run: node tests/test_exam_integrity.cjs
+      - name: Industrial engineering simulation reproducibility tests
+        run: node tests/test_simulation_core.cjs
       - name: Check frontend JavaScript syntax
         run: |
           node --check site/js/app.js
+          node --check site/js/simulation-core.js
+          node --check site/js/case-studio.js
           node --check site/js/teacher.js
           node --check site/js/platform.js
           node --check site/js/editor.js
