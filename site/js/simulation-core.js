@@ -122,6 +122,7 @@
     const a = [];
     const b = [];
     const waitDifferences = [];
+    const runs = [];
     for (let r = 0; r < params.replications; r++) {
       const seed = (params.seed + Math.imul(r, 2654435761)) >>> 0;
       const events = workload(params, seed);
@@ -129,7 +130,10 @@
       const resultB = simulate(events, params.serversB, params.warmup, params.horizon);
       a.push(resultA);
       b.push(resultB);
-      waitDifferences.push(resultB.avgWait - resultA.avgWait);
+      const waitDifference = resultB.avgWait - resultA.avgWait;
+      waitDifferences.push(waitDifference);
+      // Educational evidence: local inputs/outputs, not private judge instances.
+      runs.push({ index: r + 1, seed, resultA, resultB, waitDifference });
     }
     const keys = ["avgWait", "throughput", "utilization", "meanQueue", "meanWip", "arrivals"];
     function aggregate(rows) {
@@ -143,6 +147,7 @@
       alternative: aggregate(b),
       waitDiffCI: pairedCI(waitDifferences),
       waitDifferences,
+      runs,
       notes: {
         assumptions: "Poisson arrivals; independent exponential service times; FCFS; identical parallel servers; infinite waiting room",
         scope: "finite horizon, starting empty; arrivals before horizon; cohort waiting measured until start even if after horizon",
