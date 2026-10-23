@@ -2,7 +2,10 @@
 
 工业工程《系统建模与仿真》· **精品案例实验 + 在线建模 + 全链路作业评测平台**（可重复仿真实验 + WASM 练习 + 服务端权威评测 + 教师管理）
 
-- **精品案例实验室**：https://AmaneSuzuha000.github.io/SCIP-OJ/case-studio.html
+- **精品案例总览 / 排队仿真**：https://AmaneSuzuha000.github.io/SCIP-OJ/case-studio.html
+- **随机库存仿真**：https://AmaneSuzuha000.github.io/SCIP-OJ/inventory-lab.html
+- **双工序生产线仿真**：https://AmaneSuzuha000.github.io/SCIP-OJ/flow-lab.html
+- **Gurobi / SCIP 官方示例导航**：https://AmaneSuzuha000.github.io/SCIP-OJ/official-examples.html
 - **OJ 站点（力扣壳）**：https://AmaneSuzuha000.github.io/SCIP-OJ/
 - **教师控制台**：https://AmaneSuzuha000.github.io/SCIP-OJ/teacher.html
 - **JupyterLab (PySCIPOpt)**：https://AmaneSuzuha000.github.io/SCIP-OJ/lab/index.html
@@ -15,14 +18,19 @@
 
 课程主线是 **情境 → 系统抽象 → 模型假设 → 离散事件/蒙特卡洛仿真 → 实验设计与统计 → 工程决策 → 教师评价**。在线 OJ 是算法和正式作业子系统，不等于课程全部。
 
-**已实现的第一个独立可运行案例：IE-DES-01《检修工位配置与排队仿真》**
+**已实现三套独立可运行的仿真案例：IE-DES-01 / IE-MC-02 / IE-DES-03**
 
 - 使用合成数据搭建多工位 FCFS 离散事件模型，控制随机到达间隔、检修工时、工位数、预热时间和仿真时长；
 - 固定随机种子、共用随机数与多次配对独立重复，对比平均等待、完成率、工位利用率、队列长度及 WIP；
 - 展示配对等待差值的 95% 正态近似置信区间、负荷率警示、CSV 复现实验导出；
 - **仅供课堂学习，不上传个人数据、不写入正式成绩**；这里的检修数据是教学假设，不是企业实测。
 
-课程规划还包含随机库存、生产线瓶颈、AGV 物流、设备可靠性和动态调度仿真优化五类递进案例；**尚未标为上线功能**。课程质量验收 Gate 与建模口径见 [精品案例建设路线](docs/课程精品案例建设路线.md)。
+- **IE-MC-02《随机库存与服务水平》**：Poisson 日需求、周期检查补货、确定提前期、丢失销售、运营成本/填补率，配对 Monte Carlo 与导出。
+- **IE-DES-03《双工序生产线与缓冲阻塞》**：Poisson 到达、指数工时、有限缓冲与加工后阻塞 BAS、产出/WIP/阻塞率，配对 DES 与导出。
+- **IE-OPT-03《容量约束设施选址》Notebook**：原创 PySCIPOpt MIP 建模，采用 3 设施×4 客户的独立 81 情形穷举 oracle 核验。
+- **官方 Examples 资源页**：直接链接 PySCIPOpt 官方背包、EOQ、设施选址、排列流水车间、装箱与资源受限调度，以及 Gurobi Modeling Examples；只提供来源和自主课程模型。
+
+AGV 物流、设备可靠性和动态闭环调度是后续三类进阶方向，**尚未上线**。正式 L2 判题仍仅支持已接入私有评测的题型。教学 Rubric 与模型验证见 [课程实验与评价规范](docs/课程实验与评价规范.md) 和 [精品案例建设路线](docs/课程精品案例建设路线.md)。课程质量验收 Gate 与建模口径见 [精品案例建设路线](docs/课程精品案例建设路线.md)。
 
 ## 运行模式与判分双轨制
 
@@ -74,6 +82,7 @@ SCIP-OJ 采用**双轨制**，兼顾轻量免配置练习与可信正式成绩�
 - **JupyterLab 示例 Notebook**：
   - `content/01_P001_knapsack_PySCIPOpt.ipynb`（背包问题 MIP 建模）
   - `content/02_P002_assignment_PySCIPOpt.ipynb`（指派问题 MIP 建模）
+  - `content/03_IE_Facility_Location_PySCIPOpt.ipynb`（单源容量约束设施选址 + 独立穷举验证）
 
 ---
 

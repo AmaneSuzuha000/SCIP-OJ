@@ -1,0 +1,17 @@
+
+/* Supplementary lab layout: compatible with the primary case studio design */
+.hero{min-height:360px}.hero-card li{align-items:center}.hero-card li:before{flex:none}
+.results .metric strong{font-size:clamp(1.25rem,2vw,1.65rem)}
+.results .metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
+.results .metric{word-wrap:break-word}
+.results table{width:100%;border-collapse:collapse}.results th,.results td{padding:10px 8px;text-align:left;border-bottom:1px solid #e5edf2;font-size:.82rem}
+.results td{text-align:right;font-variant-numeric:tabular-nums}.results caption{text-align:left;font-size:.8rem;color:#60798e;margin-bottom:8px}
+.error[hidden]{display:none}.caveat{background:#f4f8f9;border-left:3px solid #189686;padding:15px;border-radius:8px;color:#456276;line-height:1.75}
+.next-steps{padding-top:34px}.next-steps h2{font-size:1.75rem}.next-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.next-grid a{display:flex;flex-direction:column;gap:8px;padding:20px;border:1px solid #dce8ed;border-radius:14px;background:#fff;transition:transform .16s,box-shadow .16s}
+.next-grid a:hover{transform:translateY(-2px);box-shadow:0 10px 26px #20425215}
+.next-grid a span{color:#0c857b;font-size:.72rem;font-weight:780;letter-spacing:.08em}
+.next-grid a strong{font-size:.97rem}.next-grid a small{color:#73899a}
+@media(max-width:1000px){.hero{grid-template-columns:1fr;gap:18px}.experiment-grid{grid-template-columns:1fr}.next-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){.results .metrics{grid-template-columns:1fr}.next-grid{grid-template-columns:1fr}.field-grid{grid-template-columns:1fr 1fr}.hero{padding:26px 22px}main{padding:18px 14px 50px}.panel{padding:17px}}
+@media(max-width:380px){.field-grid{grid-template-columns:1fr}.bar-row{grid-template-columns:45px minmax(0,1fr) 64px}}

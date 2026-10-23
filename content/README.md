@@ -1,65 +1,26 @@
-# SCIP-OJ
+# SCIP-OJ · 工业工程系统建模与仿真课程
 
-系统建模与仿真 · SCIP/Python **力扣式**练习站（**GitHub Pages**）+ **JupyterLite**（浏览器真跑 PySCIPOpt）。
+此目录由 JupyterLite 构建成浏览器 Notebook 工作区，案例数据均为合成教学示例。
 
-- **OJ 站点（力扣壳）**：https://AmaneSuzuha000.github.io/SCIP-OJ/
-- **JupyterLab (PySCIPOpt)**：https://AmaneSuzuha000.github.io/SCIP-OJ/lab/index.html
-- **REPL 入口**：https://AmaneSuzuha000.github.io/SCIP-OJ/repl/index.html
+- [案例总览 / 检修排队](https://AmaneSuzuha000.github.io/SCIP-OJ/case-studio.html)
+- [随机库存](https://AmaneSuzuha000.github.io/SCIP-OJ/inventory-lab.html)
+- [双工序生产线](https://AmaneSuzuha000.github.io/SCIP-OJ/flow-lab.html)
+- [SCIP/Gurobi 官方示例导航](https://AmaneSuzuha000.github.io/SCIP-OJ/official-examples.html)
+- [算法 OJ 主站](https://AmaneSuzuha000.github.io/SCIP-OJ/)
+- [教师控制台](https://AmaneSuzuha000.github.io/SCIP-OJ/teacher.html)
 
-## 判分政策与运行模式
+## JupyterLite 内置 Notebook
 
-| 层次 | 说明 |
-|---|---|
-| **L1** | **浏览器练习判分**：WebAssembly 真实执行文本框中的学生 Python；多实例**算术平均**；通过线 **90**；**首次加载约需数秒**；**不作正式成绩** |
-| **L2** | **正式提交作业**：PR + GitHub Actions 重判；**作业认 L2** |
+1. **01_P001_knapsack_PySCIPOpt.ipynb** — 0/1 背包、容量约束与目标函数
+2. **02_P002_assignment_PySCIPOpt.ipynb** — 人员任务指派与 MILP
+3. **03_IE_Facility_Location_PySCIPOpt.ipynb** — 容量约束设施选址、变量联动和独立穷举核验
 
-## 功能与入口
+## 成绩与运行环境说明
 
-- 学生指南：[docs/学生指南.md](docs/学生指南.md)
-- 老师出题：[docs/出题指南.md](docs/出题指南.md)
-- 判分协议：[docs/判分协议-已冻结.md](docs/判分协议-已冻结.md)
-- JupyterLab 入门 Notebook：
-  - `content/01_P001_knapsack_PySCIPOpt.ipynb`（背包问题 MIP 建模）
-  - `content/02_P002_assignment_PySCIPOpt.ipynb`（指派问题 MIP 建模）
+- JupyterLite（xeus-python + PySCIPOpt）是浏览器建模实验环境。浏览器 L1 练习使用另一条 Pyodide Worker 运行时；**两者尚非同一内核**。
+- 三个案例交互实验全部在浏览器本地运行，不上传数据、不写正式成绩。
+- 正式作业通过学生网页登录、选课门禁及后台隔离 PySCIPOpt 私有测试后存入教师成绩簿；学生**不需要 Fork、提交 PR 或使用 Actions**。
+- 只有已有判题协议的 P001/P002 是目前 L2 支持的题型；设施选址 Notebook 与 DES/库存案例不自动进入 L2。
+- 真实教学前仍需师生账号端到端验收、成绩申诉和隐私流程核对。
 
-## 架构
-
-1. **GitHub Pages 根路径 (`/`)**：
-   - 力扣壳（题单、题面渲染、Python 代码编辑框、实时 L1 判分）。
-   - 浏览器内通过 WebAssembly 运行学生代码，获取 `solve(instance)` 结果送入 `knapsack_judge.js` / `assignment_judge.js` 计算分值与约束违反报告。
-   - 首次点击判分需下载 WASM 解释器（约 6MB），加载后秒级响应；若网络阻断则安全降级为 Demo 求解器并清晰提示。
-2. **JupyterLite (`/lab/`)**：
-   - 基于 `jupyterlite-xeus` 构建，预装 `xeus-python` + `pyscipopt` + `numpy`（来自 `emscripten-forge-4x` 频道）。
-   - 学生可在浏览器内无需安装本地环境直接运行 `from pyscipopt import Model` 进行复杂的运筹优化建模实验。
-3. **L2 评测（GitHub Actions）**：
-   - 学生提交 `submissions/<username>/<problem_id>.py`，开 PR 触发自动化重判与评论。
-
-## 仓库结构
-
-- `site/` — 力扣壳前端页面与判分脚本
-  - `site/js/python_runtime.js` — WASM 运行时控制器（支持 Web Worker 与超时控制）
-  - `site/js/pyodide_worker.js` — Web Worker 隔离执行沙箱
-  - `site/js/knapsack_judge.js` — P001 L1 评分逻辑
-  - `site/js/assignment_judge.js` — P002 L1 评分逻辑
-- `content/` — JupyterLite 示例 Notebook
-- `problems/` — 题库（P001 背包、P002 指派）
-- `judge/` — Python 性质验证判分内核（与 JS 保持严格对齐）
-- `submissions/` — 学生 L2 交卷目录
-- `environment.yml` — JupyterLite xeus 内核预装依赖（`pyscipopt`, `xeus-python`, `numpy`）
-- `.github/build-environment.yml` — JupyterLite 构建环境定义
-- `.github/workflows/deploy.yml` — Pages 构建与部署流水线
-- `.github/workflows/l2-grade.yml` — L2 重判流水线
-
-## 本地烟测
-
-```bash
-cd SCIP-OJ
-PYTHONPATH=. python3 -c "
-import json
-from pathlib import Path
-from judge.runner_l1 import load_solve, run_l1
-for p in ['P001_knapsack','P002_assignment']:
-    meta=json.load(open(f'problems/{p}/meta.json'))
-    print(p, run_l1(load_solve(Path(f'problems/{p}/template.py')), meta)['score'])
-"
-```
+仓库 README、docs/课程实验与评价规范.md 及 docs/课程精品案例建设路线.md 是课程设计与正式使用口径的准绳。
