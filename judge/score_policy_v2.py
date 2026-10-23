@@ -14,7 +14,6 @@ The grading host, never the student's returned JSON, must create verdicts and qu
 from __future__ import annotations
 
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
-from math import isfinite
 from typing import Any, Mapping
 
 SCHEMA = "scip-oj-score-policy/2"
@@ -64,6 +63,28 @@ def normalized_quality(objective: float, baseline: float, certified_optimum: flo
         raise PolicyError("candidate beats certified optimum: oracle/checker mismatch")
     return float(max(Decimal(0), min(Decimal(1), improvement / possible)))
 
+
+
+def target_referenced_quality(objective: float, baseline: float,
+                              full_score_target: float, sense: str) -> float:
+    """For NP-hard problems WITHOUT certified optimum: reproducible target credit.
+
+    The fixed target grants full marks at or beyond the benchmark; students
+    legitimately beating that target also get 1. This is NOT an optimality gap.
+    A teacher must pre-register the benchmark's input version and compute budget.
+    """
+    obj = _decimal(objective, "objective")
+    base = _decimal(baseline, "baseline")
+    target = _decimal(full_score_target, "full_score_target")
+    if sense == "minimize":
+        improvement, required = base - obj, base - target
+    elif sense == "maximize":
+        improvement, required = obj - base, target - base
+    else:
+        raise PolicyError("sense must be minimize or maximize")
+    if required <= 0:
+        raise PolicyError("full-score target must be strictly better than baseline")
+    return float(max(Decimal(0), min(Decimal(1), improvement / required)))
 
 def score_subtasks(policy: Mapping[str, Any],
                    trusted_results: Mapping[str, Mapping[str, Any]]) -> dict[str, Any]:
