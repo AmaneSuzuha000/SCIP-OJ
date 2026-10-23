@@ -157,6 +157,11 @@ jobs:
         env:
           PROBLEM_ID: ${{ steps.fetch.outputs.problem_id }}
           CODE_PATH: ${{ steps.fetch.outputs.code_path }}
+          SCIP_OJ_SUBMISSION_ID: ${{ inputs.submission_id }}
+          # Domain-separated HMAC; independent key preferred, existing callback
+          # secret retained as migration fallback. Never enter student container.
+          SCIP_OJ_PRIVATE_TEST_KEY: ${{ secrets.GRADE_PRIVATE_TEST_KEY || secrets.GRADE_CALLBACK_SECRET }}
+          SCIP_OJ_REQUIRE_REPLAYABLE_TESTS: "1"
         run: |
           python << 'PYEOF'
           import json, os, sys
