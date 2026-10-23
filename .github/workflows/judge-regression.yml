@@ -28,6 +28,8 @@ jobs:
         run: node tests/test_ie_case_extensions.cjs
       - name: Browser Python worker isolation regressions
         run: node tests/test_python_runtime.cjs
+      - name: Independent course UI DOM and navigation regressions
+        run: node tests/test_workbench_ui.cjs
       - name: Check frontend JavaScript syntax
         run: |
           node --check site/js/app.js
