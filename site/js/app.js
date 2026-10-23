@@ -190,6 +190,16 @@ async function main() {
     }
   });
 
+  // From the course sidebar, never discard unsaved exam code silently.
+  document.getElementById("nav-to-assessment")?.addEventListener("click", async (event) => {
+    if (!activeProblemId) return; // The native anchor scroll works on the course landing.
+    event.preventDefault();
+    if (!(await confirmLeaveIfExamDraft())) return;
+    closeWorkspace();
+    history.replaceState(null, "", "#problem-list-section");
+    document.getElementById("problem-list-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
   // 4. 返回题单按钮
   const btnBack = document.getElementById("btn-back-to-list");
   if (btnBack) {
