@@ -13,6 +13,9 @@
     <a class="identity" href="index.html"><span class="identity-icon">∑</span><span>SCIP-OJ <small>INDUSTRIAL ENGINEERING LAB</small></span></a>
     <nav aria-label="实验室导航">
       <a class="active" href="case-studio.html" aria-current="page">案例实验室</a>
+      <a href="inventory-lab.html">库存仿真</a>
+      <a href="flow-lab.html">生产线仿真</a>
+      <a href="official-examples.html">官方 Examples</a>
       <a href="index.html">算法实训 OJ</a>
       <a href="lab/index.html">JupyterLab</a>
       <a href="doc.html?f=学生指南.md">学习指南</a>
@@ -118,15 +121,16 @@
     </section>
 
     <section id="learning-path" class="learning-path" aria-labelledby="path-title">
-      <div class="section-heading"><div><span class="eyebrow dark">COURSE BLUEPRINT / NOT ALL MODULES LIVE</span><h2 id="path-title">从基础模型到真实工业系统的六级案例路线</h2><p>按模型复杂度递进；只有标记“可运行”的案例已提供在线实验，其余是后续课程建设方向。</p></div></div>
+      <div class="section-heading"><div><span class="eyebrow dark">COURSE CATALOG / THREE RUNNABLE CASES</span><h2 id="path-title">从基础模型到真实工业系统的六级案例路线</h2><p>按模型复杂度递进；只有标记“可运行”的案例已提供在线实验，其余是后续课程建设方向。</p></div></div>
       <div class="case-grid">
         <article class="case-card live"><span>01 · DES 基础</span><h3>检修工位与排队系统</h3><p>实体—事件—资源、重复仿真、共同随机数</p><b>可运行 · 当前案例</b></article>
-        <article class="case-card"><span>02 · MONTE CARLO</span><h3>随机需求与库存策略</h3><p>需求分布、服务水平、缺货风险、补货策略</p><b>课程规划中</b></article>
-        <article class="case-card"><span>03 · MANUFACTURING</span><h3>多工序生产线与瓶颈</h3><p>阻塞、饥饿、WIP、吞吐量、布局配置</p><b>课程规划中</b></article>
+        <article class="case-card live"><span>02 · MONTE CARLO</span><h3>随机需求与库存策略</h3><p>需求分布、服务水平、缺货风险、补货策略</p><b>可运行 · <a href="inventory-lab.html">进入库存实验 ↗</a></b></article>
+        <article class="case-card live"><span>03 · MANUFACTURING</span><h3>双工序生产线与缓冲区</h3><p>有限缓冲、BAS 阻塞、WIP、吞吐量、瓶颈</p><b>可运行 · <a href="flow-lab.html">进入生产线实验 ↗</a></b></article>
         <article class="case-card"><span>04 · LOGISTICS</span><h3>仓储搬运与 AGV 系统</h3><p>物流事件、交通冲突、共享资源、调度规则</p><b>课程规划中</b></article>
         <article class="case-card"><span>05 · RELIABILITY</span><h3>设备故障与预防性维护</h3><p>失效分布、可用度、维修策略、产能损失</p><b>课程规划中</b></article>
         <article class="case-card"><span>06 · CLOSED LOOP</span><h3>动态调度与仿真优化</h3><p>重调度、预测误差、随机事件、反馈决策</p><b>课程规划中</b></article>
       </div>
+      <p class="catalog-reference">参考 <a href="official-examples.html">Gurobi / SCIP / PySCIPOpt 官方 Examples</a>，把优化建模与系统仿真连成一门完整课程。三例均为合成教学数据的本地演示；正式作业仍由 OJ 服务端评测。</p>
     </section>
   </main>
   <footer><strong>SCIP-OJ · IE MODELING & SIMULATION LAB</strong><span>案例仿真是教学实验；正式成绩仍由 OJ 服务端可信评测系统记录。</span></footer>
