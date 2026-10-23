@@ -6,7 +6,7 @@ import unittest
 
 from judge.common import average_scores
 from judge.score_policy_v2 import (
-    PolicyError, normalized_quality, score_subtasks, SCHEMA,
+    PolicyError, normalized_quality, target_referenced_quality, score_subtasks, SCHEMA,
 )
 
 
@@ -142,6 +142,19 @@ class ScoringContractV2Tests(unittest.TestCase):
             normalized_quality(59, 100, 60, "minimize")
         with self.assertRaises(PolicyError):
             normalized_quality(70, 50, 90, "maximize" + "oops")
+
+    def test_unproven_benchmark_target_is_not_misrepresented_as_optimum(self):
+        # For a hard scheduling problem with no proven OPT, a frozen target
+        # 60 (min) is a full-score yardstick, not an impossible-to-beat oracle.
+        self.assertEqual(target_referenced_quality(80, 100, 60, "minimize"), 0.5)
+        self.assertEqual(target_referenced_quality(55, 100, 60, "minimize"), 1)
+        self.assertEqual(target_referenced_quality(100, 100, 60, "minimize"), 0)
+        self.assertEqual(target_referenced_quality(70, 50, 90, "maximize"), 0.5)
+        self.assertEqual(target_referenced_quality(95, 50, 90, "maximize"), 1)
+        with self.assertRaises(PolicyError):
+            target_referenced_quality(90, 100, 100, "minimize")
+        with self.assertRaises(PolicyError):
+            target_referenced_quality(float("nan"), 100, 60, "minimize")
 
     def test_policy_must_be_frozen_and_complete(self):
         pol = policy()
