@@ -9,84 +9,119 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.20/lib/codemirror.min.css" />
   <link rel="stylesheet" href="leetcode.css" />
   <link rel="stylesheet" href="case-entry.css" />
+  <link rel="stylesheet" href="workbench-v3.css" />
 </head>
 <body class="student-page">
   <a class="skip-link" href="#main-content">跳转到主要内容</a>
-  <!-- 顶部主导航栏 -->
-  <header class="navbar">
+
+  <header class="navbar workbench-topbar">
     <div class="navbar-container">
       <div class="brand-section">
-        <a href="index.html" class="brand-logo">
-          <div class="brand-logo-icon" aria-hidden="true">∑</div>
-          <span>SCIP-OJ</span>
+        <a href="index.html" class="brand-logo" aria-label="SCIP-OJ 课程工作台首页">
+          <span class="brand-logo-icon" aria-hidden="true">∑</span>
+          <span class="brand-name">SCIP<span class="brand-name-accent">/</span>LAB</span>
         </a>
-        <span class="brand-tag">IE MODELING LAB</span>
+        <span class="brand-tag">工业工程 · 系统建模与仿真</span>
       </div>
-
-      <nav class="nav-links" aria-label="主导航">
-        <a href="case-studio.html" class="nav-item nav-item-highlight">精品案例实验室</a>
-        <a href="official-examples.html" class="nav-item">官方 Examples</a>
-        <a href="index.html" class="nav-item active" aria-current="page">算法实训 OJ</a>
-        <a href="lab/index.html" target="_blank" rel="noopener noreferrer" class="nav-item" title="全功能 PySCIPOpt 交互式 JupyterLab 环境">JupyterLab</a>
-        <a href="repl/index.html" target="_blank" rel="noopener noreferrer" class="nav-item">REPL</a>
-        <a href="teacher.html" id="teacher-link" class="nav-item nav-item-highlight" hidden><strong>教师控制台</strong></a>
-        <a href="doc.html?f=学生指南.md" class="nav-item">学生指南</a>
-        <a href="doc.html?f=教师指南.md" class="nav-item">教师指南</a>
-        <a href="doc.html?path=README.md" class="nav-item">文档</a>
-      </nav>
-
+      <div class="topbar-route" aria-hidden="true"><span>课程空间</span><span>›</span><strong>学习工作台</strong></div>
       <div class="auth-section" id="auth-area">
-        <span class="user-info" style="color:var(--text-secondary);">加载平台服务中...</span>
+        <span class="user-info" style="color:var(--text-secondary);">正在加载课程服务…</span>
       </div>
     </div>
   </header>
+  <aside class="studio-rail" aria-label="平台导航">
+    <div class="rail-section">
+      <p class="rail-section-label">学习空间</p>
+      <nav class="nav-links" aria-label="课程导航">
+        <a href="index.html" class="nav-item active" aria-current="page"><span class="rail-icon" aria-hidden="true">⌂</span>课程概览</a>
+        <a href="case-studio.html" class="nav-item"><span class="rail-icon" aria-hidden="true">◇</span>仿真案例</a>
+        <a href="index.html#list" class="nav-item"><span class="rail-icon" aria-hidden="true">⌘</span>在线评测</a>
+      </nav>
+    </div>
+    <div class="rail-section">
+      <p class="rail-section-label">案例实验</p>
+      <nav class="nav-links" aria-label="仿真实验导航">
+        <a href="case-studio.html#experiment" class="nav-item"><span class="rail-icon" aria-hidden="true">01</span>检修排队仿真</a>
+        <a href="inventory-lab.html" class="nav-item"><span class="rail-icon" aria-hidden="true">02</span>随机库存仿真</a>
+        <a href="flow-lab.html" class="nav-item"><span class="rail-icon" aria-hidden="true">03</span>生产线仿真</a>
+      </nav>
+    </div>
+    <div class="rail-section">
+      <p class="rail-section-label">建模资源</p>
+      <nav class="nav-links" aria-label="开发与资料">
+        <a href="lab/index.html" target="_blank" rel="noopener noreferrer" class="nav-item"><span class="rail-icon" aria-hidden="true">Py</span>PySCIPOpt 实验室 <span class="rail-external" aria-hidden="true">↗</span></a>
+        <a href="official-examples.html" class="nav-item"><span class="rail-icon" aria-hidden="true">≡</span>官方示例与资料</a>
+        <a href="repl/index.html" target="_blank" rel="noopener noreferrer" class="nav-item"><span class="rail-icon" aria-hidden="true">›_</span>Python REPL <span class="rail-external" aria-hidden="true">↗</span></a>
+      </nav>
+    </div>
+    <div class="rail-section">
+      <p class="rail-section-label">课程服务</p>
+      <nav class="nav-links" aria-label="课程服务">
+        <a href="teacher.html" id="teacher-link" class="nav-item" hidden><span class="rail-icon" aria-hidden="true">▣</span>教师控制台</a>
+        <a href="doc.html?f=学生指南.md" class="nav-item"><span class="rail-icon" aria-hidden="true">?</span>学习指南</a>
+        <a href="doc.html?f=教师指南.md" class="nav-item"><span class="rail-icon" aria-hidden="true">☷</span>教学说明</a>
+      </nav>
+    </div>
+    <div class="rail-bottom"><span class="rail-status-dot" aria-hidden="true"></span><div><strong>实验与考核分轨</strong><small>本地探索不会写入正式成绩</small></div></div>
+  </aside>
 
   <!-- 全局浮动提示容器 -->
   <div id="toast-container"></div>
 
   <!-- 主体工作区 -->
-  <main class="main-content" id="main-content">
-    <section class="hero-panel" aria-labelledby="hero-heading">
-      <div class="hero-copy">
-        <p class="hero-eyebrow">● &nbsp; SCIP-OJ / MODEL · SIMULATE · VALIDATE</p>
-        <h1 id="hero-heading">从工业现场<br>到<span>可验证的系统决策</span></h1>
-        <p class="hero-description">工业工程《系统建模与仿真》课程案例与实验平台。抽象生产与服务系统，运行可重复的随机仿真，解释实验结果；同时保留在线编程、正式判卷和教师成绩中心。</p>
-        <div class="hero-cta">
-          <a class="hero-primary-link" href="case-studio.html">进入案例实验室 <span aria-hidden="true">↗</span></a>
-          <a class="hero-secondary-link" href="#problem-list-section">算法实训与正式作业 ↘</a>
+  <main class="main-content studio-content" id="main-content">
+
+    <section class="studio-intro" aria-labelledby="hero-heading">
+      <div class="studio-intro-main">
+        <p class="studio-overline"><span class="overline-spark" aria-hidden="true"></span> COURSE WORKSPACE <span class="overline-slash">/</span> MODEL · EXPERIMENT · DECIDE</p>
+        <h1 id="hero-heading">把复杂系统，<br><span>变成清晰的决策。</span></h1>
+        <p class="studio-lead">从真实问题的系统抽象开始，用可重复的仿真实验理解随机性，再通过优化建模与独立验证回答“为什么这样决策”。</p>
+        <div class="studio-intro-actions">
+          <a class="studio-action-primary" href="case-studio.html#experiment">进入仿真实验 <span aria-hidden="true">↗</span></a>
+          <a class="studio-action-secondary" href="#problem-list-section">打开在线题库 <span aria-hidden="true">→</span></a>
         </div>
-        <p class="hero-footnote">仿真实验使用合成数据 · 本地实验不计入正式成绩 · 正式评分以服务端记录为准</p>
+        <div class="studio-intro-note"><span aria-hidden="true">◎</span> 当前案例使用合成教学数据 · 正式成绩由服务端独立评测</div>
       </div>
-      <div class="hero-visual" aria-label="建模求解工作流程">
-        <div class="flow-top">LEARNING LOOP / 01—03 <span>•••</span></div>
-        <div class="flow-step"><span>01</span><div><strong>系统抽象</strong><small>实体、事件、资源与边界</small></div><em>↗</em></div>
-        <div class="flow-step"><span>02</span><div><strong>仿真实验</strong><small>随机输入 · 配对试验 · 重复验证</small></div><em>↗</em></div>
-        <div class="flow-step"><span>03</span><div><strong>统计分析与决策</strong><small>指标 · 不确定性 · 工程权衡</small></div><em>✓</em></div>
-        <div class="flow-bottom"><span>SIMULATION + OPTIMIZATION</span><span>READY TO EXPLORE</span></div>
+      <div class="studio-method" aria-label="课程学习闭环">
+        <div class="studio-method-top"><span>课程方法论</span><span>LEARNING LOOP / 04</span></div>
+        <ol class="studio-method-steps">
+          <li><span class="method-index">01</span><div><strong>定义系统</strong><small>实体 · 资源 · 事件 · 约束</small></div><span class="method-mark">↗</span></li>
+          <li><span class="method-index">02</span><div><strong>运行实验</strong><small>随机输入 · 多次重复 · 对照</small></div><span class="method-mark">↗</span></li>
+          <li><span class="method-index">03</span><div><strong>验证模型</strong><small>守恒检查 · 置信区间 · 复现</small></div><span class="method-mark">↗</span></li>
+          <li><span class="method-index">04</span><div><strong>做出决策</strong><small>服务水平 · 效率 · 成本权衡</small></div><span class="method-mark">✓</span></li>
+        </ol>
+        <div class="studio-method-bottom"><span class="method-pin" aria-hidden="true"></span><span>每一步都留下可验证的证据</span></div>
       </div>
     </section>
-    <section class="overview-strip" aria-label="平台功能概览">
-      <div><strong id="overview-problems">—</strong><span>在线算法实训题</span></div>
-      <div><strong>01</strong><span>已开放交互仿真案例</span></div>
-      <div><strong>L1 + L2</strong><span>本地学习与权威计分分离</span></div>
+
+    <section class="studio-kpis" aria-label="学习资源概览">
+      <div class="studio-kpi"><div class="kpi-symbol kpi-symbol-blue" aria-hidden="true">⌘</div><div><strong id="overview-problems">—</strong><span>在线优化建模练习</span></div></div>
+      <div class="studio-kpi"><div class="kpi-symbol kpi-symbol-teal" aria-hidden="true">◇</div><div><strong>03</strong><span>可运行仿真实验</span></div></div>
+      <div class="studio-kpi"><div class="kpi-symbol kpi-symbol-orange" aria-hidden="true">↗</div><div><strong>双轨评测</strong><span>即时练习 / 正式成绩</span></div></div>
     </section>
-    <section class="case-feature" aria-labelledby="case-feature-title">
-      <div class="case-feature-copy">
-        <span class="section-kicker">FEATURED INTERACTIVE CASE / IE-DES-01</span>
-        <h2 id="case-feature-title">检修工位配置与排队仿真</h2>
-        <p>把“应该增加几个工位”变成一次可复现的系统实验。通过离散事件仿真比较等待、吞吐量、资源利用率和统计不确定性，学习如何对工业系统做出可信判断。</p>
-        <div class="case-feature-facts"><span>离散事件仿真</span><span>共同随机数</span><span>30 次配对重复</span><span>95% 近似区间</span></div>
-        <a href="case-studio.html" class="case-feature-link">进入案例并运行实验 <span aria-hidden="true">↗</span></a>
-        <small>合成数据、教学模型 · 当前案例不计入正式成绩</small>
+
+    <section class="studio-case-section" id="case-library" aria-labelledby="case-library-title">
+      <div class="studio-section-heading">
+        <div><p class="studio-section-overline">CURATED EXPERIMENTS / 精品案例</p><h2 id="case-library-title">选择你的第一个实验</h2><p>从服务系统、库存策略到生产系统，逐步掌握随机建模、仿真分析与决策优化。</p></div>
+        <a href="case-studio.html#learning-path" class="studio-subtle-link">查看完整课程路线 <span aria-hidden="true">↗</span></a>
       </div>
-      <div class="case-feature-graphic" aria-hidden="true">
-        <div class="case-feature-label">SYSTEM SNAPSHOT <span>FCFS / M/M/c</span></div>
-        <div class="case-feature-nodes"><span>任务到达</span><b>→</b><span>等待队列</span><b>→</b><span>并行工位</span></div>
-        <div class="case-feature-evidence"><div><strong>模型</strong><span>实体 / 事件 / 资源</span></div><div><strong>实验</strong><span>共同随机数 / 重复</span></div><div><strong>决策</strong><span>等待 / 产出 / 成本</span></div></div>
+      <div class="studio-case-grid">
+        <a class="studio-case-card" href="case-studio.html#experiment">
+          <div class="studio-card-art art-queue" aria-hidden="true"><span class="art-id">IE-DES-01</span><div class="queue-diagram"><i></i><i></i><i></i><b>→</b><span>FCFS</span><b>→</b><em>▣</em></div></div>
+          <div class="studio-card-body"><div class="studio-card-meta"><span>离散事件仿真</span><span class="studio-ready"><i></i>可运行</span></div><h3>检修工位与排队系统</h3><p>增加工位真的值得吗？比较等待时间、产出、利用率与配对实验不确定性。</p><div class="studio-card-bottom"><span>排队 · CRN · 置信区间</span><strong aria-hidden="true">↗</strong></div></div>
+        </a>
+        <a class="studio-case-card" href="inventory-lab.html">
+          <div class="studio-card-art art-inventory" aria-hidden="true"><span class="art-id">IE-MC-02</span><div class="inventory-diagram"><span>需求</span><i></i><i></i><i></i><i></i><b>补货策略</b></div></div>
+          <div class="studio-card-body"><div class="studio-card-meta"><span>Monte Carlo</span><span class="studio-ready"><i></i>可运行</span></div><h3>随机库存与服务水平</h3><p>库存该备多少？探索随机需求、缺货风险、运营成本和策略的取舍。</p><div class="studio-card-bottom"><span>随机需求 · 成本 · 服务率</span><strong aria-hidden="true">↗</strong></div></div>
+        </a>
+        <a class="studio-case-card" href="flow-lab.html">
+          <div class="studio-card-art art-flow" aria-hidden="true"><span class="art-id">IE-DES-03</span><div class="flow-diagram"><i>M1</i><b>→</b><em>BUFFER</em><b>→</b><i>M2</i></div></div>
+          <div class="studio-card-body"><div class="studio-card-meta"><span>制造系统仿真</span><span class="studio-ready"><i></i>可运行</span></div><h3>双工序生产线与缓冲</h3><p>缓冲容量如何影响吞吐？观察瓶颈、阻塞、在制品与生产线节拍。</p><div class="studio-card-bottom"><span>生产线 · 阻塞 · WIP</span><strong aria-hidden="true">↗</strong></div></div>
+        </a>
       </div>
     </section>
     <!-- 1. 题单大厅区域 -->
-    <section id="problem-list-section">
+    <section id="problem-list-section" class="studio-assessment-section">
       <div class="course-banner" id="current-course-banner">
         <div class="course-icon" aria-hidden="true">◎</div>
         <div class="course-title-group">
@@ -239,7 +274,7 @@
   </main>
 
   <!-- 底部信息 -->
-  <footer>
+  <footer class="studio-footer">
     <div class="footer-container">
       <div>
         <strong>SCIP-OJ</strong> · 工业工程系统建模与仿真精品案例平台 · 正式分基于服务端自动化评测入库
