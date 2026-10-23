@@ -24,12 +24,17 @@ jobs:
         run: node tests/test_exam_integrity.cjs
       - name: Industrial engineering simulation reproducibility tests
         run: node tests/test_simulation_core.cjs
+      - name: Inventory, flow-line, Erlang-C and official examples regressions
+        run: node tests/test_ie_case_extensions.cjs
       - name: Browser Python worker isolation regressions
         run: node tests/test_python_runtime.cjs
       - name: Check frontend JavaScript syntax
         run: |
           node --check site/js/app.js
           node --check site/js/simulation-core.js
+          node --check site/js/inventory-core.js
+          node --check site/js/flow-core.js
+          node --check site/js/teaching-labs.js
           node --check site/js/case-studio.js
           node --check site/js/python_runtime.js
           node --check site/js/teacher.js
@@ -64,6 +69,9 @@ jobs:
               assert report["sandbox"] == "isolated_container"
               assert report["test_set"] == "server_private_v2"
           PY
+      - name: Execute original facility-location PySCIPOpt Notebook against independent oracle
+        run: |
+          docker run --rm --network none -v "$PWD/content:/course:ro" --entrypoint python scip-oj-student:ci -c 'import json; d=json.load(open("/course/03_IE_Facility_Location_PySCIPOpt.ipynb")); exec("\n\n".join("".join(c["source"]) for c in d["cells"] if c["cell_type"]=="code"))'
       - name: Adversarial execution regression
         run: |
           python - <<'PY'
