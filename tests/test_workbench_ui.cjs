@@ -70,4 +70,6 @@ for (const filename of ["case-studio.html", "inventory-lab.html", "flow-lab.html
   assert.ok(page.includes('href="index.html#problem-list-section"'), "Broken OJ route: " + filename);
 }
 
+assert.match(html, /id="grading-rules"/, "Missing transparent scoring explainer");
+assert.match(html, /服务端使用隔离的真实求解器/, "Official scoring must be distinguished from practice");
 console.log("Independent SCIP/LAB course UI contract: PASS");
