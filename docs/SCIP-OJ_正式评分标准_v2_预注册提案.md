@@ -65,9 +65,9 @@ q_i =
 **A2：冻结达标目标参考（frozen_target）**。DFJSP、动态排程、检修仿真优化等 NP-hard/大规模问题可能没有可证明的最优值。允许老师在发布作业前，对每个测试实例冻结一个可重现实验得到的 **full-score target**（即满分目标，*不是*真实最优）。计算为：
 
 \[
-q_i^{\\mathrm{target}}=\\mathrm{clip}\\left(
-\\frac{z_{\\mathrm{base}}-z_i}{z_{\\mathrm{base}}-z_{\\mathrm{target}}},0,1
-\\right)
+q_i^{\mathrm{target}}=\mathrm{clip}\left(
+\frac{z_{\mathrm{base}}-z_i}{z_{\mathrm{base}}-z_{\mathrm{target}}},0,1
+\right)
 \]
 
 上式对应最小化；最大化把分子分母差值顺序反转。基线必须严格差于目标。举例：最小化问题基线 100、教师目标 60，学生算到 80 得 0.5，学生算到 55 则得 1，**学生超过目标是正常现象，绝不可把它报成推翻已证明最优值**。
