@@ -24,9 +24,16 @@ jobs:
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
+      - name: Assemble preview exactly like the Pages web shell
+        run: |
+          mkdir -p ui-preview/problems ui-preview/docs
+          cp -r site/* ui-preview/
+          cp -r problems/* ui-preview/problems/
+          cp -r docs/* ui-preview/docs/
+          cp README.md ui-preview/README.md
       - name: Start read-only course website preview
         run: |
-          python3 -m http.server 8765 --bind 127.0.0.1 --directory site > /tmp/scip-ui-preview.log 2>&1 &
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory ui-preview > /tmp/scip-ui-preview.log 2>&1 &
           for attempt in $(seq 1 20); do
             if curl -fsS http://127.0.0.1:8765/index.html > /dev/null; then
               exit 0
