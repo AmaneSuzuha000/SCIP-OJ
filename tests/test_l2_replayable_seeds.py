@@ -51,6 +51,30 @@ class TestReplayablePrivateInstances(unittest.TestCase):
         self.assertEqual(report["status"], "system_error")
         self.assertIsNone(report["score"])
 
+    def test_same_submission_regrade_uses_identical_hidden_inputs(self):
+        env = {
+            "SCIP_OJ_SUBMISSION_ID": "immutable-submission-id",
+            "SCIP_OJ_PRIVATE_TEST_KEY": "replay-only-server-secret",
+            "SCIP_OJ_REQUIRE_REPLAYABLE_TESTS": "1",
+        }
+        with patch.dict(os.environ, env), \
+                patch("judge.runner_l2_isolated.subprocess.run") as image_check, \
+                patch("judge.runner_l2_isolated._run_isolated") as sandbox_run:
+            image_check.return_value.returncode = 0
+            sandbox_run.return_value = (None, "synthetic student failure")
+            result1 = grade_file("problems/P001_knapsack/template.py", "P001",
+                                 {"n_instances": 2})
+            first = [call.args[1] for call in sandbox_run.call_args_list]
+            sandbox_run.reset_mock()
+            result2 = grade_file("problems/P001_knapsack/template.py", "P001",
+                                 {"n_instances": 2})
+            second = [call.args[1] for call in sandbox_run.call_args_list]
+        self.assertEqual(first, second)
+        self.assertEqual(len(first), 2)
+        self.assertEqual(result1["score"], result2["score"])
+        self.assertEqual(result1["test_protocol"], PRIVATE_SEED_PROTOCOL)
+        self.assertNotIn("seed", str(result1))
+
     def test_protocol_is_explicitly_versioned(self):
         self.assertEqual(PRIVATE_SEED_PROTOCOL, "hmac_sha256_submission_v1")
 
