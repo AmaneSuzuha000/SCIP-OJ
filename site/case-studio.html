@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="工业工程系统建模与仿真精品案例实验室：基于随机离散事件仿真的检修工位配置实验，含共同随机数、重复实验与置信区间。">
+  <title>工业工程仿真实验室 · SCIP-OJ</title>
+  <link rel="stylesheet" href="case-studio.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳转到实验内容</a>
+  <header class="site-header">
+    <a class="identity" href="index.html"><span class="identity-icon">∑</span><span>SCIP-OJ <small>INDUSTRIAL ENGINEERING LAB</small></span></a>
+    <nav aria-label="实验室导航">
+      <a class="active" href="case-studio.html" aria-current="page">案例实验室</a>
+      <a href="index.html">算法实训 OJ</a>
+      <a href="lab/index.html">JupyterLab</a>
+      <a href="doc.html?f=学生指南.md">学习指南</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="hero-content">
+        <p class="eyebrow">CASE LAB / 01 · DISCRETE-EVENT SIMULATION</p>
+        <h1>让一个工业问题，<br><span>成为可验证的仿真实验。</span></h1>
+        <p class="lead">从系统边界、随机输入、事件逻辑到重复实验与方案比较。你改变的不只是参数，还要能解释结论为什么可信。</p>
+        <div class="hero-buttons">
+          <a class="primary-link" href="#experiment">开始交互实验 <span aria-hidden="true">↘</span></a>
+          <a class="secondary-link" href="#learning-path">查看课程案例体系</a>
+        </div>
+        <p class="scope-note">教学演示采用合成数据。实验结果仅在本地计算，<strong>不是正式课程成绩</strong>。</p>
+      </div>
+      <div class="hero-card" aria-label="系统建模与仿真实验流程">
+        <div class="hero-card-title">EXPERIMENT PROTOCOL <span>01 / 05</span></div>
+        <ol>
+          <li><b>系统抽象</b><span>实体 · 资源 · 队列 · 事件</span></li>
+          <li><b>随机输入</b><span>到达过程 · 服务时间</span></li>
+          <li><b>仿真执行</b><span>FCFS · 多服务台</span></li>
+          <li><b>统计分析</b><span>独立重复 · 95% 近似区间</span></li>
+          <li><b>工程决策</b><span>成本、等待与利用率权衡</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="overview" aria-label="课程特点">
+      <div><strong>可重复</strong><span>固定种子与实验设置</span></div>
+      <div><strong>可比较</strong><span>配对共同随机数</span></div>
+      <div><strong>可解释</strong><span>模型假设与置信区间</span></div>
+    </section>
+
+    <section class="section-heading" id="experiment">
+      <div><span class="eyebrow dark">FLAGSHIP CASE / IE-DES-01</span><h2>检修工位配置：排队到底发生在哪里？</h2>
+        <p>车辆检修作业陆续到达工位。增加工位可以缩短等待，但也会降低资源利用率、增加投入。如何设计公平的仿真实验比较两种配置？</p></div>
+      <span class="status-label">可运行 · 教学案例</span>
+    </section>
+
+    <div class="experiment-grid">
+      <section class="panel controls" aria-labelledby="controls-title">
+        <div class="panel-top"><span>01 / 实验设置</span><h3 id="controls-title">定义系统与两组方案</h3></div>
+        <form id="experiment-form">
+          <div class="field-grid">
+            <label>平均到达间隔 <span>分钟 / 件</span><input id="arrivalMean" type="number" min="1" max="120" step="0.5" value="8" required></label>
+            <label>平均检修工时 <span>分钟 / 件</span><input id="serviceMean" type="number" min="1" max="180" step="0.5" value="12" required></label>
+            <label>方案 A 工位数 <span>基准</span><input id="serversA" type="number" min="1" max="16" step="1" value="2" required></label>
+            <label>方案 B 工位数 <span>备选</span><input id="serversB" type="number" min="1" max="16" step="1" value="3" required></label>
+            <label>仿真总时长 <span>分钟</span><input id="horizon" type="number" min="120" max="10080" step="1" value="480" required></label>
+            <label>预热时长 <span>分钟</span><input id="warmup" type="number" min="0" max="9999" step="1" value="60" required></label>
+            <label>独立重复 <span>次</span><input id="replications" type="number" min="5" max="100" step="1" value="30" required></label>
+            <label>随机种子 <span>复现实验</span><input id="seed" type="number" min="1" max="4294967295" step="1" value="20261023" required></label>
+          </div>
+          <div class="form-actions"><button class="primary-button" type="submit">运行配对仿真实验 →</button><button type="button" id="reset-button">恢复教学示例</button></div>
+        </form>
+        <p class="quiet">相同重复次数内，A/B 共用同一批到达与服务时间样本；方案之间只改变工位数量。</p>
+        <div id="form-error" class="error" role="alert" hidden></div>
+      </section>
+
+      <section class="panel results" aria-labelledby="results-title">
+        <div class="panel-top"><span>02 / 输出分析</span><h3 id="results-title">比较结果</h3></div>
+        <p id="run-status" class="run-status" role="status" aria-live="polite">等待运行</p>
+        <div class="metrics">
+          <div class="metric"><span>平均排队等待 · A</span><strong id="wait-a">—</strong><small>分钟 / 件</small></div>
+          <div class="metric"><span>平均排队等待 · B</span><strong id="wait-b">—</strong><small>分钟 / 件</small></div>
+          <div class="metric emphasis"><span>B − A 等待差</span><strong id="wait-diff">—</strong><small>分钟 / 件；负值代表改善</small></div>
+        </div>
+        <div class="chart-section"><div class="chart-heading"><h4>平均等待时间</h4><span>越短越好</span></div>
+          <div class="bar-row"><span>方案 A</span><div class="bar-track"><i id="bar-a"></i></div><b id="bar-label-a">—</b></div>
+          <div class="bar-row"><span>方案 B</span><div class="bar-track"><i id="bar-b" class="alternative"></i></div><b id="bar-label-b">—</b></div>
+        </div>
+        <div class="interval"><span>配对差值的近似 95% 置信区间</span><strong id="ci-value">—</strong><small>按重复实验间差值计算；采用正态近似，不代表单次运行结果的区间。</small></div>
+        <table><caption>重复实验均值</caption><thead><tr><th scope="col">指标</th><th scope="col">方案 A</th><th scope="col">方案 B</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">完工率（件/小时）</th><td id="throughput-a">—</td><td id="throughput-b">—</td></tr>
+            <tr><th scope="row">工位利用率</th><td id="util-a">—</td><td id="util-b">—</td></tr>
+            <tr><th scope="row">平均队列长度（件）</th><td id="queue-a">—</td><td id="queue-b">—</td></tr>
+            <tr><th scope="row">平均在制品（件）</th><td id="wip-a">—</td><td id="wip-b">—</td></tr>
+          </tbody>
+        </table>
+        <div id="stability-note" class="caveat" role="note"></div>
+        <div class="form-actions"><button type="button" id="export-button" disabled>导出实验数据 CSV</button><span class="quiet">本地计算，不上传代码或实验数据</span></div>
+      </section>
+    </div>
+
+    <section class="methodology" aria-labelledby="method-title">
+      <div class="section-heading"><div><span class="eyebrow dark">MODEL VALIDITY / TEACHING NOTES</span><h2 id="method-title">一份像样的仿真实验报告，应回答什么？</h2></div></div>
+      <div class="method-grid">
+        <article class="method-card"><span>01 / 建模边界</span><h3>先定义系统</h3><p>实体是检修任务，资源是并行工位，队列规则为先到先服务（FCFS）。不包含运输、设备故障、工人技能、优先级或跨线死锁。</p></article>
+        <article class="method-card"><span>02 / 输入与假设</span><h3>辨认随机性</h3><p>泊松到达对应指数到达间隔；检修时长独立且服从指数分布。这是教学假设，不应未经验证就代入真实检修现场。</p></article>
+        <article class="method-card"><span>03 / 实验设计</span><h3>让比较公平</h3><p>每次重复生成一套随机到达和服务工时，A/B 两方案复用同一套工作量（共同随机数），再对 30 个差值估计置信区间。</p></article>
+        <article class="method-card"><span>04 / 验证与决策</span><h3>识别结论边界</h3><p>比较等待、工位利用率、产出与在制品；评估增加工位的成本。区分有限时域仿真与长期稳态，不将单一随机种子的结果当规律。</p></article>
+      </div>
+      <div class="questions"><h3>课堂探究题</h3><ol>
+        <li>保持到达过程不变，将方案 B 从 3 个工位改为 4 个工位，边际等待收益如何变化？</li>
+        <li>如果平均检修工时增加 25%，基准方案可能发生什么？理论负荷率能否解释？</li>
+        <li>将重复次数由 5 提高到 50，区间宽度如何变化？为什么不应只比较两次模拟结果？</li>
+        <li>真实转向架检修存在运输、起重和共享工人时，本模型可能低估哪些等待或死锁风险？</li>
+      </ol></div>
+    </section>
+
+    <section id="learning-path" class="learning-path" aria-labelledby="path-title">
+      <div class="section-heading"><div><span class="eyebrow dark">COURSE BLUEPRINT / NOT ALL MODULES LIVE</span><h2 id="path-title">从基础模型到真实工业系统的六级案例路线</h2><p>按模型复杂度递进；只有标记“可运行”的案例已提供在线实验，其余是后续课程建设方向。</p></div></div>
+      <div class="case-grid">
+        <article class="case-card live"><span>01 · DES 基础</span><h3>检修工位与排队系统</h3><p>实体—事件—资源、重复仿真、共同随机数</p><b>可运行 · 当前案例</b></article>
+        <article class="case-card"><span>02 · MONTE CARLO</span><h3>随机需求与库存策略</h3><p>需求分布、服务水平、缺货风险、补货策略</p><b>课程规划中</b></article>
+        <article class="case-card"><span>03 · MANUFACTURING</span><h3>多工序生产线与瓶颈</h3><p>阻塞、饥饿、WIP、吞吐量、布局配置</p><b>课程规划中</b></article>
+        <article class="case-card"><span>04 · LOGISTICS</span><h3>仓储搬运与 AGV 系统</h3><p>物流事件、交通冲突、共享资源、调度规则</p><b>课程规划中</b></article>
+        <article class="case-card"><span>05 · RELIABILITY</span><h3>设备故障与预防性维护</h3><p>失效分布、可用度、维修策略、产能损失</p><b>课程规划中</b></article>
+        <article class="case-card"><span>06 · CLOSED LOOP</span><h3>动态调度与仿真优化</h3><p>重调度、预测误差、随机事件、反馈决策</p><b>课程规划中</b></article>
+      </div>
+    </section>
+  </main>
+  <footer><strong>SCIP-OJ · IE MODELING & SIMULATION LAB</strong><span>案例仿真是教学实验；正式成绩仍由 OJ 服务端可信评测系统记录。</span></footer>
+  <script src="js/simulation-core.js"></script>
+  <script src="js/case-studio.js"></script>
+</body>
+</html>
