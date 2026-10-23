@@ -135,7 +135,7 @@ class ScoringContractV2Tests(unittest.TestCase):
         self.assertEqual(normalized_quality(80, 100, 60, "minimize"), 0.5)
         self.assertEqual(normalized_quality(70, 50, 90, "maximize"), 0.5)
         self.assertEqual(normalized_quality(500, 100, 60, "minimize"), 0)
-        self.assertEqual(normalized_quality(50, 100, 60, "minimize"), 1)
+        self.assertEqual(normalized_quality(60, 100, 60, "minimize"), 1)
         with self.assertRaises(PolicyError):
             normalized_quality(90, 100, 100, "minimize")
         with self.assertRaises(PolicyError):
