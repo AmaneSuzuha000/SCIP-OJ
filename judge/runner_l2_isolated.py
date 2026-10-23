@@ -6,6 +6,8 @@ isolation is defense-in-depth, not a guarantee against all kernel escapes.
 """
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import os
 import resource
@@ -25,6 +27,21 @@ IMAGE = os.environ.get("SCIP_OJ_SANDBOX_IMAGE", "scip-oj-student:ci")
 RESULT_PREFIX = "SCIP_OJ_RESULT="
 ERROR_PREFIX = "SCIP_OJ_ERROR="
 OUTPUT_LIMIT = 1 << 20
+PRIVATE_SEED_PROTOCOL = "hmac_sha256_submission_v1"
+
+
+def _derive_private_seed(problem_id: str, submission_id: str, index: int, secret: str) -> int:
+    """Deterministic private instance, bound to a submission and secret server key.
+
+    Independent grading attempts for the same submission intentionally reuse
+    hidden test instances. Students never receive the key or the private seed.
+    """
+    if not problem_id or not submission_id or index < 0 or not secret:
+        raise ValueError("Incomplete private-test seed context")
+    payload = f"scip-oj:l2:{PRIVATE_SEED_PROTOCOL}:{problem_id}:{submission_id}:{index}".encode()
+    digest = hmac.new(secret.encode(), payload, hashlib.sha256).digest()
+    return int.from_bytes(digest[:8], "big")
+
 
 
 def _limit_cli_output() -> None:
@@ -111,6 +128,13 @@ def grade_file(path: Path, problem_id: str | None = None,
         if "n_instances" in assignment_meta:
             meta["n_instances_l1"] = int(assignment_meta["n_instances"])
     n = int(meta.get("n_instances_l1", 3))
+    submission_id = os.environ.get("SCIP_OJ_SUBMISSION_ID", "").strip()
+    private_key = os.environ.get("SCIP_OJ_PRIVATE_TEST_KEY", "")
+    replayable = bool(submission_id and private_key)
+    if os.environ.get("SCIP_OJ_REQUIRE_REPLAYABLE_TESTS") == "1" and not replayable:
+        return {"ok": False, "status": "system_error",
+                "error": "正式评测缺少私有测试重放密钥或提交标识",
+                "score": None, "passed": False, "path": str(path), "layer": "L2"}
     if not 1 <= n <= 20:
         return {"ok": False, "status": "system_error", "error": "非法测试实例数量",
                 "score": None, "passed": False, "path": str(path), "layer": "L2"}
@@ -124,10 +148,13 @@ def grade_file(path: Path, problem_id: str | None = None,
         if inspected.returncode != 0:
             raise SystemJudgeError("可信评测容器未构建完成")
         reports = []
-        for _ in range(n):
-            # Cryptographically unpredictable per-attempt L2 tests: never use
-            # published meta.seed_base or send the oracle to the container.
-            inst = gen(secrets.randbits(64))
+        for index in range(n):
+            # Hidden tests are unpredictable without the server secret, yet
+            # reproducible on appeal and across regrades of this submission.
+            # Local ad-hoc runs remain random unless explicitly configured.
+            seed = (_derive_private_seed(pid, submission_id, index, private_key)
+                    if replayable else secrets.randbits(64))
+            inst = gen(seed)
             public = {key: value for key, value in inst.items()
                       if key != "optimal_value"}
             result, error = _run_isolated(path, public, int(meta.get("time_limit_sec", 30)))
@@ -146,6 +173,8 @@ def grade_file(path: Path, problem_id: str | None = None,
         aggregate.update({"ok": True, "status": "done", "problem_id": pid,
                           "path": str(path), "layer": "L2",
                           "test_set": "server_private_v2",
+                          "test_protocol": PRIVATE_SEED_PROTOCOL if replayable else "ephemeral_random",
+                          "judge_commit": os.environ.get("GITHUB_SHA") or None,
                           "sandbox": "isolated_container"})
         return aggregate
     except (SystemJudgeError, OSError, subprocess.SubprocessError) as exc:
