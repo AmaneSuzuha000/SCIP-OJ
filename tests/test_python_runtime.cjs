@@ -5,7 +5,8 @@ const vm = require("node:vm");
 
 const source = fs.readFileSync("site/js/python_runtime.js", "utf8");
 assert(!source.includes("inThreadPyodide"), "Student code must not execute on the UI thread");
-assert(!source.includes("py.runPython("), "The practice runtime must never use synchronous main-thread execution");
+const executable = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+assert(!executable.includes("py.runPython("), "The practice runtime must never use synchronous main-thread execution");
 
 async function check() {
   const created = [];
