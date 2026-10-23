@@ -238,3 +238,26 @@ body.student-page{
 @media(prefers-reduced-motion:reduce){
  .student-page .studio-case-card,.student-page .studio-rail .nav-item{transition:none}
 }
+/* Transparent, learnable scoring stages without coupling to a future policy version. */
+.student-page .studio-grade-guide{
+  border:1px solid #dae7e2;border-radius:12px;background:#fff;
+  margin:15px 0 20px;color:#243b3d;overflow:hidden;
+}
+.student-page .studio-grade-guide summary{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;cursor:pointer;
+  padding:14px 18px;list-style:none;user-select:none;
+}
+.student-page .studio-grade-guide summary::-webkit-details-marker{display:none}
+.student-page .studio-grade-guide summary>span:first-child{display:flex;flex-direction:column;gap:4px}
+.student-page .studio-grade-guide summary strong{font-size:.86rem;font-weight:750}
+.student-page .studio-grade-guide summary small{font-size:.73rem;color:#7a8b89}
+.student-page .studio-grade-guide summary>span:last-child{color:#168674;font-size:1.35rem}
+.student-page .studio-grade-guide[open] summary>span:last-child{transform:rotate(45deg)}
+.student-page .studio-grade-guide summary:hover{background:#f1f7f4}
+.student-page .studio-grade-guide summary:focus-visible{outline:2px solid #168674;outline-offset:-3px}
+.student-page .studio-grade-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;padding:0 15px 12px}
+.student-page .studio-grade-grid>div{background:#f5f8f6;border:1px solid #e3ece8;border-radius:9px;padding:13px}
+.student-page .studio-grade-grid b{font-size:.76rem;color:#21655f}
+.student-page .studio-grade-grid p{color:#687e7c;font-size:.75rem;line-height:1.65;margin:7px 0 0}
+.student-page .studio-grade-note{margin:0;border-top:1px solid #e4eeea;padding:10px 16px;color:#798b89;font-size:.72rem;line-height:1.6}
+@media(max-width:900px){.student-page .studio-grade-grid{grid-template-columns:1fr}}
