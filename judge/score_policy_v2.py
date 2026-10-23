@@ -86,6 +86,7 @@ def target_referenced_quality(objective: float, baseline: float,
         raise PolicyError("full-score target must be strictly better than baseline")
     return float(max(Decimal(0), min(Decimal(1), improvement / required)))
 
+
 def score_subtasks(policy: Mapping[str, Any],
                    trusted_results: Mapping[str, Mapping[str, Any]]) -> dict[str, Any]:
     """Aggregate a frozen teacher policy and trusted host-generated case verdicts.
@@ -99,6 +100,13 @@ def score_subtasks(policy: Mapping[str, Any],
     mode = policy.get("mode")
     if mode not in {"exact", "approximate"}:
         raise PolicyError("mode must be exact or approximate")
+    # Frozen reference provenance matters: an unproven benchmark target is
+    # a course attainment yardstick, never a claimed global optimum.
+    reference_kind = policy.get("referenceKind")
+    if mode == "approximate" and reference_kind not in {"certified_optimum", "frozen_target"}:
+        raise PolicyError("approximate policy must fix referenceKind")
+    if mode == "exact" and reference_kind is not None:
+        raise PolicyError("exact policy must not specify referenceKind")
     pass_score = policy.get("passScore")
     if type(pass_score) is not int or not 0 <= pass_score <= 100:
         raise PolicyError("passScore must be integer 0..100")
@@ -188,6 +196,7 @@ def score_subtasks(policy: Mapping[str, Any],
         "allCasesAccepted": all_accepted,
         "passScore": pass_score,
         "mode": mode,
+        "referenceKind": reference_kind,
         "rounding": "ROUND_HALF_UP_ONCE",
         "aggregation": "weighted_minimum_per_subtask",
         "groups": group_scores,
