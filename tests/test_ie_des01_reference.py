@@ -13,24 +13,9 @@ from judge.ie_des01_reference import (
 class IEDES01ReferenceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        script = r"""
-const core = require("./site/js/simulation-core.js");
-const params = {
-  arrivalMean: 8, serviceMean: 12, serversA: 2, serversB: 3,
-  horizon: 480, warmup: 60, replications: 30, seed: 20261023
-};
-const result = core.compare(params);
-const report = {
-  schemaVersion: "ie-des01-experiment/1", caseId: "IE-DES-01",
-  params: result.params, summary: {
-    baseline: result.baseline, alternative: result.alternative,
-    waitDiffCI: result.waitDiffCI
-  }, runs: result.runs
-};
-process.stdout.write(JSON.stringify(report));
-"""
         process = subprocess.run(
-            ["node", "-e", script], check=True, capture_output=True, text=True
+            ["node", "tests/test_ie_des01_export.cjs", "--emit-json"],
+            check=True, capture_output=True, text=True,
         )
         cls.document = json.loads(process.stdout)
 
