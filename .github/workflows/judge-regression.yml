@@ -24,11 +24,14 @@ jobs:
         run: node tests/test_exam_integrity.cjs
       - name: Industrial engineering simulation reproducibility tests
         run: node tests/test_simulation_core.cjs
+      - name: Browser Python worker isolation regressions
+        run: node tests/test_python_runtime.cjs
       - name: Check frontend JavaScript syntax
         run: |
           node --check site/js/app.js
           node --check site/js/simulation-core.js
           node --check site/js/case-studio.js
+          node --check site/js/python_runtime.js
           node --check site/js/teacher.js
           node --check site/js/platform.js
           node --check site/js/editor.js
