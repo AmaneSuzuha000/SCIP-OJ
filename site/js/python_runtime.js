@@ -1,235 +1,153 @@
 /**
- * python_runtime.js
- * In-browser execution engine for student Python code in SCIP-OJ.
- * Runs code via WebAssembly (Pyodide Worker with main-thread fallback).
+ * SCIP-OJ L1 Python runtime.
+ *
+ * Student code MUST run in a dedicated Worker, never synchronously on the UI
+ * thread. A Promise timeout cannot interrupt py.runPython() on the main thread.
+ * L1 is untrusted/local practice; authoritative grades use isolated L2.
  */
 (function () {
+  "use strict";
+
+  // Capture currentScript during evaluation. It is usually null later when
+  // the student clicks Run. The Worker lives beside this file under /js/.
+  const scriptUrl = document.currentScript?.src ||
+    new URL("js/python_runtime.js", window.location.href).href;
+  const workerScriptUrl = new URL("pyodide_worker.js", scriptUrl).href;
+
   let worker = null;
   let workerReady = false;
-  let workerInitPromise = null;
-  let reqCounter = 0;
-  const pendingRequests = new Map();
+  let initPromise = null;
+  let requestCounter = 0;
+  const pending = new Map();
 
-  // Fallback in-thread Pyodide state
-  let inThreadPyodide = null;
-  let inThreadInitPromise = null;
-  let inThreadHarnessReady = false;
-
-  const PYODIDE_BASE_URLS = [
-    "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/",
-    "https://fastly.jsdelivr.net/pyodide/v0.26.4/full/"
-  ];
-
-  function getWorkerScriptUrl() {
-    return new URL("pyodide_worker.js", document.currentScript ? document.currentScript.src : window.location.href).href;
+  function failWorker(error) {
+    const reason = error instanceof Error ? error : new Error(String(error));
+    const old = worker;
+    worker = null;
+    workerReady = false;
+    initPromise = null;
+    if (old) {
+      try { old.terminate(); } catch (_) { /* worker already gone */ }
+    }
+    for (const callback of pending.values()) callback.reject(reason);
+    pending.clear();
   }
 
   function initWorker(onProgress) {
-    if (workerReady && worker) return Promise.resolve();
-    if (workerInitPromise) return workerInitPromise;
+    if (worker && workerReady) return Promise.resolve();
+    if (initPromise) return initPromise;
 
-    workerInitPromise = new Promise((resolve, reject) => {
+    initPromise = new Promise(function (resolve, reject) {
+      let initTimer = null;
+      let settled = false;
+      function rejectInit(error) {
+        if (settled) return;
+        settled = true;
+        if (initTimer) clearTimeout(initTimer);
+        failWorker(error);
+        reject(error);
+      }
+
       try {
-        if (onProgress) onProgress("正在启动 Web Worker Python 运行沙箱...");
-        const workerUrl = getWorkerScriptUrl();
-        worker = new Worker(workerUrl);
-
-        worker.onmessage = function (e) {
-          const { type, id, resultJson, error } = e.data || {};
-          if (type === "init_ok") {
+        if (onProgress) onProgress("正在启动隔离的 Python Web Worker...");
+        const created = new Worker(workerScriptUrl);
+        worker = created;
+        created.onmessage = function (event) {
+          if (worker !== created) return;
+          const data = event.data || {};
+          if (data.type === "init_ok") {
+            if (settled) return;
+            settled = true;
+            if (initTimer) clearTimeout(initTimer);
             workerReady = true;
             if (onProgress) onProgress("Python WASM 运行环境就绪");
             resolve();
             return;
           }
-          if (type === "init_error") {
-            workerReady = false;
-            reject(new Error(error || "Worker init error"));
+          if (data.type === "init_error") {
+            rejectInit(new Error(data.error || "Python Worker 初始化失败"));
             return;
           }
-          if (type === "solve_ok" || type === "solve_error") {
-            const cb = pendingRequests.get(id);
-            if (cb) {
-              pendingRequests.delete(id);
-              if (type === "solve_ok") {
-                try {
-                  cb.resolve(JSON.parse(resultJson));
-                } catch (pe) {
-                  cb.reject(new Error("JSON 解析返回值失败: " + pe.message));
-                }
-              } else {
-                cb.reject(new Error(error || "运行错误"));
-              }
+          const callback = pending.get(data.id);
+          if (!callback) return;
+          if (data.type === "solve_ok") {
+            try {
+              callback.resolve(JSON.parse(data.resultJson));
+            } catch (error) {
+              callback.reject(new Error("Python 返回值 JSON 解析失败: " + error.message));
             }
+          } else if (data.type === "solve_error") {
+            const message = String(data.error || "Python 运行失败");
+            callback.reject(new Error(/No module named [\u0027\u0022]?pyscipopt/i.test(message)
+              ? "当前 L1 Pyodide 不含 PySCIPOpt；请到顶部 JupyterLab 使用完整的 PySCIPOpt 环境。本地运行未计入正式成绩。"
+              : message));
           }
         };
-
-        worker.onerror = function (err) {
-          console.warn("Worker error:", err);
-          if (!workerReady) {
-            reject(new Error("Web Worker 创建或运行异常"));
-          }
+        created.onerror = function () {
+          const error = new Error("Python Worker 运行异常，请刷新页面重试");
+          if (!workerReady) rejectInit(error);
+          else failWorker(error);
         };
-
-        if (onProgress) onProgress("正在下载并初始化 Python WASM 解释器（首次约 6MB）...");
-        worker.postMessage({ type: "init" });
-      } catch (err) {
-        reject(err);
+        initTimer = setTimeout(function () {
+          rejectInit(new Error("Python Worker 初始化超过 120 秒，请检查网络后重试"));
+        }, 120000);
+        if (onProgress) onProgress("正在加载浏览器 Python WASM（首次需要下载运行时）...");
+        created.postMessage({ type: "init" });
+      } catch (error) {
+        rejectInit(error);
       }
+    }).catch(function (error) {
+      initPromise = null;
+      throw error;
     });
-
-    return workerInitPromise;
-  }
-
-  function loadScript(url) {
-    return new Promise((resolve, reject) => {
-      if (document.querySelector(`script[src="${url}"]`)) return resolve();
-      const s = document.createElement("script");
-      s.src = url;
-      s.onload = () => resolve();
-      s.onerror = (e) => reject(new Error("脚本加载失败: " + url));
-      document.head.appendChild(s);
-    });
-  }
-
-  async function initInThread(onProgress) {
-    if (inThreadPyodide) return inThreadPyodide;
-    if (inThreadInitPromise) return inThreadInitPromise;
-
-    inThreadInitPromise = (async () => {
-      let lastErr = null;
-      for (const baseUrl of PYODIDE_BASE_URLS) {
-        try {
-          if (onProgress) onProgress("正在通过主线程加载 Pyodide CDN...");
-          await loadScript(baseUrl + "pyodide.js");
-          if (typeof window.loadPyodide !== "function") {
-            throw new Error("loadPyodide 未定义");
-          }
-          if (onProgress) onProgress("正在初始化 Python 解释器...");
-          inThreadPyodide = await window.loadPyodide({ indexURL: baseUrl });
-          return inThreadPyodide;
-        } catch (e) {
-          lastErr = e;
-        }
-      }
-      throw lastErr || new Error("主线程 Pyodide 初始化失败");
-    })();
-
-    return inThreadInitPromise;
+    return initPromise;
   }
 
   async function ensureReady(onProgress) {
-    // Try Worker first
     try {
       await initWorker(onProgress);
       return "worker";
-    } catch (workerErr) {
-      console.warn("Worker 初始化失败，切换为主线程模式:", workerErr);
-      if (onProgress) onProgress("Web Worker 不可用，切换至主线程 Python 运行时...");
-      await initInThread(onProgress);
-      return "main-thread";
+    } catch (error) {
+      throw new Error("安全的 Worker 运行环境不可用，已停止本地执行以避免卡死浏览器。请检查网络或在 JupyterLab 中练习。原因：" + (error.message || error));
     }
   }
 
   async function runSolve(userCode, instance, timeoutSec = 10) {
-    const mode = await ensureReady();
-    const instJson = JSON.stringify(instance);
-
-    if (mode === "worker" && worker && workerReady) {
-      return new Promise((resolve, reject) => {
-        const id = ++reqCounter;
-        let timer = null;
-
-        const cleanup = () => {
-          if (timer) clearTimeout(timer);
-          pendingRequests.delete(id);
-        };
-
-        timer = setTimeout(() => {
-          cleanup();
-          try {
-            worker.terminate();
-          } catch (_) {}
-          worker = null;
-          workerReady = false;
-          workerInitPromise = null;
-          reject(new Error(`执行超时（超过 ${timeoutSec} 秒限制）`));
-        }, timeoutSec * 1000);
-
-        pendingRequests.set(id, {
-          resolve: (res) => {
-            cleanup();
-            resolve(res);
-          },
-          reject: (err) => {
-            cleanup();
-            reject(err);
-          },
-        });
-
-        worker.postMessage({
-          type: "solve",
-          id,
-          code: userCode,
-          instanceJson: instJson,
-        });
-      });
+    await ensureReady();
+    if (!worker || !workerReady) throw new Error("Python Worker 未就绪");
+    const limit = Number(timeoutSec);
+    if (!Number.isFinite(limit) || limit <= 0 || limit > 120) {
+      throw new RangeError("Python 运行超时设置须在 0–120 秒内");
     }
-
-    // In-thread fallback
-    const py = await initInThread();
-    if (!inThreadHarnessReady) {
-      py.runPython(`
-import json
-def __run_student_solve__(code_str, inst_json):
-    user_ns = {"__name__": "__main__"}
-    exec(code_str, user_ns)
-    if "solve" not in user_ns or not callable(user_ns["solve"]):
-        raise NameError("代码中未找到 def solve(instance): 函数定义，请按题目模板实现。")
-    inst = json.loads(inst_json)
-    res = user_ns["solve"](inst)
-    if not isinstance(res, dict):
-        raise TypeError(f"solve(instance) 的返回值必须是 Python 字典 dict，实际得到 {type(res).__name__}")
-    return json.dumps(res)
-`);
-      inThreadHarnessReady = true;
-    }
-
-    let timer;
-    const timeoutPromise = new Promise((_, reject) => {
-      timer = setTimeout(() => {
-        reject(new Error(`执行超时（超过 ${timeoutSec} 秒限制）`));
-      }, timeoutSec * 1000);
-    });
-
-    const executionPromise = (async () => {
-      py.globals.set("__code_str__", userCode);
-      py.globals.set("__inst_json__", instJson);
-      try {
-        const outJson = py.runPython("__run_student_solve__(__code_str__, __inst_json__)");
-        return JSON.parse(outJson);
-      } catch (err) {
-        const msg = String(err?.message || err);
-        if (msg.includes("No module named 'pyscipopt'") || msg.includes("No module named pyscipopt")) {
-          throw new Error("缺少模块 pyscipopt：当前纯 Python Web 评测环境未包含 C 扩展库。本题若使用了 PySCIPOpt，请在顶部「JupyterLab (PySCIPOpt)」打开并测试；当前页面模板提供纯 Python / DP 算法，可直接运行评分。");
+    const instanceJson = JSON.stringify(instance);
+    return new Promise(function (resolve, reject) {
+      const id = ++requestCounter;
+      const timer = setTimeout(function () {
+        failWorker(new Error("执行超时（超过 " + limit + " 秒），已终止隔离 Worker"));
+      }, limit * 1000);
+      pending.set(id, {
+        resolve: function (result) {
+          clearTimeout(timer);
+          pending.delete(id);
+          resolve(result);
+        },
+        reject: function (error) {
+          clearTimeout(timer);
+          pending.delete(id);
+          reject(error);
         }
-        throw new Error(msg);
-      } finally {
-        py.globals.delete("__code_str__");
-        py.globals.delete("__inst_json__");
+      });
+      try {
+        worker.postMessage({ type: "solve", id, code: userCode, instanceJson });
+      } catch (error) {
+        failWorker(error);
       }
-    })();
-
-    try {
-      return await Promise.race([executionPromise, timeoutPromise]);
-    } finally {
-      clearTimeout(timer);
-    }
+    });
   }
 
   window.ScipOJRuntime = {
     ensureReady,
     runSolve,
-    isReady: () => workerReady || !!inThreadPyodide,
+    isReady: function () { return workerReady && !!worker; }
   };
 })();
