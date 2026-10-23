@@ -17,10 +17,25 @@ async function run() {
   const browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
   try {
     const desktop = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
+    const browserErrors = [];
+    desktop.on("pageerror", error => browserErrors.push("pageerror: " + error.message));
+    desktop.on("console", message => { if (message.type() === "error") browserErrors.push("console: " + message.text()); });
     await desktop.goto(origin + "/index.html", { waitUntil: "domcontentloaded" });
     assert.match(await desktop.title(), /SCIP\/LAB/);
     assert.equal(await desktop.locator(".studio-case-card").count(), 3);
-    await desktop.locator("#problem-list .problem-card").first().waitFor({ state: "visible", timeout: 25000 });
+    await screenshot(desktop, "00-diagnostic-home-before-load.png");
+    try {
+      await desktop.locator("#problem-list .problem-card").first().waitFor({ state: "visible", timeout: 25000 });
+    } catch (error) {
+      console.error("Browser diagnostics:", JSON.stringify({
+        readyState: await desktop.evaluate(() => document.readyState),
+        location: desktop.url(),
+        list: await desktop.locator("#problem-list").innerText(),
+        scripts: await desktop.evaluate(() => [...document.scripts].map(s => ({ src: s.src, loaded: !!s.readyState }))),
+        errors: browserErrors
+      }, null, 2));
+      throw error;
+    }
     assert.equal(await desktop.locator("#teacher-link").isVisible(), false,
       "Teacher navigation should be hidden before authorization");
     await screenshot(desktop, "01-course-workbench-desktop.png");
