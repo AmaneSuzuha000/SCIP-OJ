@@ -25,6 +25,24 @@ class CourseNotebookTests(unittest.TestCase):
         self.assertIn("合成教学数据", docs)
         self.assertIn("未接入正式 L2", docs)
 
+
+    def test_independent_oracles_in_extended_notebooks(self):
+        files = {
+            "04_IE_Bin_Packing_PySCIPOpt.ipynb": "oracle_min_bins",
+            "05_IE_Flow_Shop_PySCIPOpt.ipynb": "evaluate_schedule",
+            "06_IE_Stochastic_Inventory_PySCIPOpt.ipynb": "explicit_expected_cost",
+        }
+        for file, oracle in files.items():
+            with self.subTest(file=file):
+                nb = json.loads((ROOT / "content" / file).read_text(encoding="utf-8"))
+                self.assertEqual(nb["nbformat"], 4)
+                code = "\n\n".join("".join(c["source"]) for c in nb["cells"] if c["cell_type"] == "code")
+                ast.parse(code)
+                self.assertIn("from pyscipopt import Model, quicksum", code)
+                self.assertIn(oracle, code)
+                self.assertIn("assert", code)
+                self.assertGreater(len(nb["cells"]), 5)
+
     def test_all_case_links_exist(self):
         for name in ["case-studio.html", "inventory-lab.html",
                      "flow-lab.html", "official-examples.html"]:

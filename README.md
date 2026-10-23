@@ -27,7 +27,10 @@
 
 - **IE-MC-02《随机库存与服务水平》**：Poisson 日需求、周期检查补货、确定提前期、丢失销售、运营成本/填补率，配对 Monte Carlo 与导出。
 - **IE-DES-03《双工序生产线与缓冲阻塞》**：Poisson 到达、指数工时、有限缓冲与加工后阻塞 BAS、产出/WIP/阻塞率，配对 DES 与导出。
-- **IE-OPT-03《容量约束设施选址》Notebook**：原创 PySCIPOpt MIP 建模，采用 3 设施×4 客户的独立 81 情形穷举 oracle 核验。
+- **IE-OPT-03《容量约束设施选址》Notebook**：3 设施×4 客户，独立穷举 81 个分配对照。
+- **IE-OPT-04《仓储装箱》Notebook**：物品—容器 MILP 与独立回溯装箱真值。
+- **IE-OPT-05《排列流水车间》Notebook**：位置索引调度模型与 4! 排列枚举真值。
+- **IE-OPT-06《单周期随机库存优化》Notebook**：随机需求场景 MILP 与 0～10 件订货量穷举。
 - **官方 Examples 资源页**：直接链接 PySCIPOpt 官方背包、EOQ、设施选址、排列流水车间、装箱与资源受限调度，以及 Gurobi Modeling Examples；只提供来源和自主课程模型。
 
 AGV 物流、设备可靠性和动态闭环调度是后续三类进阶方向，**尚未上线**。正式 L2 判题仍仅支持已接入私有评测的题型。教学 Rubric 与模型验证见 [课程实验与评价规范](docs/课程实验与评价规范.md) 和 [精品案例建设路线](docs/课程精品案例建设路线.md)。课程质量验收 Gate 与建模口径见 [精品案例建设路线](docs/课程精品案例建设路线.md)。
@@ -82,7 +85,10 @@ SCIP-OJ 采用**双轨制**，兼顾轻量免配置练习与可信正式成绩�
 - **JupyterLab 示例 Notebook**：
   - `content/01_P001_knapsack_PySCIPOpt.ipynb`（背包问题 MIP 建模）
   - `content/02_P002_assignment_PySCIPOpt.ipynb`（指派问题 MIP 建模）
-  - `content/03_IE_Facility_Location_PySCIPOpt.ipynb`（单源容量约束设施选址 + 独立穷举验证）
+  - `content/03_IE_Facility_Location_PySCIPOpt.ipynb`（单源设施选址）
+  - `content/04_IE_Bin_Packing_PySCIPOpt.ipynb`（装箱）
+  - `content/05_IE_Flow_Shop_PySCIPOpt.ipynb`（排列流水车间）
+  - `content/06_IE_Stochastic_Inventory_PySCIPOpt.ipynb`（单周期随机库存优化）
 
 ---
 
