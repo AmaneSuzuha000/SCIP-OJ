@@ -81,7 +81,8 @@ SCIP-OJ 采用**双轨制**，兼顾轻量免配置练习与可信正式成绩�
 - **学生使用指南**：[docs/学生指南.md](docs/学生指南.md)
 - **教师与助教指南**：[docs/教师指南.md](docs/教师指南.md)
 - **出题指南（教师）**：[docs/出题指南.md](docs/出题指南.md)
-- **判分协议（已冻结）**：[docs/判分协议-已冻结.md](docs/判分协议-已冻结.md)
+- **当前评分审计与 v2 预注册提案（未上线）**：[docs/SCIP-OJ_正式评分标准_v2_预注册提案.md](docs/SCIP-OJ_正式评分标准_v2_预注册提案.md)
+- **历史 L1 MVP 判分协议（不适用于当前 L2）**：[docs/判分协议-已冻结.md](docs/判分协议-已冻结.md)
 - **JupyterLab 示例 Notebook**：
   - `content/01_P001_knapsack_PySCIPOpt.ipynb`（背包问题 MIP 建模）
   - `content/02_P002_assignment_PySCIPOpt.ipynb`（指派问题 MIP 建模）
