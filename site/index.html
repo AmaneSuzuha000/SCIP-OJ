@@ -3,11 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SCIP-OJ · 系统建模与优化评测平台</title>
+  <title>SCIP-OJ · 工业工程系统建模与仿真精品案例平台</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="ui-refresh.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.20/lib/codemirror.min.css" />
   <link rel="stylesheet" href="leetcode.css" />
+  <link rel="stylesheet" href="case-entry.css" />
 </head>
 <body class="student-page">
   <a class="skip-link" href="#main-content">跳转到主要内容</a>
@@ -19,11 +20,12 @@
           <div class="brand-logo-icon" aria-hidden="true">∑</div>
           <span>SCIP-OJ</span>
         </a>
-        <span class="brand-tag">OPTIMIZATION LAB</span>
+        <span class="brand-tag">IE MODELING LAB</span>
       </div>
 
       <nav class="nav-links" aria-label="主导航">
-        <a href="index.html" class="nav-item active" aria-current="page">探索题库</a>
+        <a href="case-studio.html" class="nav-item nav-item-highlight">精品案例实验室</a>
+        <a href="index.html" class="nav-item active" aria-current="page">算法实训 OJ</a>
         <a href="lab/index.html" target="_blank" rel="noopener noreferrer" class="nav-item" title="全功能 PySCIPOpt 交互式 JupyterLab 环境">JupyterLab</a>
         <a href="repl/index.html" target="_blank" rel="noopener noreferrer" class="nav-item">REPL</a>
         <a href="teacher.html" id="teacher-link" class="nav-item nav-item-highlight" hidden><strong>教师控制台</strong></a>
@@ -45,35 +47,50 @@
   <main class="main-content" id="main-content">
     <section class="hero-panel" aria-labelledby="hero-heading">
       <div class="hero-copy">
-        <p class="hero-eyebrow">● &nbsp; SCIP-OJ / MODEL · SOLVE · VERIFY</p>
-        <h1 id="hero-heading">从数学模型<br>到<span>可验证的最优解</span></h1>
-        <p class="hero-description">面向运筹优化与工业工程的在线实训空间。读懂约束、实现求解器、在浏览器验证，再将代码提交给服务端正式评测。</p>
+        <p class="hero-eyebrow">● &nbsp; SCIP-OJ / MODEL · SIMULATE · VALIDATE</p>
+        <h1 id="hero-heading">从工业现场<br>到<span>可验证的系统决策</span></h1>
+        <p class="hero-description">工业工程《系统建模与仿真》课程案例与实验平台。抽象生产与服务系统，运行可重复的随机仿真，解释实验结果；同时保留在线编程、正式判卷和教师成绩中心。</p>
         <div class="hero-cta">
-          <a class="hero-primary-link" href="#problem-list-section">开始解题 <span aria-hidden="true">↗</span></a>
-          <a class="hero-secondary-link" href="lab/index.html" target="_blank" rel="noopener noreferrer">进入 JupyterLab ↗</a>
+          <a class="hero-primary-link" href="case-studio.html">进入案例实验室 <span aria-hidden="true">↗</span></a>
+          <a class="hero-secondary-link" href="#problem-list-section">算法实训与正式作业 ↘</a>
         </div>
-        <p class="hero-footnote">本地练习分数不计入正式成绩 · 正式评分以服务端记录为准</p>
+        <p class="hero-footnote">仿真实验使用合成数据 · 本地实验不计入正式成绩 · 正式评分以服务端记录为准</p>
       </div>
       <div class="hero-visual" aria-label="建模求解工作流程">
-        <div class="flow-top">WORKFLOW / 01—03 <span>•••</span></div>
-        <div class="flow-step"><span>01</span><div><strong>定义问题</strong><small>理解目标、变量与约束</small></div><em>↗</em></div>
-        <div class="flow-step"><span>02</span><div><strong>构建求解器</strong><small>Python · solve(instance)</small></div><em>↗</em></div>
-        <div class="flow-step"><span>03</span><div><strong>验证与提交</strong><small>L1 本地检查 · L2 正式计分</small></div><em>✓</em></div>
-        <div class="flow-bottom"><span>PYTHON / SCIP</span><span>READY TO SOLVE</span></div>
+        <div class="flow-top">LEARNING LOOP / 01—03 <span>•••</span></div>
+        <div class="flow-step"><span>01</span><div><strong>系统抽象</strong><small>实体、事件、资源与边界</small></div><em>↗</em></div>
+        <div class="flow-step"><span>02</span><div><strong>仿真实验</strong><small>随机输入 · 配对试验 · 重复验证</small></div><em>↗</em></div>
+        <div class="flow-step"><span>03</span><div><strong>统计分析与决策</strong><small>指标 · 不确定性 · 工程权衡</small></div><em>✓</em></div>
+        <div class="flow-bottom"><span>SIMULATION + OPTIMIZATION</span><span>READY TO EXPLORE</span></div>
       </div>
     </section>
     <section class="overview-strip" aria-label="平台功能概览">
-      <div><strong id="overview-problems">—</strong><span>可练习题目</span></div>
-      <div><strong>Python</strong><span>求解接口语言</span></div>
-      <div><strong>L1 + L2</strong><span>练习与正式评测分离</span></div>
+      <div><strong id="overview-problems">—</strong><span>在线算法实训题</span></div>
+      <div><strong>01</strong><span>已开放交互仿真案例</span></div>
+      <div><strong>L1 + L2</strong><span>本地学习与权威计分分离</span></div>
+    </section>
+    <section class="case-feature" aria-labelledby="case-feature-title">
+      <div class="case-feature-copy">
+        <span class="section-kicker">FEATURED INTERACTIVE CASE / IE-DES-01</span>
+        <h2 id="case-feature-title">检修工位配置与排队仿真</h2>
+        <p>把“应该增加几个工位”变成一次可复现的系统实验。通过离散事件仿真比较等待、吞吐量、资源利用率和统计不确定性，学习如何对工业系统做出可信判断。</p>
+        <div class="case-feature-facts"><span>离散事件仿真</span><span>共同随机数</span><span>30 次配对重复</span><span>95% 近似区间</span></div>
+        <a href="case-studio.html" class="case-feature-link">进入案例并运行实验 <span aria-hidden="true">↗</span></a>
+        <small>合成数据、教学模型 · 当前案例不计入正式成绩</small>
+      </div>
+      <div class="case-feature-graphic" aria-hidden="true">
+        <div class="case-feature-label">SYSTEM SNAPSHOT <span>FCFS / M/M/c</span></div>
+        <div class="case-feature-nodes"><span>任务到达</span><b>→</b><span>等待队列</span><b>→</b><span>并行工位</span></div>
+        <div class="case-feature-evidence"><div><strong>模型</strong><span>实体 / 事件 / 资源</span></div><div><strong>实验</strong><span>共同随机数 / 重复</span></div><div><strong>决策</strong><span>等待 / 产出 / 成本</span></div></div>
+      </div>
     </section>
     <!-- 1. 题单大厅区域 -->
     <section id="problem-list-section">
       <div class="course-banner" id="current-course-banner">
         <div class="course-icon" aria-hidden="true">◎</div>
         <div class="course-title-group">
-          <h2 id="banner-course-title">系统建模与优化课程</h2>
-          <p id="banner-course-desc">正式作业认准服务端权威评测 · 练习模式由浏览器 Python WASM 本地真跑</p>
+          <h2 id="banner-course-title">工业工程 · 系统建模与仿真课程</h2>
+          <p id="banner-course-desc">案例实验是教学演示 · 正式作业认准服务端权威评测</p>
         </div>
         <div id="banner-course-action">
           <button id="btn-banner-join-course" type="button" class="btn-secondary" style="font-size:0.85rem;">
@@ -83,7 +100,7 @@
       </div>
 
       <div class="section-header">
-        <div class="section-heading-group"><span class="section-kicker">PROBLEM LIBRARY</span><h2>探索题库 <small id="problem-count" aria-live="polite"></small></h2><p>选择一道题目，从理解约束开始完成优化求解。</p></div>
+        <div class="section-heading-group"><span class="section-kicker">ALGORITHM PRACTICE</span><h2>算法建模实训 <small id="problem-count" aria-live="polite"></small></h2><p>作为课程中的优化建模练习，当前提供背包与指派问题；真实系统仿真请进入上方精品案例实验室。</p></div>
         <div style="display:flex; align-items:center; gap:0.5rem;">
           <label class="sr-only" for="problem-search-input">搜索题目</label>
           <input type="search" id="problem-search-input" placeholder="搜索编号、名称、标签…" autocomplete="off" />
@@ -224,7 +241,7 @@
   <footer>
     <div class="footer-container">
       <div>
-        <strong>SCIP-OJ</strong> · 系统建模与优化课程平台 · 正式分基于服务端自动化评测入库
+        <strong>SCIP-OJ</strong> · 工业工程系统建模与仿真精品案例平台 · 正式分基于服务端自动化评测入库
       </div>
       <div>
         双轨架构：Pages 静态轻量站 + JupyterLite L1 练习 + Supabase Edge / GitHub Actions 评测
