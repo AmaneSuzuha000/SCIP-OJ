@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "scip-oj-score-policy/2",
+  "mode": "exact",
+  "passScore": 90,
+  "groups": [
+    {
+      "id": "basic",
+      "weight": 20,
+      "cases": [
+        "basic-01",
+        "basic-02",
+        "basic-03"
+      ]
+    },
+    {
+      "id": "boundary",
+      "weight": 30,
+      "cases": [
+        "boundary-01",
+        "boundary-02",
+        "boundary-03",
+        "boundary-04"
+      ]
+    },
+    {
+      "id": "stress",
+      "weight": 50,
+      "cases": [
+        "stress-01",
+        "stress-02",
+        "stress-03",
+        "stress-04",
+        "stress-05"
+      ]
+    }
+  ]
+}
