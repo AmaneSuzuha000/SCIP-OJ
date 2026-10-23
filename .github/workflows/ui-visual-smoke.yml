@@ -1,0 +1,46 @@
+name: Course UI Chromium Preview
+
+on:
+  pull_request:
+    paths:
+      - "site/**"
+      - "tests/test_ui_browser.cjs"
+      - ".github/workflows/ui-visual-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ui-chromium-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install headless Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start read-only course website preview
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory site > /tmp/scip-ui-preview.log 2>&1 &
+          for attempt in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:8765/index.html > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          exit 1
+      - name: Exercise student, editor, simulation, faculty, and mobile views
+        run: node tests/test_ui_browser.cjs
+      - name: Save review screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scip-lab-ui-preview
+          path: ui-artifacts/
+          if-no-files-found: warn
+          retention-days: 14
