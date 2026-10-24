@@ -11,6 +11,7 @@ const out = path.resolve(process.env.SCIP_UI_SCREENSHOT_DIR || "ui-artifacts");
 fs.mkdirSync(out, { recursive: true });
 
 async function screenshot(page, file) {
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: path.join(out, file), fullPage: true, animations: "disabled" });
 }
 
@@ -20,6 +21,18 @@ async function assertFits(page, label) {
   }));
   assert.ok(dimensions.scrollWidth <= dimensions.innerWidth + 2,
     label + " horizontal overflow: " + JSON.stringify(dimensions));
+  const content = await page.evaluate(() => {
+    const main = document.querySelector(".studio-content");
+    if (!main) return null;
+    const rect = main.getBoundingClientRect();
+    return { left: rect.left, width: rect.width, right: rect.right, viewport: window.innerWidth };
+  });
+  if (content) {
+    assert.ok(Math.abs(content.right - content.viewport) <= 2,
+      label + " content must fill the available width: " + JSON.stringify(content));
+    if (content.viewport <= 840) assert.ok(content.width >= content.viewport - 2,
+      label + " must not retain the desktop sidebar width: " + JSON.stringify(content));
+  }
 }
 
 async function download(page, selector, name) {
