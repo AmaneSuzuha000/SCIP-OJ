@@ -3,25 +3,26 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SCIP-OJ · 教师控制台</title>
+  <title>SCIP/LAB · 教师控制台</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="ui-refresh.css" />
+  <link rel="stylesheet" href="faculty-v3.css" />
 </head>
 <body class="teacher-page">
   <a class="skip-link" href="#main-content">跳转到主要内容</a>
   <!-- 顶部主导航栏 -->
-  <header class="navbar">
+  <header class="navbar faculty-topbar">
     <div class="navbar-container">
       <div class="brand-section">
         <a href="index.html" class="brand-logo">
           <div class="brand-logo-icon" aria-hidden="true">∑</div>
-          <span>SCIP-OJ</span>
+          <span class="faculty-brand-text">SCIP<span class="faculty-brand-divider">/</span>LAB</span>
         </a>
-        <span class="brand-tag">FACULTY WORKSPACE</span>
+        <span class="brand-tag">工业工程 · 教师管理空间</span>
       </div>
 
       <nav class="nav-links">
-        <a href="index.html" class="nav-item">← 返回题单大厅</a>
+        <a href="index.html" class="nav-item">← 返回课程工作台</a>
         <a href="doc.html?f=教师指南.md" class="nav-item">教师指南</a>
         <a href="doc.html?f=出题指南.md" class="nav-item">出题指南</a>
       </nav>
@@ -34,12 +35,12 @@
 
   <div id="toast-container"></div>
 
-  <main class="main-content" id="main-content">
+  <main class="main-content faculty-content" id="main-content">
     <section class="faculty-hero" aria-labelledby="faculty-title">
-      <div><span class="section-kicker">ACADEMIC OPERATIONS / TEACHER DESK</span>
-      <h1 id="faculty-title">把课程管理<span>集中在一处。</span></h1>
-      <p>班级名单、作业发布、正式成绩与复判审计，沿同一条教学工作流追踪。</p></div>
-      <div class="faculty-hero-art" aria-hidden="true">∑<small>MODEL / ASSESS / IMPROVE</small></div>
+      <div><span class="section-kicker">TEACHING OPERATIONS / FACULTY DESK</span>
+      <h1 id="faculty-title">把教学过程，<span>管理得清清楚楚。</span></h1>
+      <p>从班级选课、作业发布到权威成绩和复判证据，保持同一套可核查的教学记录。</p></div>
+      <div class="faculty-hero-art" aria-hidden="true"><span>IE</span><small>PLAN / ASSESS / VERIFY</small></div>
     </section>
     <!-- 未配置后端服务提示 -->
     <section id="teacher-no-config" hidden>
@@ -295,7 +296,7 @@
 
   <footer>
     <div class="footer-container">
-      <div><strong>SCIP-OJ</strong> · 教师控制台 · 班级成绩管理与自动化评测审计</div>
+      <div><strong>SCIP/LAB</strong> · 教师控制台 · 班级成绩管理与自动化评测审计</div>
       <div>支持批量重判、整题一键重判、花名册对齐与 CSV 导出</div>
     </div>
   </footer>

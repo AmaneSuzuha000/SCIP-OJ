@@ -1,0 +1,148 @@
+/* Faculty operations surface — same visual language as the SCIP/LAB course workbench.
+   Pure presentation: authenticated gradebook and assessment contracts are unchanged. */
+body.teacher-page{
+  --bg-base:#f5f7f6;--bg-surface:#fff;--bg-subtle:#edf4f1;
+  --border-default:#dfe9e5;--border-subtle:#e9f0ed;--border-active:#117b72;
+  --text-primary:#203238;--text-secondary:#657c7d;--text-muted:#849698;
+  --brand-blue:#226f85;--brand-blue-hover:#17546b;--brand-green:#117b72;
+  background:#f5f7f6;color:#203238;
+}
+.teacher-page .faculty-topbar{
+  position:sticky;top:0;z-index:80;background:rgba(255,255,255,.97);
+  border-bottom:1px solid #dde8e4;box-shadow:none;backdrop-filter:blur(16px);
+}
+.teacher-page .faculty-topbar .navbar-container{max-width:1550px;min-height:62px;gap:14px}
+.teacher-page .faculty-topbar .brand-logo{gap:10px;color:#1a3e43;font-weight:800}
+.teacher-page .faculty-topbar .brand-logo-icon{
+  display:flex;align-items:center;justify-content:center;
+  width:37px;height:37px;border-radius:10px;color:#c4f4e4;
+  background:linear-gradient(145deg,#167d76,#163b4e);font-size:25px;
+  box-shadow:0 4px 12px #13484220;
+}
+.teacher-page .faculty-brand-text{font-size:1.28rem;letter-spacing:-.055em}
+.teacher-page .faculty-brand-divider{color:#23ad96;padding:0 2px}
+.teacher-page .faculty-topbar .brand-tag{
+  border-left:1px solid #dee8e4;padding-left:16px;color:#718784;
+  font-size:.75rem;letter-spacing:0;
+}
+.teacher-page .faculty-topbar .nav-links{gap:6px}
+.teacher-page .faculty-topbar .nav-item{
+  color:#5c7473;font-size:.8rem;padding:10px 12px;border-radius:10px;
+}
+.teacher-page .faculty-topbar .nav-item:hover{background:#eaf4f0;color:#116c63}
+.teacher-page .faculty-content{
+  max-width:1470px;margin:0 auto 50px;padding:27px 32px 30px;
+}
+.teacher-page .faculty-hero{
+  margin:0 0 19px;min-height:0;border-radius:21px;padding:28px 35px;gap:20px;
+  background:radial-gradient(circle at 95% -45%,#317e775f,transparent 40%),linear-gradient(118deg,#142d37,#205154);
+}
+.teacher-page .faculty-hero .section-kicker{
+  font-size:.66rem;color:#a2e6d3;letter-spacing:.13em;
+}
+.teacher-page .faculty-hero h1{
+  margin:9px 0;font-size:clamp(1.8rem,3vw,2.7rem);letter-spacing:-.055em;
+}
+.teacher-page .faculty-hero h1 span{color:#b4efd9}
+.teacher-page .faculty-hero p{font-size:.88rem;line-height:1.7;color:#c8e2df}
+.teacher-page .faculty-hero-art{
+  position:relative;width:172px;min-width:172px;height:95px;
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid #b6e6d72b;border-radius:15px;background:#0c303354;
+}
+.teacher-page .faculty-hero-art>span{
+  font:700 3.3rem/.9 Georgia,serif;color:#b4efd9;
+}
+.teacher-page .faculty-hero-art small{
+  position:absolute;bottom:10px;letter-spacing:.14em;
+  color:#9fd1c4;font-size:.48rem;white-space:nowrap;
+}
+.teacher-page .faculty-stats{gap:12px;margin:0 0 18px}
+.teacher-page .faculty-stats>div{
+  border:1px solid #dfebe6;border-radius:13px;background:#fff;
+  box-shadow:0 4px 16px #1f574a07;padding:18px 22px;gap:5px;
+}
+.teacher-page .faculty-stats>div:before{
+  content:'';display:block;width:27px;height:3px;margin-bottom:8px;
+  border-radius:3px;background:#29ab96;
+}
+.teacher-page .faculty-stats>div:nth-child(2):before{background:#4789b7}
+.teacher-page .faculty-stats>div:nth-child(3):before{background:#df9b6d}
+.teacher-page .faculty-stats span{color:#657f7e;font-size:.8rem}
+.teacher-page .faculty-stats strong{color:#23454a;font-size:1.9rem;font-variant-numeric:tabular-nums}
+.teacher-page .faculty-stats small{color:#8b9b99;font-size:.74rem}
+.teacher-page #teacher-panel>.course-banner{
+  margin:0 0 17px;border:1px solid #dce9e3;background:#fff;
+  border-radius:13px;padding:14px 22px;box-shadow:0 3px 13px #1e64550a;
+}
+.teacher-page .teacher-tabs{
+  background:#fff;border:1px solid #deeae4;border-bottom:0;
+  border-radius:14px 14px 0 0;padding:5px 12px 0;margin-bottom:0;gap:10px;
+  overflow-x:auto;display:flex;
+}
+.teacher-page .teacher-tabs .tab-btn{
+  border:0!important;border-bottom:3px solid transparent!important;
+  border-radius:0;background:transparent;padding:13px 17px!important;
+  white-space:nowrap;color:#698381;font-size:.85rem;
+}
+.teacher-page .teacher-tabs .tab-btn.active{
+  color:#096e64;background:#eef8f4!important;border-bottom-color:#0e8c7a!important;
+}
+.teacher-page .teacher-tabs .tab-btn:hover{background:#eff6f2;color:#0e7169}
+.teacher-page .tab-content:not([hidden]){
+  background:#fff;border:1px solid #deeae4;border-radius:0 0 14px 14px;
+  padding:20px 20px 24px;box-shadow:0 6px 20px #244e4208;
+}
+.teacher-page .filter-bar{
+  background:#f7faf8;border:1px solid #e4ede8;border-radius:10px;
+  padding:15px;gap:11px;
+}
+.teacher-page .filter-group label{font-size:.79rem;font-weight:700;color:#587471}
+.teacher-page :is(input:not([type=checkbox]),select){
+  border-color:#d3e2db;background:#fff;color:#27484b;
+}
+.teacher-page :is(input,select,button):focus-visible{
+  outline:2px solid #169787;outline-offset:2px;
+}
+.teacher-page .btn-blue{
+  background:#147e74;border-color:#147e74;color:#fff;
+}
+.teacher-page .btn-blue:hover{background:#0b6e63;border-color:#0b6e63}
+.teacher-page .btn-secondary{
+  color:#285855;background:#fff;border-color:#cfded8;
+}
+.teacher-page .btn-secondary:hover{background:#edf7f3;border-color:#a5c9ba}
+.teacher-page .table-wrapper{
+  border:1px solid #e0eae4;border-radius:11px;overflow-x:auto;
+}
+.teacher-page .card{
+  background:#fff;border-color:#e0eae4;box-shadow:none;
+}
+.teacher-page footer{
+  border-top:1px solid #dde8e3;background:#fff;color:#718683;
+}
+.teacher-page footer strong{color:#28615d}
+@media(max-width:1100px){
+  .teacher-page .faculty-content{padding:23px 20px 32px}
+  .teacher-page .faculty-topbar .brand-tag{display:none}
+}
+@media(max-width:780px){
+  .teacher-page .faculty-topbar .navbar-container{
+    flex-wrap:wrap;align-items:center;gap:6px;
+  }
+  .teacher-page .faculty-topbar .nav-links{
+    order:3;width:100%;overflow-x:auto;flex-wrap:nowrap;
+  }
+  .teacher-page .faculty-topbar .auth-section{margin-left:auto;width:auto}
+  .teacher-page .faculty-content{padding:15px 12px 27px}
+  .teacher-page .faculty-hero{padding:23px 22px;border-radius:16px}
+  .teacher-page .faculty-hero-art{display:none}
+  .teacher-page .faculty-stats{grid-template-columns:1fr;gap:8px}
+  .teacher-page .faculty-stats>div{padding:13px 18px}
+  .teacher-page .faculty-stats>div:before{margin-bottom:3px}
+  .teacher-page #teacher-panel>.course-banner{padding:14px;gap:12px}
+  .teacher-page .teacher-tabs{padding:4px 6px 0}
+  .teacher-page .teacher-tabs .tab-btn{padding:11px 12px!important;font-size:.77rem}
+  .teacher-page .tab-content:not([hidden]){padding:14px 10px}
+}
+@media(prefers-reduced-motion:reduce){.teacher-page *{scroll-behavior:auto!important}}

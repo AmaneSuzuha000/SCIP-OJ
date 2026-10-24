@@ -175,9 +175,9 @@ async function main() {
   document.getElementById("tab-description")?.addEventListener("click", () => showWorkbenchTab("description"));
   document.getElementById("tab-history")?.addEventListener("click", () => showWorkbenchTab("history"));
   // Reuse the existing submissions component without duplicating its ID or backend calls.
-  const history = document.getElementById("history-tab");
+  const historyPanel = document.getElementById("history-tab");
   const submissions = document.getElementById("my-submissions-section");
-  if (history && submissions) history.appendChild(submissions);
+  if (historyPanel && submissions) historyPanel.appendChild(submissions);
   window.ScipOJEditor?.init();
   window.ScipOJExam?.bind();
   document.getElementById("tab-testcase")?.addEventListener("click", () => showConsoleTab("testcase"));
@@ -190,12 +190,32 @@ async function main() {
     }
   });
 
+  const courseMenu = document.getElementById("btn-course-menu");
+  courseMenu?.addEventListener("click", () => {
+    const expanded = courseMenu.getAttribute("aria-expanded") !== "true";
+    courseMenu.setAttribute("aria-expanded", String(expanded));
+    document.querySelector(".studio-rail")?.classList.toggle("rail-menu-open", expanded);
+  });
+
+  // From the course sidebar, never discard unsaved exam code silently.
+  document.getElementById("nav-to-assessment")?.addEventListener("click", async (event) => {
+    if (!activeProblemId) return; // The native anchor scroll works on the course landing.
+    event.preventDefault();
+    if (!(await confirmLeaveIfExamDraft())) return;
+    closeWorkspace();
+    window.history.replaceState(null, "", "#problem-list-section");
+    document.getElementById("problem-list-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
   // 4. 返回题单按钮
   const btnBack = document.getElementById("btn-back-to-list");
   if (btnBack) {
     btnBack.onclick = async (e) => {
       e.preventDefault();
-      if (await confirmLeaveIfExamDraft()) closeWorkspace();
+      if (await confirmLeaveIfExamDraft()) {
+        closeWorkspace();
+        document.getElementById("problem-list-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
     };
   }
   // Keep exam navigation explicit; switching discards unsaved exam source.

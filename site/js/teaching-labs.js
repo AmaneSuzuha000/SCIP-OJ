@@ -87,7 +87,12 @@
    e.preventDefault();document.getElementById("run-button").disabled=true;
    window.setTimeout(run,15);
  });
- form.addEventListener("input",()=>{if(last){status.textContent="参数已修改；当前展示的是上一次运行结果。";}});
+ form.addEventListener("input",()=>{
+   if(last){
+     last=null;exporter.disabled=true;
+     status.textContent="参数已修改；当前展示的是上一次运行结果。请重新运行后再导出。";
+   }
+ });
  form.addEventListener("reset",function(){last=null;exporter.disabled=true;
    status.textContent="已重置输入；请重新运行并生成新结果。";
    error.hidden=true;
@@ -97,7 +102,9 @@
    const meta=Object.entries(last.params).map(([k,v])=>["parameter:"+k,v]);
    const lines=[["case_id",isInventory?"IE-MC-02":"IE-DES-03"],...meta,
      ["metric","baseline","alternative","unit"]];
-   for(const [field,label,unit] of specs.rows) lines.push([label,last.baseline[field],last.alternative[field],unit]);
+   for(const [field,label,unit,precision,scale] of specs.rows) {
+     lines.push([label,last.baseline[field]*(scale||1),last.alternative[field]*(scale||1),unit]);
+   }
    const ci=last[specs.ci];
    lines.push(["paired_difference","mean","low_95_normal","high_95_normal"]);
    lines.push([specs.label,ci.mean,ci.low,ci.high]);
