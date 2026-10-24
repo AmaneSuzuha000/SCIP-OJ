@@ -390,7 +390,7 @@ function closeWorkspace(updateHash = true) {
   }
   const ws = document.getElementById("workspace");
   const listSec = document.getElementById("problem-list-section");
-  if (ws) ws.hidden = true;
+  if (ws) { ws.hidden = true; ws.setAttribute("aria-busy", "false"); }
   if (listSec) listSec.hidden = false;
   document.body.classList.remove("workbench-active");
   // 用 replaceState 避免“返回题单”在浏览器历史里不断堆叠，按后退键可正常离开
@@ -474,7 +474,7 @@ async function openProblem(path, id) {
   }
   const ws = document.getElementById("workspace");
   const listSec = document.getElementById("problem-list-section");
-  if (ws) ws.hidden = false;
+  if (ws) { ws.hidden = false; ws.setAttribute("aria-busy", "true"); }
   if (listSec) listSec.hidden = true;
   document.body.classList.add("workbench-active");
   updateProblemSequence();
@@ -568,6 +568,8 @@ async function openProblem(path, id) {
     const titleEl = document.getElementById("title");
     if (titleEl) titleEl.textContent = `${id} · 加载失败`;
     window.ScipOJPlatform?.showToast("题目加载失败: " + (err.message || err), "error");
+  } finally {
+    if (seq === openSeq && ws) ws.setAttribute("aria-busy", "false");
   }
 }
 

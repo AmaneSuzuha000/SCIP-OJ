@@ -15,6 +15,11 @@ async function screenshot(page, file) {
   await page.screenshot({ path: path.join(out, file), fullPage: true, animations: "disabled" });
 }
 
+async function openFirstProblem(page) {
+  await page.locator("#problem-list .problem-card").first().click();
+  await page.locator('#workspace[aria-busy="false"]').waitFor({ state: "visible" });
+}
+
 async function assertFits(page, label) {
   const dimensions = await page.evaluate(() => ({
     scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth
@@ -109,7 +114,7 @@ async function run() {
     await desktop.locator("#nav-to-assessment").click();
     await desktop.locator("#problem-list-section").waitFor({ state: "visible" });
 
-    await desktop.locator("#problem-list .problem-card").first().click();
+    await openFirstProblem(desktop);
     await desktop.waitForFunction(() => document.body.classList.contains("workbench-active"), { timeout: 10000 });
     await desktop.locator("#title").waitFor({ state: "visible", timeout: 15000 });
     await desktop.waitForFunction(() => (document.getElementById("title")?.textContent || "").length > 3);
@@ -138,7 +143,7 @@ async function run() {
     await desktop.locator('.learning-overview').waitFor({ state: "visible" });
     await desktop.locator("#nav-to-assessment").click();
     await desktop.locator("#problem-list-section").waitFor({ state: "visible" });
-    await desktop.locator("#problem-list .problem-card").first().click();
+    await openFirstProblem(desktop);
     await desktop.locator("#title").waitFor({ state: "visible" });
     await desktop.evaluate(() => {
       window.ScipOJExam.activate("exam_warn", "P001");
@@ -155,13 +160,13 @@ async function run() {
     assert.equal(await desktop.locator("#problem-list-section").isVisible(), true);
     assert.match(desktop.url(), /#problem-list-section$/,
       "Sidebar must update the URL without a shadowed History API error");
-    await desktop.locator("#problem-list .problem-card").first().click();
+    await openFirstProblem(desktop);
     await desktop.locator("#workspace").waitFor({ state: "visible" });
     await desktop.locator("#btn-back-to-list").click();
     assert.equal(await desktop.locator("#workspace").isVisible(), false);
     assert.equal(await desktop.locator("#problem-list-section").isVisible(), true);
 
-    await desktop.locator("#problem-list .problem-card").first().click();
+    await openFirstProblem(desktop);
     await desktop.waitForFunction(() => document.getElementById("title").textContent.startsWith("P001"));
     // A slow assignment response must not re-enable exam policy after switching spaces.
     await desktop.evaluate(() => {
@@ -247,7 +252,7 @@ async function run() {
     await mobile.locator("#nav-learning-space").click();
     await mobile.locator("#nav-to-assessment").click();
     await mobile.locator("#problem-list-section").waitFor({ state: "visible" });
-    await mobile.locator("#problem-list .problem-card").first().click();
+    await openFirstProblem(mobile);
     await mobile.locator("#workspace").waitFor({ state: "visible" });
     assert.equal(await mobile.locator(".workspace-layout").evaluate(
       node => getComputedStyle(node).gridTemplateColumns.split(" ").length), 1,
@@ -261,7 +266,7 @@ async function run() {
     await tablet.locator("#problem-list .problem-card").first().waitFor({ state: "attached" });
     await tablet.locator("#nav-to-assessment").click();
     await tablet.locator("#problem-list-section").waitFor({ state: "visible" });
-    await tablet.locator("#problem-list .problem-card").first().click();
+    await openFirstProblem(tablet);
     await tablet.locator("#workspace").waitFor({ state: "visible" });
     await assertFits(tablet, "Tablet editor");
     assert.equal(await tablet.locator(".workspace-layout").evaluate(
