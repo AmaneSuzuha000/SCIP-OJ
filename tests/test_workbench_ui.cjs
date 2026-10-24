@@ -35,8 +35,8 @@ for (const [id, url] of [
 }
 assert.match(html, /class="studio-rail"/, "Expected the dedicated workbench navigation");
 assert.match(html, /class="studio-case-grid"/, "Expected three runnable case cards");
-assert.equal((html.match(/class="course-case-row"/g)||[]).length, 3,
-  "The course directory must describe the three actual runnable labs");
+assert.equal((html.match(/class="course-case-row"/g)||[]).length, 2,
+  "Teaching retains the two original P001/P002 modeling notebooks");
 assert.match(html, /id="teacher-link"[^>]*hidden/, "Teacher navigation must remain permission gated");
 assert.ok(html.indexOf('href="workbench-v3.css"') > html.indexOf('href="case-entry.css"'),
   "Course workbench overrides must load after prior styles");
@@ -68,7 +68,8 @@ for (const filename of ["case-studio.html", "inventory-lab.html", "flow-lab.html
   const page = fs.readFileSync(path.join(root, filename), "utf8");
   assert.ok(page.includes('href="course-case-v3.css"'), "Case theme missing: " + filename);
   assert.ok(page.includes('SCIP/LAB'), "Course brand missing: " + filename);
-  assert.ok(page.includes('href="index.html#problem-list-section"'), "Broken OJ route: " + filename);
+  assert.ok(page.includes('href="index.html#learn"'), "Extension pages must return to extension learning: " + filename);
+  assert.ok(!page.includes('href="index.html#problem-list-section"'), "OJ navigation leaked into extension page: " + filename);
 }
 
 assert.match(html, /id="grading-rules"/, "Missing transparent scoring explainer");
