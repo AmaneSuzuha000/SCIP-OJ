@@ -43,8 +43,9 @@ jobs:
           SCIP_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SCIP_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          cp dist/index.html dist/lite.html 2>/dev/null || true
+          cp dist/index.html dist/lite.html
           cp -r site/* dist/
+          python3 scripts/merge_jupyter_shell.py dist
           if [ -n "$SCIP_SUPABASE_URL" ] && [ -n "$SCIP_SUPABASE_ANON_KEY" ]; then
             python3 -c 'import json,os,pathlib; pathlib.Path("dist/config.js").write_text("window.SCIP_OJ_CONFIG = " + json.dumps({"SUPABASE_URL": os.environ["SCIP_SUPABASE_URL"], "SUPABASE_ANON_KEY": os.environ["SCIP_SUPABASE_ANON_KEY"], "MOCK_MODE": False}, indent=2) + ";\n")'
           fi
