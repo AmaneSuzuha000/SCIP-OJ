@@ -23,6 +23,10 @@ let activeAssignment = null;
 let currentTemplate = "";
 let pollTimer = null;
 let listViewMode = "table";
+let acceptedRoute = location.hash || "#learn";
+let assignmentFetchSeq = 0;
+let routeSeq = 0;
+let submissionsFetchSeq = 0;
 
 function getCodeValue() {
   return window.ScipOJEditor?.getValue() ?? document.getElementById("code").value;
@@ -116,6 +120,12 @@ function showWorkbenchTab(name) {
 
 
 async function main() {
+  document.querySelector(".skip-link")?.addEventListener("click", event => {
+    event.preventDefault();
+    const mainContent = document.getElementById("main-content");
+    mainContent?.focus({ preventScroll: true });
+    mainContent?.scrollIntoView({ block: "start" });
+  });
   // 1. 初始化平台层
   if (window.ScipOJPlatform) {
     try {
@@ -178,6 +188,7 @@ async function main() {
   const historyPanel = document.getElementById("history-tab");
   const submissions = document.getElementById("my-submissions-section");
   if (historyPanel && submissions) historyPanel.appendChild(submissions);
+  document.getElementById("btn-refresh-submissions").onclick = refreshHistory;
   window.ScipOJEditor?.init();
   window.ScipOJExam?.bind();
   document.getElementById("tab-testcase")?.addEventListener("click", () => showConsoleTab("testcase"));
@@ -223,7 +234,7 @@ async function main() {
     document.getElementById(id)?.addEventListener("click", async () => {
       const index = problemIndex.findIndex(p => p.id === activeProblemId);
       const next = problemIndex[index + step];
-      if (!next || !(await confirmLeaveIfExamDraft())) return;
+      if (!next) return; // The hash router asks once before leaving an exam draft.
       location.hash = "#" + next.id;
     });
   }
@@ -262,12 +273,13 @@ async function main() {
 
   // 8. 监听登录状态变化
   if (window.ScipOJPlatform) {
-    window.ScipOJPlatform.onAuthChange(() => {
+    window.ScipOJPlatform.onAuthChange(async () => {
       updateBannerCourseInfo();
       if (activeProblemId) {
-        refreshAssignmentMeta(activeProblemId);
-        refreshSubmissionsList();
-      }
+        const problemId = activeProblemId;
+        await refreshAssignmentMeta(problemId);
+        if (activeProblemId === problemId) refreshSubmissionsList();
+      } else if (document.body.dataset.learningView === "records") refreshSubmissionsList();
     });
 
     // 选课/退课成功后立即刷新横幅与作业门禁，无需刷新页面
@@ -319,27 +331,56 @@ function updateBannerCourseInfo() {
     bannerTitle.textContent = "尚未选修任何教学班级";
     bannerDesc.textContent = "您当前处于自主练习模式。请输入任课教师提供的邀请码（如 REDACTED-INVITE）加入课程。";
   } else {
-    bannerTitle.textContent = "系统建模与优化课程作业平台";
-    bannerDesc.textContent = "登录后绑定学号选课，即可提交正式作业并生成成绩凭证；未登录亦可进行 L1 练习自测。";
+    bannerTitle.textContent = "加入你的教学班级";
+    bannerDesc.textContent = "登录后绑定学号并加入班级，查看正式作业与提交记录。未登录可运行仿真实验和本地练习。";
   }
 }
 
 /** 处理 URL 路由 hash */
 async function handleRouteHash() {
-  const hash = location.hash.slice(1);
-  if (!hash || hash === "list") {
-    closeWorkspace();
-    return;
+  const seq = ++routeSeq;
+  const route = window.ScipOJSpaces.parseRoute(location.hash);
+  if (activeProblemId && route.problemId !== activeProblemId) {
+    if (!(await confirmLeaveIfExamDraft())) {
+      if (seq === routeSeq) window.history.replaceState(null, "", acceptedRoute);
+      return;
+    }
+    if (seq !== routeSeq) return;
   }
-
-  const prob = problemIndex.find(p => p.id === hash);
+  const prob = problemIndex.find(p => p.id === route.problemId);
   if (prob) {
+    window.ScipOJSpaces.activate(route);
+    placeSubmissionPanel(false);
+    acceptedRoute = location.hash;
     await openProblem(prob.path, prob.id);
+  } else {
+    closeWorkspace(false);
+    // Unknown problem bookmarks recover to the question list.
+    if (route.problemId) { route.view = "problems"; route.key = "problem-list-section"; }
+    window.ScipOJSpaces.activate(route);
+    placeSubmissionPanel(route.view === "records");
+    if (route.view === "records") await refreshSubmissionsList();
+    if (seq !== routeSeq) return;
+    if (route.anchor) document.getElementById(route.anchor)?.scrollIntoView({ block: "start" });
+    else window.scrollTo({ top: 0, behavior: "instant" });
   }
+  if (seq === routeSeq) acceptedRoute = location.hash || "#learn";
 }
 
-function closeWorkspace() {
+function placeSubmissionPanel(globalHistory) {
+  const section = document.getElementById("my-submissions-section");
+  const target = document.getElementById(globalHistory ? "submissions-host" : "history-tab");
+  if (section && target && section.parentElement !== target) target.appendChild(section);
+  const title = section?.querySelector("h3");
+  if (title) title.textContent = globalHistory ? "全部正式提交" : "本题正式提交记录";
+  const leaderboard = document.getElementById("btn-show-leaderboard");
+  if (leaderboard) leaderboard.hidden = globalHistory;
+}
+
+function closeWorkspace(updateHash = true) {
   openSeq++;
+  assignmentFetchSeq++;
+  submissionsFetchSeq++;
   activeProblemId = null;
   activeAssignment = null;
   window.ScipOJExam?.activate("standard", null);
@@ -353,8 +394,11 @@ function closeWorkspace() {
   if (listSec) listSec.hidden = false;
   document.body.classList.remove("workbench-active");
   // 用 replaceState 避免“返回题单”在浏览器历史里不断堆叠，按后退键可正常离开
-  if (location.hash && location.hash !== "#list") {
-    history.replaceState(null, "", "#list");
+  if (updateHash) {
+    acceptedRoute = "#problem-list-section";
+    window.history.replaceState(null, "", acceptedRoute);
+    window.ScipOJSpaces.activate(window.ScipOJSpaces.parseRoute(acceptedRoute));
+    placeSubmissionPanel(false);
   }
 }
 
@@ -421,6 +465,9 @@ let openSeq = 0;
 async function openProblem(path, id) {
   const seq = ++openSeq;
   activeProblemId = id;
+  activeAssignment = null;
+  const formalButton = document.getElementById("btn-submit-formal");
+  if (formalButton) formalButton.disabled = true;
   if (pollTimer) {
     clearInterval(pollTimer);
     pollTimer = null;
@@ -503,6 +550,7 @@ async function openProblem(path, id) {
 
     // 刷新作业元信息
     await refreshAssignmentMeta(id);
+    if (seq !== openSeq || activeProblemId !== id) return;
 
     // 绑定按钮行为
     setupActionButtons(meta, id);
@@ -525,18 +573,23 @@ async function openProblem(path, id) {
 
 /** 刷新题目与作业关联元数据（截止时间、及格线、计分规则） */
 async function refreshAssignmentMeta(problemId) {
+  const requestSeq = ++assignmentFetchSeq;
   const metaBar = document.getElementById("assignment-meta-bar");
   const btnSubmitFormal = document.getElementById("btn-submit-formal");
   if (!metaBar) return;
 
   activeAssignment = null;
+  let assignment = null;
   if (window.ScipOJPlatform && window.ScipOJPlatform.isConfigured()) {
     try {
-      activeAssignment = await window.ScipOJPlatform.getAssignmentForProblem(problemId);
+      assignment = await window.ScipOJPlatform.getAssignmentForProblem(problemId);
     } catch (e) {
       console.warn("[App] 获取作业信息失败:", e);
     }
   }
+
+  if (requestSeq !== assignmentFetchSeq || activeProblemId !== problemId) return;
+  activeAssignment = assignment;
 
   if (activeAssignment) {
     const dueStr = activeAssignment.due_at ? new Date(activeAssignment.due_at).toLocaleString("zh-CN") : "长期有效";
@@ -840,13 +893,16 @@ function setupActionButtons(meta, id) {
 
 /** 刷新学生在该题目的提交历史记录 */
 async function refreshSubmissionsList() {
+  const requestSeq = ++submissionsFetchSeq;
+  const context = `${activeProblemId || ""}|${activeAssignment?.id || ""}|${document.body.dataset.learningView}`;
+  const globalHistory = document.body.dataset.learningView === "records";
   const container = document.getElementById("my-submissions-container");
   if (!container) return;
 
   if (!window.ScipOJPlatform || !window.ScipOJPlatform.isConfigured()) {
     container.innerHTML = `
       <p style="color:var(--text-secondary); padding:1rem;">
-        🌿 <strong>当前处于离线模式</strong>：未配置后端服务。您可在上方使用「⚡ L1 练习评分」在本地环境自由自测。
+        当前未连接课程服务。可进入「<a href="#problem-list-section">在线做题</a>」进行本地练习；正式提交记录需连接课程服务后查看。
       </p>
     `;
     return;
@@ -867,13 +923,18 @@ async function refreshSubmissionsList() {
   container.innerHTML = `<p style="color:var(--text-secondary); padding:1rem;">正在加载历史提交记录...</p>`;
 
   try {
-    const assignmentId = activeAssignment?.id || null;
+    if (!globalHistory && activeProblemId && !activeAssignment?.id) {
+      container.innerHTML = '<p class="history-empty">当前题目没有可用的正式作业。可继续本地练习，或进入「提交记录」查看其他作业。</p>';
+      return;
+    }
+    const assignmentId = globalHistory ? null : activeAssignment?.id || null;
     const submissions = await window.ScipOJPlatform.getMySubmissions(assignmentId);
+    if (requestSeq !== submissionsFetchSeq || context !== `${activeProblemId || ""}|${activeAssignment?.id || ""}|${document.body.dataset.learningView}`) return;
 
     if (submissions.length === 0) {
       container.innerHTML = `
         <p style="color:var(--text-secondary); padding:1.25rem;">
-          您尚未对该题目提交正式作业。编写完成后点击「🚀 提交正式作业」即可发起权威评测。
+          ${globalHistory ? '还没有正式提交记录。进入在线做题，选择当前班级的作业后提交。' : '您尚未对本题提交正式作业。完成后点击「提交正式作业」即可发起评测。'}
         </p>
       `;
       return;
@@ -894,18 +955,29 @@ async function refreshSubmissionsList() {
       pollTimer = null;
     }
   } catch (err) {
+    if (requestSeq !== submissionsFetchSeq) return;
     container.innerHTML = `<p class="fail" style="padding:1rem;">加载提交记录异常: ${escapeHtml(err.message)}</p>`;
   }
 }
 
+async function refreshHistory() {
+  const button = document.getElementById("btn-refresh-submissions");
+  button.disabled = true;
+  button.textContent = "刷新中…";
+  try { await refreshSubmissionsList(); }
+  finally { button.disabled = false; button.textContent = "刷新记录"; }
+}
+
 /** 渲染正式提交记录表格 */
 function renderSubmissionsTable(container, list) {
+  const globalHistory = document.body.dataset.learningView === "records";
   const table = document.createElement("table");
   table.className = "submissions-table";
   table.innerHTML = `
     <thead>
       <tr>
         <th>提交编号</th>
+        ${globalHistory ? '<th>题目 / 班级</th>' : ''}
         <th>轮次</th>
         <th>评测状态</th>
         <th>得分</th>
@@ -934,9 +1006,8 @@ function renderSubmissionsTable(container, list) {
 
         let scoreDisplay = "-";
         if (status === "done") {
-          const passThreshold = activeAssignment?.pass_score ?? 90;
           scoreDisplay = score != null
-            ? `<strong class="${score >= passThreshold ? 'pass' : 'fail'}">${score} 分</strong>`
+            ? `<strong class="${passed ? 'pass' : 'fail'}">${score} 分</strong>`
             : '<span style="color:var(--text-secondary);">未出分</span>';
         } else if (status === "system_error") {
           scoreDisplay = '<span style="color:var(--text-secondary);" title="系统错误不计0分">未出分 (系统故障)</span>';
@@ -951,6 +1022,12 @@ function renderSubmissionsTable(container, list) {
 
         const isLate = sub.metadata?.late;
         const timeStr = sub.created_at ? new Date(sub.created_at).toLocaleString("zh-CN") : "-";
+        const assignment = Array.isArray(sub.assignments) ? sub.assignments[0] : sub.assignments;
+        const course = Array.isArray(assignment?.courses) ? assignment.courses[0] : assignment?.courses;
+        const problemId = assignment?.problem_id;
+        const problemLabel = problemId
+          ? `${problemId} · ${problemIndex.find(p => p.id === problemId)?.title || '编程作业'}`
+          : `作业 ${String(sub.assignment_id || '').slice(0, 8) || '信息暂不可用'}`;
 
         return `
           <tr>
@@ -958,6 +1035,7 @@ function renderSubmissionsTable(container, list) {
               <code>${escapeHtml(sub.public_code || sub.id.slice(0, 8))}</code>
               ${isLate ? '<span class="tag-late" style="font-size:0.68rem; margin-left:0.25rem;">迟交</span>' : ''}
             </td>
+            ${globalHistory ? `<td class="submission-context"><strong>${escapeHtml(problemLabel)}</strong><small>${escapeHtml(course ? `${course.name} · ${course.code}` : '班级信息暂不可用')}</small></td>` : ''}
             <td>第 ${sub.attempt_no || 1} 次</td>
             <td>${statusBadge}</td>
             <td>${scoreDisplay}</td>
@@ -1012,7 +1090,7 @@ function showReportDialog(sub) {
           <div>提交时间: <strong>${new Date(sub.created_at).toLocaleString("zh-CN")}</strong></div>
           <div>轮次: <strong>第 ${sub.attempt_no || 1} 次</strong></div>
           <div>状态: <strong>${grading?.status || 'queued'}</strong></div>
-          <div>得分: <strong class="${grading?.score != null && grading.score >= (activeAssignment?.pass_score ?? 90) ? 'pass' : 'fail'}">${grading?.score != null ? grading.score + ' 分' : '未出分'}</strong></div>
+          <div>得分: <strong class="${grading?.passed ? 'pass' : 'fail'}">${grading?.score != null ? grading.score + ' 分' : '未出分'}</strong></div>
         </div>
 
         <div class="form-group">
@@ -1041,7 +1119,7 @@ function startSubmissionsPolling() {
 
   pollTimer = setInterval(async () => {
     // 用户已返回题单或切换题目时停止轮询
-    if (!activeProblemId || document.getElementById("workspace")?.hidden) {
+    if (document.getElementById("workspace")?.hidden && document.getElementById("submission-overview")?.hidden) {
       clearInterval(pollTimer);
       pollTimer = null;
       return;
