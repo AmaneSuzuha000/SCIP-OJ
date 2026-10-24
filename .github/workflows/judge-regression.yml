@@ -34,9 +34,12 @@ jobs:
         run: node tests/test_python_runtime.cjs
       - name: Independent course UI DOM and navigation regressions
         run: node tests/test_workbench_ui.cjs
+      - name: Course and learning space routing regressions
+        run: node tests/test_spaces.cjs
       - name: Check frontend JavaScript syntax
         run: |
           node --check site/js/app.js
+          node --check site/js/spaces.js
           node --check site/js/simulation-core.js
           node --check site/js/inventory-core.js
           node --check site/js/flow-core.js
