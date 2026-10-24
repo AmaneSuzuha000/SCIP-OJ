@@ -11,6 +11,15 @@ const a = core.compare(defaults);
 const b = core.compare(defaults);
 assert.deepEqual(a, b, "Fixed seeds and parameters must be reproducible");
 assert.equal(a.waitDifferences.length, defaults.replications);
+assert.equal(a.runs.length, defaults.replications, "Raw paired replicates must be exportable");
+for (let i = 0; i < a.runs.length; i++) {
+  const run = a.runs[i];
+  assert.equal(run.index, i + 1);
+  assert.equal(run.seed, (defaults.seed + Math.imul(i, 2654435761)) >>> 0);
+  assert.equal(run.resultA.arrivals, run.resultB.arrivals);
+  assert(Math.abs(run.waitDifference - (run.resultB.avgWait - run.resultA.avgWait)) < 1e-10);
+}
+
 assert.equal(a.waitDiffCI.replications, defaults.replications);
 assert(a.baseline.avgWait > a.alternative.avgWait, "Expected seeded demonstration to benefit from extra server");
 assert(a.baseline.avgWait > 0);
@@ -44,6 +53,8 @@ assert(single.avgWait >= 0 && single.meanQueue >= 0 && single.meanWip >= single.
 const page = fs.readFileSync("site/case-studio.html", "utf8");
 assert(page.includes("js/simulation-core.js"));
 assert(page.includes("js/case-studio.js"));
+assert(page.includes("export-json-button"), "Verifiable JSON must be exposed in the course UI");
+assert(page.includes("python -m judge.ie_des01_reference"), "Teacher replay instructions missing");
 assert(page.includes("本地计算"));
 assert(page.includes("不是正式课程成绩"));
 assert(!page.includes("service_role"));

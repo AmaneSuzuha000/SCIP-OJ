@@ -1,9 +1,17 @@
 name: Course UI Chromium Preview
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "judge/ie_des01_reference.py"
+      - "tests/test_ui_browser.cjs"
+      - ".github/workflows/ui-visual-smoke.yml"
   pull_request:
     paths:
       - "site/**"
+      - "judge/ie_des01_reference.py"
       - "tests/test_ui_browser.cjs"
       - ".github/workflows/ui-visual-smoke.yml"
   workflow_dispatch:
@@ -20,6 +28,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Install CJK font for readable Chinese review screenshots
+        run: |
+          mkdir -p "$HOME/.local/share/fonts"
+          curl --fail --location --retry 3 \
+            https://raw.githubusercontent.com/notofonts/noto-cjk/main/Sans/OTF/SimplifiedChinese/NotoSansCJKsc-Regular.otf \
+            --output "$HOME/.local/share/fonts/NotoSansCJKsc-Regular.otf"
+          test "$(git hash-object "$HOME/.local/share/fonts/NotoSansCJKsc-Regular.otf")" = dc15562470b4f842321894787a0d066879ccff8b
+          fc-cache -f
+          fc-match 'Noto Sans CJK SC' | grep -F NotoSansCJKsc-Regular
       - name: Install Playwright headless-shell
         run: |
           npm install --no-save playwright@1.55.0
@@ -41,7 +58,7 @@ jobs:
             sleep 1
           done
           exit 1
-      - name: Exercise student, editor, simulation, faculty, and mobile views
+      - name: Exercise responsive workbench, three labs, downloads and independent replay
         run: node tests/test_ui_browser.cjs
       - name: Save review screenshots
         if: always()
