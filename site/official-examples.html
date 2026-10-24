@@ -17,8 +17,8 @@
 </style>
 </head>
 <body><a class="skip-link" href="#main">跳过导航</a>
-<header class="site-header"><a class="identity" href="index.html"><span class="identity-icon">∑</span><span>SCIP/LAB <small>INDUSTRIAL ENGINEERING COURSE</small></span></a>
-<nav aria-label="站点导航"><a href="case-studio.html">检修排队</a><a href="inventory-lab.html">库存仿真</a><a href="flow-lab.html">生产线仿真</a><a href="official-examples.html" class="active" aria-current="page">官方示例</a><a href="index.html#problem-list-section">在线评测</a><a href="lab/index.html">JupyterLab</a></nav></header>
+<header class="site-header"><a class="identity" href="index.html#learn"><span class="identity-icon">∑</span><span>SCIP/LAB <small>INDUSTRIAL ENGINEERING COURSE</small></span></a>
+<nav aria-label="站点导航"><a href="index.html#learn">← 拓展学习</a><a href="case-studio.html">检修排队</a><a href="inventory-lab.html">库存仿真</a><a href="flow-lab.html">生产线仿真</a><a href="official-examples.html" class="active" aria-current="page">官方示例</a><a href="index.html#learn-notebooks">优化建模 Notebook</a></nav></header>
 <main id="main">
 <section class="hero"><div class="hero-content"><span class="eyebrow">CURATED OFFICIAL EXAMPLES / SCIP + GUROBI</span><h1>从官方 Examples，<br><span>建立严谨的工业工程案例课程。</span></h1>
 <p class="lead">先学习可信的数学建模方法，再把优化结果放回不确定性、排队和资源约束的系统仿真中验证。每一例给出原始官方出处、适用学习阶段和课程转化任务。</p>
@@ -43,10 +43,10 @@
 <p><strong>出处与许可：</strong>PySCIPOpt 项目为 MIT；SCIP 8.0.3 起采用 Apache-2.0；Gurobi 建模示例项目采用 Apache-2.0。若未来将第三方代码纳入本仓库，需逐个保留原版权、许可声明并履行相关要求。本站现阶段只提供链接与自主编写的课程模型。</p></section>
 <section class="local-notebooks"><div class="section-heading"><div><span class="eyebrow dark">ORIGINAL PYSCIPOPT NOTEBOOKS / VERIFIED ORACLES</span><h2>平台原创、可在浏览器运行的教学 Notebook</h2><p>在 <a href="lab/index.html">JupyterLab 文件列表</a>中打开相应 Notebook；所有新增优化模型均有不依赖 SCIP 的独立小规模真值校验。</p></div></div>
 <div class="catalog">
-<article><span class="eyebrow">IE-OPT-03</span><h3>容量约束设施选址</h3><p>单源二元分配，容量守恒、启用成本；3 设施 × 4 客户，共 81 种候选分配穷举。</p><a href="lab/index.html">JupyterLab · 03_Facility ↗</a></article>
-<article><span class="eyebrow">IE-OPT-04</span><h3>仓储装箱</h3><p>二元物品分配、箱容量、对称性；以独立递归装箱算法验证最少箱数。</p><a href="lab/index.html">JupyterLab · 04_Bin_Packing ↗</a></article>
-<article><span class="eyebrow">IE-OPT-05</span><h3>排列流水车间</h3><p>工件顺序与机器先后约束，独立枚举 4! = 24 个排列计算 Cmax 真值。</p><a href="lab/index.html">JupyterLab · 05_Flow_Shop ↗</a></article>
-<article><span class="eyebrow">IE-OPT-06</span><h3>单周期随机库存优化</h3><p>场景概率与整数订货决策；独立枚举 0～10 件订货量对照期望损失。</p><a href="lab/index.html">JupyterLab · 06_Stochastic_Inventory ↗</a></article>
+<article><span class="eyebrow">IE-OPT-03</span><h3>容量约束设施选址</h3><p>单源二元分配，容量守恒、启用成本；3 设施 × 4 客户，共 81 种候选分配穷举。</p><a href="lab/index.html?path=03_IE_Facility_Location_PySCIPOpt.ipynb&amp;mode=single-document">JupyterLab · 03_Facility ↗</a></article>
+<article><span class="eyebrow">IE-OPT-04</span><h3>仓储装箱</h3><p>二元物品分配、箱容量、对称性；以独立递归装箱算法验证最少箱数。</p><a href="lab/index.html?path=04_IE_Bin_Packing_PySCIPOpt.ipynb&amp;mode=single-document">JupyterLab · 04_Bin_Packing ↗</a></article>
+<article><span class="eyebrow">IE-OPT-05</span><h3>排列流水车间</h3><p>工件顺序与机器先后约束，独立枚举 4! = 24 个排列计算 Cmax 真值。</p><a href="lab/index.html?path=05_IE_Flow_Shop_PySCIPOpt.ipynb&amp;mode=single-document">JupyterLab · 05_Flow_Shop ↗</a></article>
+<article><span class="eyebrow">IE-OPT-06</span><h3>单周期随机库存优化</h3><p>场景概率与整数订货决策；独立枚举 0～10 件订货量对照期望损失。</p><a href="lab/index.html?path=06_IE_Stochastic_Inventory_PySCIPOpt.ipynb&amp;mode=single-document">JupyterLab · 06_Stochastic_Inventory ↗</a></article>
 </div></section>
 <section id="method"><div class="section-heading"><div><span class="eyebrow dark">BRIDGE / OPTIMIZE → SIMULATE → VALIDATE</span><h2>同一个工业系统，两种互补的方法</h2></div></div>
 <div class="table-scroll"><table class="matrix"><thead><tr><th>阶段</th><th>优化建模（SCIP）</th><th>系统仿真（课程案例）</th><th>学生应交的证据</th></tr></thead>
