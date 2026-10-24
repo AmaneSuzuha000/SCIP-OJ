@@ -1,0 +1,70 @@
+name: Course UI Chromium Preview
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "judge/ie_des01_reference.py"
+      - "tests/test_ui_browser.cjs"
+      - ".github/workflows/ui-visual-smoke.yml"
+  pull_request:
+    paths:
+      - "site/**"
+      - "judge/ie_des01_reference.py"
+      - "tests/test_ui_browser.cjs"
+      - ".github/workflows/ui-visual-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ui-chromium-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install CJK font for readable Chinese review screenshots
+        run: |
+          mkdir -p "$HOME/.local/share/fonts"
+          curl --fail --location --retry 3 \
+            https://raw.githubusercontent.com/notofonts/noto-cjk/main/Sans/OTF/SimplifiedChinese/NotoSansCJKsc-Regular.otf \
+            --output "$HOME/.local/share/fonts/NotoSansCJKsc-Regular.otf"
+          test "$(git hash-object "$HOME/.local/share/fonts/NotoSansCJKsc-Regular.otf")" = dc15562470b4f842321894787a0d066879ccff8b
+          fc-cache -f
+          fc-match 'Noto Sans CJK SC' | grep -F NotoSansCJKsc-Regular
+      - name: Install Playwright headless-shell
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium --only-shell
+      - name: Assemble preview exactly like the Pages web shell
+        run: |
+          mkdir -p ui-preview/problems ui-preview/docs
+          cp -r site/* ui-preview/
+          cp -r problems/* ui-preview/problems/
+          cp -r docs/* ui-preview/docs/
+          cp README.md ui-preview/README.md
+      - name: Start read-only course website preview
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory ui-preview > /tmp/scip-ui-preview.log 2>&1 &
+          for attempt in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:8765/index.html > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          exit 1
+      - name: Exercise responsive workbench, three labs, downloads and independent replay
+        run: node tests/test_ui_browser.cjs
+      - name: Save review screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scip-lab-ui-preview
+          path: ui-artifacts/
+          if-no-files-found: warn
+          retention-days: 14

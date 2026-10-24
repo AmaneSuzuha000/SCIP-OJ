@@ -1,0 +1,274 @@
+/* SCIP/LAB v3 — course-first interface. Kept isolated from the judge/runtime. */
+body.student-page{
+  --bg-base:#f5f7f6;--bg-surface:#fff;--bg-subtle:#eff3f2;--bg-elevated:#fff;
+  --border-default:#e0e8e5;--border-subtle:#eaf0ee;--border-active:#157d77;
+  --text-primary:#203238;--text-secondary:#667a7e;--text-muted:#829294;
+  --brand-blue:#266aaf;--brand-blue-hover:#174f89;--brand-green:#117b72;--brand-green-hover:#075e57;
+  --rail-width:250px;
+  background:#f5f7f6;
+  color:var(--text-primary);
+  font-family:Inter,"Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;
+}
+.student-page [hidden]{display:none!important}
+.student-page .navbar.workbench-topbar{
+  position:sticky;top:0;z-index:90;height:74px;
+  display:flex;align-items:center;box-sizing:border-box;
+  background:rgba(255,255,255,.97);padding:0 27px;
+  border-bottom:1px solid #e4ebe8;box-shadow:none;
+  backdrop-filter:saturate(150%) blur(14px);
+}
+.student-page .workbench-topbar .navbar-container{
+  max-width:none;width:100%;height:100%;
+  display:flex;flex-direction:row;align-items:center;gap:22px;justify-content:space-between;
+}
+.student-page .workbench-topbar .brand-section{display:flex;align-items:center;gap:19px;flex:none;min-width:0}
+.student-page .workbench-topbar .brand-logo{
+  display:inline-flex;align-items:center;gap:10px;
+  text-decoration:none;color:#1b353a;font-size:1.13rem;letter-spacing:-.055em;
+}
+.student-page .workbench-topbar .brand-logo-icon{
+  width:39px;height:39px;display:grid;place-items:center;
+  border-radius:11px;background:linear-gradient(150deg,#146f70,#103e56);
+  box-shadow:0 5px 13px rgba(25,87,87,.15);
+  font:26px/1 Georgia,serif;color:#fff;
+}
+.student-page .brand-name{font-weight:850;white-space:nowrap}.student-page .brand-name-accent{color:#24998a;padding:0 1px}
+.student-page .workbench-topbar .brand-tag{
+  font:600 11px/1.2 Inter,"Noto Sans SC",sans-serif;
+  border-left:1px solid #dce7e4;border-top:0;border-right:0;border-bottom:0;
+  border-radius:0;padding:4px 0 4px 17px;
+  background:transparent;color:#798a8e;letter-spacing:.02em;white-space:nowrap;
+}
+.student-page .topbar-route{display:flex;align-items:center;gap:13px;margin-right:auto;padding-left:13px;color:#91a09f;font-size:.8rem;white-space:nowrap}
+.student-page .topbar-route strong{color:#35565a;font-weight:680}
+.student-page .workbench-topbar .auth-section{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end;width:auto;min-width:0}
+.student-page .auth-section .btn-blue{background:#175e60;border-radius:10px;font-weight:700;padding:9px 14px!important}
+.student-page .auth-section .user-info{max-width:280px;overflow:hidden;text-overflow:ellipsis}
+.student-page .studio-rail{
+  position:fixed;inset:74px auto 0 0;z-index:65;
+  width:var(--rail-width);display:flex;flex-direction:column;gap:24px;
+  overflow:auto;padding:32px 15px 18px;
+  background:#fff;border-right:1px solid #e4eae8;
+  box-shadow:inset -1px 0 #fafcfb;
+}
+.student-page .rail-section{min-width:0}
+.student-page .rail-menu-toggle{display:none}
+.student-page .rail-section-label{font-size:.67rem;font-weight:750;letter-spacing:.16em;color:#9caeac;margin:0 0 8px 17px}
+.student-page .studio-rail .nav-links{width:100%;display:flex;flex-direction:column;gap:3px;overflow:visible;order:initial;flex-wrap:nowrap;padding:0}
+.student-page .studio-rail .nav-item{
+  display:flex;align-items:center;gap:11px;min-width:0;min-height:39px;
+  font-size:.85rem;font-weight:640;text-decoration:none;
+  padding:8px 10px 8px 12px;border-radius:11px;
+  color:#566b70;background:transparent;white-space:nowrap;
+  transition:background .18s ease,color .18s ease,transform .18s ease;
+}
+.student-page .studio-rail .nav-item:hover{color:#116b67;background:#edf7f3;transform:translateX(2px)}
+.student-page .studio-rail .nav-item.active{color:#0c635f;background:#e3f4ef;font-weight:800}
+.student-page .rail-icon{
+  display:inline-grid;place-items:center;flex:none;
+  width:28px;height:28px;border-radius:8px;color:#829795;
+  background:#f2f6f4;font:750 12px/1 ui-monospace,SFMono-Regular,Consolas,monospace;
+}
+.student-page .nav-item.active .rail-icon{color:#0a756c;background:#caede3}
+.student-page .rail-external{margin-left:auto;font-size:15px;color:#9aa9aa}
+.student-page .rail-bottom{
+  display:flex;align-items:flex-start;gap:10px;margin-top:auto;
+  background:#f4f7f5;padding:15px 13px;border-radius:13px;
+  border:1px solid #e5ece9;color:#314c50;
+}
+.student-page .rail-bottom strong,.student-page .rail-bottom small{display:block}
+.student-page .rail-bottom strong{font-size:.8rem;margin-bottom:5px}
+.student-page .rail-bottom small{font-size:.69rem;line-height:1.5;color:#7a918d}
+.student-page .rail-status-dot{width:8px;height:8px;flex:none;background:#2fa48e;border-radius:50%;margin-top:4px;box-shadow:0 0 0 4px #daf4e9}
+.student-page .main-content.studio-content{width:calc(100% - var(--rail-width));max-width:none;margin:0 0 0 var(--rail-width);padding:30px 38px 68px;min-width:0}
+.student-page .studio-intro{
+  display:grid;grid-template-columns:minmax(0,1.2fr) minmax(290px,.78fr);
+  gap:24px;align-items:stretch;min-height:344px;
+  padding:37px 38px;overflow:hidden;position:relative;
+  color:#effdf9;border-radius:23px;
+  background:radial-gradient(circle at 90% -40%,rgba(125,209,191,.2),transparent 50%),linear-gradient(121deg,#122e38 0%,#1c4f50 100%);
+}
+.student-page .studio-intro::before{content:"";width:370px;height:370px;border:1px solid rgba(255,255,255,.085);position:absolute;right:-130px;bottom:-260px;border-radius:50%;pointer-events:none}
+.student-page .studio-intro-main,.student-page .studio-method{z-index:1;position:relative}
+.student-page .studio-overline{display:flex;align-items:center;gap:9px;flex-wrap:wrap;color:#9bdbc9;font:700 .66rem ui-monospace,Consolas,monospace;letter-spacing:.12em;margin:1px 0 22px}
+.student-page .overline-spark{width:7px;height:7px;border-radius:50%;background:#9de6d2;box-shadow:0 0 0 4px rgba(157,230,210,.1)}
+.student-page .overline-slash{color:#619c9a}
+.student-page .studio-intro h1{color:#f4faf8;margin:0 0 16px;letter-spacing:-.065em;font-size:clamp(2.2rem,3.5vw,3.4rem);line-height:1.24;font-weight:820}
+.student-page .studio-intro h1 span{color:#9ee6d1}
+.student-page .studio-lead{max-width:650px;color:#c5dcd9;font-size:.94rem;line-height:1.85;margin:0 0 24px}
+.student-page .studio-intro-actions{display:flex;flex-wrap:wrap;gap:11px}
+.student-page .studio-action-primary,.student-page .studio-action-secondary{
+  display:inline-flex;align-items:center;justify-content:center;gap:18px;
+  text-decoration:none!important;font-weight:780;font-size:.86rem;border-radius:11px;
+  padding:11px 18px;min-height:45px;
+}
+.student-page .studio-action-primary{background:#a9edda;color:#143d36}
+.student-page .studio-action-primary:hover{background:#c8f7e9;color:#143d36}
+.student-page .studio-action-secondary{background:rgba(255,255,255,.06);color:#ebfaf7;border:1px solid rgba(207,236,229,.31)}
+.student-page .studio-action-secondary:hover{background:rgba(255,255,255,.13);color:#fff}
+.student-page .studio-intro-note{font-size:.7rem;color:#a4c4c0;margin-top:21px;display:flex;gap:7px;align-items:center}
+.student-page .studio-method{background:rgba(7,26,34,.44);border:1px solid rgba(184,225,219,.16);border-radius:17px;padding:18px 20px;align-self:stretch;display:flex;flex-direction:column;min-width:0}
+.student-page .studio-method-top{display:flex;justify-content:space-between;gap:8px;padding-bottom:13px;border-bottom:1px solid rgba(231,255,250,.15);font-size:.72rem;font-weight:780}
+.student-page .studio-method-top span:last-child{color:#9dbdb8;font:650 .61rem ui-monospace,monospace;letter-spacing:.07em}
+.student-page .studio-method-steps{padding:0;margin:5px 0 0;list-style:none;flex:1}
+.student-page .studio-method-steps li{display:flex;align-items:center;gap:14px;border-bottom:1px solid rgba(231,255,250,.13);padding:10px 0}
+.student-page .method-index{font:800 .7rem ui-monospace,monospace;color:#80d1bc}
+.student-page .studio-method-steps li>div{min-width:0;flex:1}
+.student-page .studio-method-steps strong,.student-page .studio-method-steps small{display:block}
+.student-page .studio-method-steps strong{font-size:.84rem;color:#f5faf8}
+.student-page .studio-method-steps small{font-size:.68rem;color:#9fbcb9;margin-top:2px}
+.student-page .method-mark{font-size:15px;color:#91d9c8}
+.student-page .studio-method-bottom{display:flex;gap:9px;align-items:center;color:#abd6ca;font-size:.69rem;padding-top:12px}
+.student-page .method-pin{width:18px;height:18px;border:1px solid #84cbb7;border-radius:50%;display:inline-grid;place-items:center}
+.student-page .method-pin::after{content:"✓";font-size:11px}
+.student-page .studio-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin:18px 0 34px}
+.student-page .studio-kpi{min-height:92px;background:#fff;border:1px solid #e4ebe8;border-radius:17px;display:flex;gap:15px;align-items:center;padding:17px 19px}
+.student-page .kpi-symbol{display:grid;place-items:center;flex:none;width:43px;height:43px;border-radius:13px;font-size:19px;font-weight:800}
+.student-page .kpi-symbol-blue{background:#eaf0ff;color:#3a6dc2}
+.student-page .kpi-symbol-teal{background:#e0f4ef;color:#188876}
+.student-page .kpi-symbol-orange{background:#fff1e4;color:#c78047}
+.student-page .studio-kpi strong,.student-page .studio-kpi span{display:block}
+.student-page .studio-kpi strong{color:#233b3e;font-size:1.38rem;line-height:1.2;letter-spacing:-.04em}
+.student-page .studio-kpi span{margin-top:5px;font-size:.75rem;color:#7c8f8e}
+.student-page .studio-section-heading{display:flex;align-items:end;justify-content:space-between;gap:15px;margin:0 0 21px}
+.student-page .studio-section-overline{margin:0 0 7px;font:800 .67rem ui-monospace,monospace;color:#22867a;letter-spacing:.11em}
+.student-page .studio-section-heading h2{font-size:clamp(1.4rem,2vw,1.9rem);letter-spacing:-.045em;margin:0;color:#22383d}
+.student-page .studio-section-heading p:not(.studio-section-overline){margin:8px 0 0;font-size:.84rem;color:#758a8b;line-height:1.65}
+.student-page .studio-subtle-link{color:#27736d!important;font-size:.8rem;text-decoration:none;white-space:nowrap;font-weight:780;padding-bottom:5px}
+.student-page .studio-subtle-link:hover{text-decoration:underline}
+.student-page .studio-case-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}
+.student-page .studio-case-card{display:block;min-width:0;background:#fff;border:1px solid #e2eae7;border-radius:17px;overflow:hidden;text-decoration:none!important;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;box-shadow:0 5px 16px rgba(22,57,51,.028)}
+.student-page .studio-case-card:hover{border-color:#8bcab8;transform:translateY(-4px);box-shadow:0 16px 34px rgba(30,69,65,.095)}
+.student-page .studio-card-art{height:124px;padding:15px 18px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.student-page .art-id{font:800 .65rem ui-monospace,monospace;letter-spacing:.11em;position:absolute;left:17px;top:14px;color:rgba(17,53,59,.54)}
+.student-page .art-queue{background:radial-gradient(circle at 90% 10%,#b0efe2,transparent 50%),linear-gradient(125deg,#d8f3ea,#c3e5e3)}
+.student-page .art-inventory{background:radial-gradient(circle at 85% 0%,#fdd5b9,transparent 55%),linear-gradient(125deg,#fdf1e5,#f0e3d4)}
+.student-page .art-flow{background:radial-gradient(circle at 100% -20%,#d0d6ff,transparent 65%),linear-gradient(125deg,#e5eafb,#d8e1f0)}
+.student-page .queue-diagram,.student-page .inventory-diagram,.student-page .flow-diagram{display:flex;align-items:center;justify-content:center;gap:8px;padding-top:19px}
+.student-page .queue-diagram>i{width:17px;height:24px;display:block;border-radius:6px;background:#2f8078;box-shadow:0 3px 0 rgba(17,71,69,.14)}
+.student-page .queue-diagram>i:nth-child(2){opacity:.65;height:31px}.student-page .queue-diagram>i:nth-child(3){opacity:.4;height:19px}
+.student-page .queue-diagram>b,.student-page .flow-diagram>b{color:#497c7b;font-size:18px;font-weight:700}
+.student-page .queue-diagram>span{border:1px solid #6db3a8;color:#296d68;background:#ffffff9c;padding:8px 12px;border-radius:8px;font-size:.73rem;font-weight:900}
+.student-page .queue-diagram>em{font:900 27px/1 ui-monospace,monospace;color:#397971}
+.student-page .inventory-diagram>span{font-size:.7rem;font-weight:800;color:#88592b;padding:6px 8px;border-radius:8px;background:#fff7eccc}
+.student-page .inventory-diagram>i{height:32px;width:15px;background:#c18a56;border-radius:4px 4px 2px 2px}
+.student-page .inventory-diagram>i:nth-of-type(2){height:22px}.student-page .inventory-diagram>i:nth-of-type(3){height:39px}.student-page .inventory-diagram>i:nth-of-type(4){height:17px}
+.student-page .inventory-diagram>b{font-size:.68rem;color:#8a602f;margin-left:3px}
+.student-page .flow-diagram>i{font-style:normal;font-size:.76rem;font-weight:850;color:#455e9c;background:#f7f9ffdb;padding:11px 14px;border-radius:9px;border:1px solid #b9c7e4}
+.student-page .flow-diagram>em{font-style:normal;font:750 .61rem ui-monospace,monospace;color:#5671a3;border:1px dashed #8ea5d6;border-radius:6px;padding:9px 11px}
+.student-page .studio-card-body{padding:18px 19px 16px}
+.student-page .studio-card-meta{display:flex;justify-content:space-between;align-items:center;gap:6px;color:#6e8783;font-size:.71rem;font-weight:720}
+.student-page .studio-ready{color:#178674!important;white-space:nowrap}
+.student-page .studio-ready i{display:inline-block;width:6px;height:6px;border-radius:50%;background:#22a589;margin-right:4px;vertical-align:middle}
+.student-page .studio-case-card h3{color:#1c393d;font-size:1.03rem;letter-spacing:-.023em;margin:12px 0 7px}
+.student-page .studio-case-card p{color:#738888;font-size:.79rem;line-height:1.74;margin:0;min-height:57px}
+.student-page .studio-card-bottom{border-top:1px solid #edf1ee;margin-top:14px;padding-top:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.7rem;color:#8ca0a0}
+.student-page .studio-card-bottom strong{color:#197b72;font-size:1.2rem}
+.student-page .studio-assessment-section{margin-top:45px;scroll-margin-top:110px}
+.student-page .studio-assessment-section .course-banner{border:1px solid #e1e9e6;box-shadow:none;background:#fff;padding:20px 23px;margin-bottom:31px}
+.student-page .studio-assessment-section .course-icon{background:#e0f3ed;color:#218578}
+.student-page #problem-search-input{border-color:#d7e5df}
+.student-page #problem-search-input:focus{border-color:#278e81;box-shadow:0 0 0 3px rgba(48,159,143,.1)}
+.student-page .catalog-view{background:#e7eeeb}
+.student-page .view-toggle.active{color:#15776d}
+.student-page #problem-list .problem-card:hover{border-color:#6eb6a1}
+.student-page .workspace-intro .section-kicker{color:#288b79}
+.student-page .workspace-intro{padding-top:9px}
+.student-page .workspace-layout{grid-template-columns:minmax(0,.93fr) minmax(0,1.07fr)}
+.student-page.workbench-active .studio-intro,
+.student-page.workbench-active .studio-kpis,
+.student-page.workbench-active .studio-case-section{display:none}
+.student-page.workbench-active .studio-content{padding-top:12px}
+.student-page .btn-green,.student-page button#btn-grade{background:#0d806f}
+.student-page .btn-green:hover,.student-page button#btn-grade:hover:not(:disabled){background:#076455}
+.student-page .btn-blue,.student-page button.btn-blue{background:#236b91}
+.student-page .btn-blue:hover,.student-page button.btn-blue:hover:not(:disabled){background:#155273}
+.student-page .studio-footer{margin-left:var(--rail-width);background:#fff;border-top:1px solid #e3ebe8;padding:19px 28px}
+.student-page .studio-footer .footer-container{max-width:none}
+@media(max-width:1300px){
+  .student-page .topbar-route{display:none}
+  .student-page .studio-intro{gap:18px;padding:29px}
+  .student-page .studio-method{padding:16px}
+  .student-page .studio-case-grid{gap:11px}
+}
+@media(max-width:1050px){
+  body.student-page{--rail-width:213px}
+  .student-page .main-content.studio-content{padding:24px}
+  .student-page .studio-rail{padding:25px 10px}
+  .student-page .studio-intro{grid-template-columns:minmax(0,1fr)}
+  .student-page .studio-method{display:none}
+  .student-page .studio-case-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .student-page .studio-case-card:last-child{grid-column:1 / -1}
+  .student-page .studio-kpis{gap:8px}
+  .student-page .studio-kpi{padding:13px 12px;gap:10px}
+}
+@media(max-width:1200px){
+  .student-page .workspace-layout{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:840px){
+  body.student-page{--rail-width:0px}
+  .student-page .navbar.workbench-topbar{height:auto;min-height:66px;padding:9px 16px}
+  .student-page .workbench-topbar .brand-section{width:auto}
+  .student-page .workbench-topbar .brand-tag{display:none}
+  .student-page .workbench-topbar .auth-section{max-width:60vw}
+  .student-page .studio-rail{position:relative;inset:auto;width:100%;height:auto;padding:8px 13px;overflow-x:auto;overflow-y:hidden;display:block;border-right:0;border-bottom:1px solid #e4eae8}
+  .student-page .studio-rail .rail-section:not(:first-child),.student-page .studio-rail .rail-bottom{display:none}
+  .student-page .studio-rail.rail-menu-open .rail-section{display:block}
+  .student-page .rail-menu-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:42px;margin-top:5px;padding:8px 12px;background:#f1f7f4;color:#285c57;border:1px solid #dfeae5;border-radius:9px;font-size:.8rem}
+  .student-page .rail-menu-toggle[aria-expanded=true] span{transform:rotate(45deg)}
+  .student-page .studio-rail.rail-menu-open .rail-section:not(:first-child){margin-top:14px}
+  .student-page .studio-rail.rail-menu-open .rail-section:not(:first-child) .rail-section-label{display:block;margin:0 0 6px 10px}
+  .student-page .studio-rail.rail-menu-open .rail-section:not(:first-child) .nav-links{flex-wrap:wrap}
+  .student-page .studio-rail .rail-section-label{display:none}
+  .student-page .studio-rail .nav-links{display:flex;flex-direction:row;flex-wrap:nowrap;gap:4px}
+  .student-page .studio-rail .nav-item{min-height:37px;flex:none}
+  .student-page .main-content.studio-content{margin:0;padding:18px 20px 42px}
+  .student-page .studio-footer{margin-left:0}
+  .student-page .studio-assessment-section{scroll-margin-top:20px}
+}
+@media(max-width:650px){
+  .student-page .workbench-topbar .brand-name{font-size:1.05rem}
+  .student-page .workbench-topbar .brand-logo-icon{height:34px;width:34px;font-size:23px}
+  .student-page .workbench-topbar .auth-section .user-info{max-width:150px}
+  .student-page .main-content.studio-content{padding:14px 12px 33px}
+  .student-page .studio-intro{border-radius:17px;padding:25px 20px;min-height:0}
+  .student-page .studio-intro h1{font-size:2.15rem}
+  .student-page .studio-lead{font-size:.86rem}
+  .student-page .studio-intro-note{line-height:1.5}
+  .student-page .studio-kpis{grid-template-columns:1fr;gap:8px;margin:12px 0 30px}
+  .student-page .studio-kpi{min-height:70px}
+  .student-page .studio-section-heading{align-items:start;flex-direction:column}
+  .student-page .studio-case-grid{grid-template-columns:1fr}
+  .student-page .studio-case-card:last-child{grid-column:auto}
+  .student-page .studio-card-art{height:107px}
+  .student-page .studio-case-card p{min-height:0}
+  .student-page .studio-assessment-section{margin-top:36px}
+  .student-page .studio-footer{padding:17px 13px}
+  .student-page .studio-intro-actions a{width:100%}
+}
+@media(prefers-reduced-motion:reduce){
+ .student-page .studio-case-card,.student-page .studio-rail .nav-item{transition:none}
+}
+/* Transparent, learnable scoring stages without coupling to a future policy version. */
+.student-page .studio-grade-guide{
+  border:1px solid #dae7e2;border-radius:12px;background:#fff;
+  margin:15px 0 20px;color:#243b3d;overflow:hidden;
+}
+.student-page .studio-grade-guide summary{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;cursor:pointer;
+  padding:14px 18px;list-style:none;user-select:none;
+}
+.student-page .studio-grade-guide summary::-webkit-details-marker{display:none}
+.student-page .studio-grade-guide summary>span:first-child{display:flex;flex-direction:column;gap:4px}
+.student-page .studio-grade-guide summary strong{font-size:.86rem;font-weight:750}
+.student-page .studio-grade-guide summary small{font-size:.73rem;color:#7a8b89}
+.student-page .studio-grade-guide summary>span:last-child{color:#168674;font-size:1.35rem}
+.student-page .studio-grade-guide[open] summary>span:last-child{transform:rotate(45deg)}
+.student-page .studio-grade-guide summary:hover{background:#f1f7f4}
+.student-page .studio-grade-guide summary:focus-visible{outline:2px solid #168674;outline-offset:-3px}
+.student-page .studio-grade-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;padding:0 15px 12px}
+.student-page .studio-grade-grid>div{background:#f5f8f6;border:1px solid #e3ece8;border-radius:9px;padding:13px}
+.student-page .studio-grade-grid b{font-size:.76rem;color:#21655f}
+.student-page .studio-grade-grid p{color:#687e7c;font-size:.75rem;line-height:1.65;margin:7px 0 0}
+.student-page .studio-grade-note{margin:0;border-top:1px solid #e4eeea;padding:10px 16px;color:#798b89;font-size:.72rem;line-height:1.6}
+@media(max-width:900px){.student-page .studio-grade-grid{grid-template-columns:1fr}}
