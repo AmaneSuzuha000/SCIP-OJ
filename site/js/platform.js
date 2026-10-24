@@ -420,6 +420,7 @@ const ScipOJPlatform = (() => {
           attempt_no,
           created_at,
           metadata,
+          assignments (problem_id, courses (name, code)),
           gradings (
             id,
             status,
