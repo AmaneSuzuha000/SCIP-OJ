@@ -192,7 +192,7 @@ body.student-page{
   .student-page .studio-case-grid{gap:11px}
 }
 @media(max-width:1050px){
-  .student-page{--rail-width:213px}
+  body.student-page{--rail-width:213px}
   .student-page .main-content.studio-content{padding:24px}
   .student-page .studio-rail{padding:25px 10px}
   .student-page .studio-intro{grid-template-columns:minmax(0,1fr)}
@@ -206,7 +206,7 @@ body.student-page{
   .student-page .workspace-layout{grid-template-columns:minmax(0,1fr)}
 }
 @media(max-width:840px){
-  .student-page{--rail-width:0px}
+  body.student-page{--rail-width:0px}
   .student-page .navbar.workbench-topbar{height:auto;min-height:66px;padding:9px 16px}
   .student-page .workbench-topbar .brand-section{width:auto}
   .student-page .workbench-topbar .brand-tag{display:none}
