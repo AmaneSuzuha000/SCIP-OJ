@@ -19,7 +19,7 @@ body.student-page{
 }
 .student-page .workbench-topbar .navbar-container{
   max-width:none;width:100%;height:100%;
-  display:flex;align-items:center;gap:22px;justify-content:space-between;
+  display:flex;flex-direction:row;align-items:center;gap:22px;justify-content:space-between;
 }
 .student-page .workbench-topbar .brand-section{display:flex;align-items:center;gap:19px;flex:none;min-width:0}
 .student-page .workbench-topbar .brand-logo{
@@ -52,6 +52,7 @@ body.student-page{
   box-shadow:inset -1px 0 #fafcfb;
 }
 .student-page .rail-section{min-width:0}
+.student-page .rail-menu-toggle{display:none}
 .student-page .rail-section-label{font-size:.67rem;font-weight:750;letter-spacing:.16em;color:#9caeac;margin:0 0 8px 17px}
 .student-page .studio-rail .nav-links{width:100%;display:flex;flex-direction:column;gap:3px;overflow:visible;order:initial;flex-wrap:nowrap;padding:0}
 .student-page .studio-rail .nav-item{
@@ -79,7 +80,7 @@ body.student-page{
 .student-page .rail-bottom strong{font-size:.8rem;margin-bottom:5px}
 .student-page .rail-bottom small{font-size:.69rem;line-height:1.5;color:#7a918d}
 .student-page .rail-status-dot{width:8px;height:8px;flex:none;background:#2fa48e;border-radius:50%;margin-top:4px;box-shadow:0 0 0 4px #daf4e9}
-.student-page .main-content.studio-content{max-width:none;margin:0 0 0 var(--rail-width);padding:30px 38px 68px;min-width:0}
+.student-page .main-content.studio-content{width:calc(100% - var(--rail-width));max-width:none;margin:0 0 0 var(--rail-width);padding:30px 38px 68px;min-width:0}
 .student-page .studio-intro{
   display:grid;grid-template-columns:minmax(0,1.2fr) minmax(290px,.78fr);
   gap:24px;align-items:stretch;min-height:344px;
@@ -201,13 +202,23 @@ body.student-page{
   .student-page .studio-kpis{gap:8px}
   .student-page .studio-kpi{padding:13px 12px;gap:10px}
 }
+@media(max-width:1200px){
+  .student-page .workspace-layout{grid-template-columns:minmax(0,1fr)}
+}
 @media(max-width:840px){
   .student-page{--rail-width:0px}
   .student-page .navbar.workbench-topbar{height:auto;min-height:66px;padding:9px 16px}
+  .student-page .workbench-topbar .brand-section{width:auto}
   .student-page .workbench-topbar .brand-tag{display:none}
   .student-page .workbench-topbar .auth-section{max-width:60vw}
   .student-page .studio-rail{position:relative;inset:auto;width:100%;height:auto;padding:8px 13px;overflow-x:auto;overflow-y:hidden;display:block;border-right:0;border-bottom:1px solid #e4eae8}
   .student-page .studio-rail .rail-section:not(:first-child),.student-page .studio-rail .rail-bottom{display:none}
+  .student-page .studio-rail.rail-menu-open .rail-section{display:block}
+  .student-page .rail-menu-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:42px;margin-top:5px;padding:8px 12px;background:#f1f7f4;color:#285c57;border:1px solid #dfeae5;border-radius:9px;font-size:.8rem}
+  .student-page .rail-menu-toggle[aria-expanded=true] span{transform:rotate(45deg)}
+  .student-page .studio-rail.rail-menu-open .rail-section:not(:first-child){margin-top:14px}
+  .student-page .studio-rail.rail-menu-open .rail-section:not(:first-child) .rail-section-label{display:block;margin:0 0 6px 10px}
+  .student-page .studio-rail.rail-menu-open .rail-section:not(:first-child) .nav-links{flex-wrap:wrap}
   .student-page .studio-rail .rail-section-label{display:none}
   .student-page .studio-rail .nav-links{display:flex;flex-direction:row;flex-wrap:nowrap;gap:4px}
   .student-page .studio-rail .nav-item{min-height:37px;flex:none}

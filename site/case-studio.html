@@ -100,9 +100,26 @@
           </tbody>
         </table>
         <div id="stability-note" class="caveat" role="note"></div>
-        <div class="form-actions"><button type="button" id="export-button" disabled>导出实验数据 CSV</button><span class="quiet">本地计算，不上传代码或实验数据</span></div>
+        <div class="form-actions"><button type="button" id="export-button" disabled>导出 CSV</button><button type="button" id="export-json-button" disabled>导出可复算实验 JSON</button><span class="quiet">本地计算，不上传代码或实验数据</span></div>
       </section>
     </div>
+
+    <section class="methodology" id="lab-tasks" aria-labelledby="lab-tasks-title">
+      <div class="section-heading"><div><span class="eyebrow dark">TEACHING ASSIGNMENT / IE-DES-01</span><h2 id="lab-tasks-title">从一键运行，到能独立核验的课程实验</h2>
+        <p>先作预测，再用固定协议实验，最后解释反例与工程约束。以下是可交付的课堂学习任务，不计入 L2 正式成绩。</p></div></div>
+      <div class="method-grid">
+        <article class="method-card"><span>01 / 实验前预测</span><h3>先不运行，算负荷率</h3><p>计算 ρ＝平均工时 ÷（平均到达间隔 × 工位数）。分别判断 A/B 是否满足 ρ &lt; 1，并预测等待时间方向。</p></article>
+        <article class="method-card"><span>02 / 模型逻辑验证</span><h3>用微型算例手算</h3><p>三件任务：到达 0、0.5、1 分钟，服务时长 2、2、1 分钟。手算单工位与双工位的排队开始时间，再核对独立参考实现。</p></article>
+        <article class="method-card"><span>03 / 统计比较</span><h3>不要挑最好的一次</h3><p>把重复数由 5 改为 30、100，比较 B−A 的均值和区间。若区间跨过零，不能据此断言 B 更优；思考单个种子为何不够。</p></article>
+        <article class="method-card"><span>04 / 运营决策</span><h3>把成本纳入判断</h3><p>假设每工位每小时固定成本为 C，每件等待一分钟的代价为 P。构造比较两方案的成本表达式，并解释模型未覆盖的跨线搬运与工人约束。</p></article>
+      </div>
+      <div class="questions">
+        <h3>可复核的实验记录</h3>
+        <p>完成实验后导出 JSON，保留每次独立重复的输入种子、A/B 原始指标与配对差。教师使用标准库 Python 独立复算，检查随机流、队列事件、窗口指标和置信区间。</p>
+        <p><code>python -m judge.ie_des01_reference IE-DES-01-verifiable-experiment.json</code></p>
+        <p class="quiet">出现 VERIFIED_REPLAY 只表示数值能重放，不能证明报告分析正确、数据来自真实工厂，亦不能证明学生独立完成。模型源代码与核验脚本均在仓库公开。</p>
+      </div>
+    </section>
 
     <section class="methodology" aria-labelledby="method-title">
       <div class="section-heading"><div><span class="eyebrow dark">MODEL VALIDITY / TEACHING NOTES</span><h2 id="method-title">一份像样的仿真实验报告，应回答什么？</h2></div></div>
@@ -134,7 +151,7 @@
     </section>
   </main>
   <footer><strong>SCIP/LAB · IE MODELING & SIMULATION LAB</strong><span>案例仿真是教学实验；正式成绩仍由 OJ 服务端可信评测系统记录。</span></footer>
-  <script src="js/simulation-core.js"></script>
-  <script src="js/case-studio.js"></script>
+  <script src="js/simulation-core.js?v=evidence1"></script>
+  <script src="js/case-studio.js?v=evidence1"></script>
 </body>
 </html>

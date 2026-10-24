@@ -38,7 +38,8 @@
         <a href="#problem-list-section" id="nav-to-assessment" class="nav-item"><span class="rail-icon" aria-hidden="true">⌘</span>在线评测</a>
       </nav>
     </div>
-    <div class="rail-section">
+    <button type="button" class="rail-menu-toggle" id="btn-course-menu" aria-expanded="false" aria-controls="rail-labs rail-resources rail-services">更多资源与课程服务 <span aria-hidden="true">＋</span></button>
+    <div class="rail-section" id="rail-labs">
       <p class="rail-section-label">案例实验</p>
       <nav class="nav-links" aria-label="仿真实验导航">
         <a href="case-studio.html#experiment" class="nav-item"><span class="rail-icon" aria-hidden="true">01</span>检修排队仿真</a>
@@ -46,7 +47,7 @@
         <a href="flow-lab.html" class="nav-item"><span class="rail-icon" aria-hidden="true">03</span>生产线仿真</a>
       </nav>
     </div>
-    <div class="rail-section">
+    <div class="rail-section" id="rail-resources">
       <p class="rail-section-label">建模资源</p>
       <nav class="nav-links" aria-label="开发与资料">
         <a href="lab/index.html" target="_blank" rel="noopener noreferrer" class="nav-item"><span class="rail-icon" aria-hidden="true">Py</span>PySCIPOpt 实验室 <span class="rail-external" aria-hidden="true">↗</span></a>
@@ -54,7 +55,7 @@
         <a href="repl/index.html" target="_blank" rel="noopener noreferrer" class="nav-item"><span class="rail-icon" aria-hidden="true">›_</span>Python REPL <span class="rail-external" aria-hidden="true">↗</span></a>
       </nav>
     </div>
-    <div class="rail-section">
+    <div class="rail-section" id="rail-services">
       <p class="rail-section-label">课程服务</p>
       <nav class="nav-links" aria-label="课程服务">
         <a href="teacher.html" id="teacher-link" class="nav-item" hidden><span class="rail-icon" aria-hidden="true">▣</span>教师控制台</a>
@@ -308,6 +309,6 @@
   <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.20/mode/python/python.min.js"></script>
   <script src="js/editor.js?v=leetcode1"></script>
   <script src="js/exam-integrity.js?v=leetcode1"></script>
-  <script src="js/app.js?v=leetcode1"></script>
+  <script src="js/app.js?v=course-release1"></script>
 </body>
 </html>
