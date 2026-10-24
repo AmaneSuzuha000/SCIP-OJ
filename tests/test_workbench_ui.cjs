@@ -35,7 +35,8 @@ for (const [id, url] of [
 }
 assert.match(html, /class="studio-rail"/, "Expected the dedicated workbench navigation");
 assert.match(html, /class="studio-case-grid"/, "Expected three runnable case cards");
-assert.match(html, /<strong>03<\/strong>\s*<span>可运行仿真实验/, "Case count must be 3, not stale 1");
+assert.equal((html.match(/class="course-case-row"/g)||[]).length, 3,
+  "The course directory must describe the three actual runnable labs");
 assert.match(html, /id="teacher-link"[^>]*hidden/, "Teacher navigation must remain permission gated");
 assert.ok(html.indexOf('href="workbench-v3.css"') > html.indexOf('href="case-entry.css"'),
   "Course workbench overrides must load after prior styles");
