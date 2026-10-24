@@ -64,7 +64,8 @@ async function run() {
     desktop.on("console", message => { if (message.type() === "error") browserErrors.push("console: " + message.text()); });
     await desktop.goto(origin + "/index.html", { waitUntil: "domcontentloaded" });
     assert.match(await desktop.title(), /SCIP\/LAB/);
-    assert.equal(await desktop.locator(".studio-case-card").count(), 3);
+    assert.equal(await desktop.locator("#course-space").isVisible(), true, "Default entry is course teaching");
+    assert.equal(await desktop.locator("#learning-space").isVisible(), false);
     await screenshot(desktop, "00-diagnostic-home-before-load.png");
     try {
       await desktop.locator("#problem-list .problem-card").first().waitFor({ state: "attached", timeout: 25000 });
@@ -83,11 +84,12 @@ async function run() {
     await assertFits(desktop, "Desktop home");
     await screenshot(desktop, "01-course-workbench-desktop.png");
 
-    await desktop.locator("#nav-course-space").click();
-    await desktop.locator("#course-space").waitFor({ state: "visible" });
+    await desktop.locator(".teaching-overview").waitFor({ state: "visible" });
     assert.equal(await desktop.locator("#learning-space").isVisible(), false);
     assert.equal(await desktop.locator("#nav-course-space").getAttribute("aria-current"), "page");
-    assert.equal(await desktop.locator(".course-case-row").count(), 3);
+    assert.equal(await desktop.locator(".course-case-row").count(), 2);
+    assert.equal(await desktop.locator("#course-space a[href*='case-studio']").count(), 0);
+    assert.equal(await desktop.locator("#learning-space #workspace, #learning-space #problem-list-section, #learning-space #submission-overview").count(), 0);
     await desktop.locator(".skip-link").focus();
     await desktop.locator(".skip-link").click();
     assert.equal(await desktop.locator("#course-space").isVisible(), true,
@@ -97,10 +99,18 @@ async function run() {
     await screenshot(desktop, "08-course-space.png");
     await desktop.locator("#nav-learning-space").click();
     await desktop.locator('.learning-overview').waitFor({ state: "visible" });
+    assert.equal(await desktop.locator("#auth-area").isVisible(), false);
+    assert.equal(await desktop.locator("#rail-services").isVisible(), false);
+    assert.equal(await desktop.locator("#learning-space a[href='#problem-list-section'], #learning-space a[href='#submissions']").count(), 0);
+    assert.equal(await desktop.locator("#learning-space .studio-case-card").count(), 3);
+    assert.equal(await desktop.locator(".extension-notebook").count(), 4);
+    await screenshot(desktop, "09-extension-learning.png");
+    await desktop.locator("#nav-course-space").click();
+    await desktop.locator(".teaching-overview").waitFor({ state: "visible" });
     await desktop.locator('[data-route="submissions"]').click();
     await desktop.locator("#submission-overview").waitFor({ state: "visible" });
     assert.equal(await desktop.locator("#submissions-host #my-submissions-section").count(), 1);
-    assert.equal(await desktop.locator(".learning-overview").isVisible(), false);
+    assert.equal(await desktop.locator(".teaching-overview").isVisible(), false);
     assert.equal(await desktop.locator("#btn-show-leaderboard").isVisible(), false);
     await desktop.evaluate(() => renderSubmissionsTable(document.getElementById("my-submissions-container"), [{
       id: "qa-only", public_code: "QA-ONLY", assignment_id: "qa-assignment", attempt_no: 1,
@@ -129,18 +139,18 @@ async function run() {
       window.ScipOJExam.activate("exam_warn", "P001");
       window.ScipOJEditor.setValue(window.ScipOJEditor.getValue() + "\n# exam-navigation-regression\n");
     });
-    await desktop.locator("#nav-course-space").click();
+    await desktop.locator("#nav-learning-space").click();
     await desktop.locator("#confirm-dialog").waitFor({ state: "visible" });
     await desktop.locator("#confirm-cancel").click();
     await desktop.waitForURL(/#P001$/);
     assert.equal(await desktop.locator("#workspace").isVisible(), true);
-    assert.equal(await desktop.locator("#course-space").isVisible(), false);
+    assert.equal(await desktop.locator("#learning-space").isVisible(), false);
     assert.ok(await desktop.evaluate(() => window.ScipOJEditor.getValue().includes("exam-navigation-regression")));
-    await desktop.locator("#nav-course-space").click();
-    await desktop.locator("#confirm-ok").click();
-    await desktop.locator("#course-space").waitFor({ state: "visible" });
     await desktop.locator("#nav-learning-space").click();
-    await desktop.locator('.learning-overview').waitFor({ state: "visible" });
+    await desktop.locator("#confirm-ok").click();
+    await desktop.locator("#learning-space").waitFor({ state: "visible" });
+    await desktop.locator("#nav-course-space").click();
+    await desktop.locator('.teaching-overview').waitFor({ state: "visible" });
     await desktop.locator("#nav-to-assessment").click();
     await desktop.locator("#problem-list-section").waitFor({ state: "visible" });
     await openFirstProblem(desktop);
@@ -177,8 +187,8 @@ async function run() {
       window.__assignmentRefresh = refreshAssignmentMeta("P001");
       window.__restoreAssignmentLookup = () => { platform.isConfigured = originalConfigured; platform.getAssignmentForProblem = originalLookup; };
     });
-    await desktop.locator("#nav-course-space").click();
-    await desktop.locator("#course-space").waitFor({ state: "visible" });
+    await desktop.locator("#nav-learning-space").click();
+    await desktop.locator("#learning-space").waitFor({ state: "visible" });
     await desktop.evaluate(async () => {
       window.__resolveAssignment({ id: "qa-only", integrity_policy: "exam_block" });
       await window.__assignmentRefresh;
@@ -186,6 +196,13 @@ async function run() {
     });
     assert.equal(await desktop.evaluate(() => window.ScipOJExam.getPolicy()), "standard");
     assert.equal(await desktop.locator("#workspace").isVisible(), false);
+
+    await desktop.goto(origin + "/index.html#P002", { waitUntil: "domcontentloaded" });
+    await desktop.locator('#workspace[aria-busy="false"]').waitFor({ state: "visible" });
+    assert.equal(await desktop.locator("#nav-course-space").getAttribute("aria-current"), "page");
+    await desktop.goto(origin + "/index.html#course-cases", { waitUntil: "domcontentloaded" });
+    await desktop.locator("#learning-space").waitFor({ state: "visible" });
+    assert.equal(await desktop.locator("#course-space").isVisible(), false);
 
     const lab = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     lab.on("pageerror", error => browserErrors.push("lab pageerror: " + error.message));
@@ -223,6 +240,11 @@ async function run() {
     }
 
     const teacher = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    await teacher.goto(origin + "/doc.html?f=拓展学习指南.md&space=learn", { waitUntil: "domcontentloaded" });
+    await teacher.locator("#md h1").waitFor({ state: "visible" });
+    assert.equal(await teacher.locator("#doc-teaching-nav").isVisible(), false);
+    assert.equal(await teacher.locator("#doc-learning-nav").isVisible(), true);
+    assert.equal(await teacher.locator("#doc-back-link").getAttribute("href"), "index.html#learn");
     await teacher.goto(origin + "/teacher.html", { waitUntil: "domcontentloaded" });
     assert.equal(await teacher.locator("#teacher-panel").isVisible(), false,
       "Anonymous users cannot see gradebook or release controls");
@@ -231,25 +253,28 @@ async function run() {
     const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
     mobile.on("pageerror", error => browserErrors.push("mobile pageerror: " + error.message));
     await mobile.goto(origin + "/index.html", { waitUntil: "domcontentloaded" });
-    await mobile.locator(".studio-case-card").first().waitFor({ state: "visible" });
-    assert.equal(await mobile.locator(".studio-case-card").count(), 3);
+    await mobile.locator(".teaching-overview").waitFor({ state: "visible" });
     await mobile.locator("#problem-list .problem-card").first().waitFor({ state: "attached" });
-    await assertFits(mobile, "Mobile home");
-    const phoneNav = await mobile.locator('#rail-primary [data-space-nav="learn"] a').evaluateAll(
+    await assertFits(mobile, "Mobile teaching home");
+    const phoneNav = await mobile.locator('#rail-primary [data-space-nav="course"] a').evaluateAll(
       links => links.map(link => ({ left: link.getBoundingClientRect().left, right: link.getBoundingClientRect().right })));
-    assert.ok(phoneNav.every(box => box.left >= 0 && box.right <= 390),
-      "Every primary mobile entry, including submissions, must be visible without horizontal scrolling");
-    await screenshot(mobile, "05-course-workbench-mobile.png");
+    assert.ok(phoneNav.every(box => box.left >= 0 && box.right <= 390), "All four teaching entries must be visible");
+    await screenshot(mobile, "05-teaching-mobile.png");
     await mobile.locator("#btn-course-menu").click();
     assert.equal(await mobile.locator("#btn-course-menu").getAttribute("aria-expanded"), "true");
-    assert.equal(await mobile.locator('#rail-resources a[href="official-examples.html"]').isVisible(), true);
+    assert.equal(await mobile.locator('#rail-resources a[href*="01_P001"]').isVisible(), true);
     assert.equal(await mobile.locator('#rail-services a[href="doc.html?f=学生指南.md"]').isVisible(), true);
     assert.equal(await mobile.locator("#teacher-link").isVisible(), false);
+    assert.equal(await mobile.locator("#rail-learning-resources").isVisible(), false);
     await mobile.locator("#btn-course-menu").click();
-    await mobile.locator("#nav-course-space").click();
-    await mobile.locator("#course-space").waitFor({ state: "visible" });
-    await assertFits(mobile, "Mobile course space");
     await mobile.locator("#nav-learning-space").click();
+    await mobile.locator("#learning-space").waitFor({ state: "visible" });
+    await assertFits(mobile, "Mobile extension learning");
+    assert.equal(await mobile.locator("#nav-to-assessment").isVisible(), false);
+    assert.equal(await mobile.locator("#auth-area").isVisible(), false);
+    await screenshot(mobile, "10-extension-mobile.png");
+    await mobile.locator("#nav-course-space").click();
+    await mobile.locator(".teaching-overview").waitFor({ state: "visible" });
     await mobile.locator("#nav-to-assessment").click();
     await mobile.locator("#problem-list-section").waitFor({ state: "visible" });
     await openFirstProblem(mobile);

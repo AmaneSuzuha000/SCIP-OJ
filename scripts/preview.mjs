@@ -16,7 +16,7 @@ http.createServer(async (req, res) => {
     const url = new URL(req.url, "http://preview.local");
     const requested = decodeURIComponent(url.pathname);
     if (req.method !== "GET" && req.method !== "HEAD") { res.writeHead(405); res.end(); return; }
-    if (/^\/(lab|repl)(\/|$)/.test(requested)) { res.writeHead(302, { Location: "https://amanesuzuha000.github.io/SCIP-OJ" + requested }); res.end(); return; }
+    if (/^\/(lab|repl)(\/|$)/.test(requested)) { res.writeHead(302, { Location: "https://amanesuzuha000.github.io/SCIP-OJ" + requested + url.search }); res.end(); return; }
     let base = path.join(root, "site"), relative = requested === "/" ? "index.html" : requested.slice(1);
     if (requested.startsWith("/problems/")) { base = path.join(root, "problems"); relative = requested.slice(10); }
     if (requested.startsWith("/docs/")) { base = path.join(root, "docs"); relative = requested.slice(6); }

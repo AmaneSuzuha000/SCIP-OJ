@@ -80,26 +80,31 @@
         <span class="brand-tag">文档中心</span>
       </div>
 
-      <nav class="nav-links">
-        <a href="index.html" class="nav-item">← 题单大厅</a>
+      <nav class="nav-links" id="doc-teaching-nav" aria-label="教学文档导航">
+        <a href="index.html#course" class="nav-item">← 课程教学</a>
         <a href="doc.html?f=学生指南.md" class="nav-item">学生指南</a>
         <a href="doc.html?f=教师指南.md" class="nav-item">教师指南</a>
         <a href="doc.html?f=出题指南.md" class="nav-item">出题指南</a>
         <a href="doc.html?path=README.md" class="nav-item">README</a>
+      </nav>
+      <nav class="nav-links" id="doc-learning-nav" aria-label="拓展文档导航" hidden>
+        <a href="index.html#learn" class="nav-item">← 拓展学习</a>
+        <a href="official-examples.html" class="nav-item">官方案例</a>
+        <a href="doc.html?f=拓展学习指南.md&amp;space=learn" class="nav-item">拓展学习指南</a>
       </nav>
     </div>
   </header>
 
   <main class="doc-container">
     <div style="margin-bottom:1rem;">
-      <a href="index.html" class="btn-back">← 返回题单大厅</a>
+      <a href="index.html#course" class="btn-back" id="doc-back-link">← 返回课程教学</a>
     </div>
     <article id="md" class="doc-article">正在加载文档内容...</article>
   </main>
 
   <footer>
     <div class="footer-container">
-      <div><strong>SCIP-OJ</strong> · 系统建模与优化评测平台</div>
+      <div id="doc-platform-label"><strong>SCIP-OJ</strong> · 课程教学与作业评测</div>
       <div>支持 Markdown 格式与代码高亮</div>
     </div>
   </footer>
@@ -111,6 +116,14 @@
       const params = new URLSearchParams(location.search);
       const path = params.get("path") || ("docs/" + (params.get("f") || "学生指南.md"));
       const name = path.split("/").pop().replace(/\.md$/, "");
+      const learning = params.get("space") === "learn";
+      document.getElementById("doc-teaching-nav").hidden = learning;
+      document.getElementById("doc-learning-nav").hidden = !learning;
+      const backLink = document.getElementById("doc-back-link");
+      backLink.href = learning ? "index.html#learn" : "index.html#course";
+      backLink.textContent = learning ? "← 返回拓展学习" : "← 返回课程教学";
+      document.querySelector(".brand-logo").href = backLink.href;
+      if (learning) document.getElementById("doc-platform-label").textContent = "SCIP/LAB · 拓展学习资源";
       document.title = "SCIP-OJ · " + name;
       const mdEl = document.getElementById("md");
       try {

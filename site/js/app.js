@@ -23,7 +23,7 @@ let activeAssignment = null;
 let currentTemplate = "";
 let pollTimer = null;
 let listViewMode = "table";
-let acceptedRoute = location.hash || "#learn";
+let acceptedRoute = location.hash || "#course";
 let assignmentFetchSeq = 0;
 let routeSeq = 0;
 let submissionsFetchSeq = 0;
@@ -279,7 +279,7 @@ async function main() {
         const problemId = activeProblemId;
         await refreshAssignmentMeta(problemId);
         if (activeProblemId === problemId) refreshSubmissionsList();
-      } else if (document.body.dataset.learningView === "records") refreshSubmissionsList();
+      } else if (document.body.dataset.teachingView === "records") refreshSubmissionsList();
     });
 
     // 选课/退课成功后立即刷新横幅与作业门禁，无需刷新页面
@@ -332,7 +332,7 @@ function updateBannerCourseInfo() {
     bannerDesc.textContent = "您当前处于自主练习模式。请输入任课教师提供的邀请码（如 SCIP2026-FALL）加入课程。";
   } else {
     bannerTitle.textContent = "加入你的教学班级";
-    bannerDesc.textContent = "登录后绑定学号并加入班级，查看正式作业与提交记录。未登录可运行仿真实验和本地练习。";
+    bannerDesc.textContent = "登录后绑定学号并加入班级，查看正式作业与提交记录。也可先进行建模与本地练习。";
   }
 }
 
@@ -364,7 +364,7 @@ async function handleRouteHash() {
     if (route.anchor) document.getElementById(route.anchor)?.scrollIntoView({ block: "start" });
     else window.scrollTo({ top: 0, behavior: "instant" });
   }
-  if (seq === routeSeq) acceptedRoute = location.hash || "#learn";
+  if (seq === routeSeq) acceptedRoute = location.hash || "#course";
 }
 
 function placeSubmissionPanel(globalHistory) {
@@ -896,8 +896,8 @@ function setupActionButtons(meta, id) {
 /** 刷新学生在该题目的提交历史记录 */
 async function refreshSubmissionsList() {
   const requestSeq = ++submissionsFetchSeq;
-  const context = `${activeProblemId || ""}|${activeAssignment?.id || ""}|${document.body.dataset.learningView}`;
-  const globalHistory = document.body.dataset.learningView === "records";
+  const context = `${activeProblemId || ""}|${activeAssignment?.id || ""}|${document.body.dataset.teachingView}`;
+  const globalHistory = document.body.dataset.teachingView === "records";
   const container = document.getElementById("my-submissions-container");
   if (!container) return;
 
@@ -931,7 +931,7 @@ async function refreshSubmissionsList() {
     }
     const assignmentId = globalHistory ? null : activeAssignment?.id || null;
     const submissions = await window.ScipOJPlatform.getMySubmissions(assignmentId);
-    if (requestSeq !== submissionsFetchSeq || context !== `${activeProblemId || ""}|${activeAssignment?.id || ""}|${document.body.dataset.learningView}`) return;
+    if (requestSeq !== submissionsFetchSeq || context !== `${activeProblemId || ""}|${activeAssignment?.id || ""}|${document.body.dataset.teachingView}`) return;
 
     if (submissions.length === 0) {
       container.innerHTML = `
@@ -972,7 +972,7 @@ async function refreshHistory() {
 
 /** 渲染正式提交记录表格 */
 function renderSubmissionsTable(container, list) {
-  const globalHistory = document.body.dataset.learningView === "records";
+  const globalHistory = document.body.dataset.teachingView === "records";
   const table = document.createElement("table");
   table.className = "submissions-table";
   table.innerHTML = `
