@@ -106,7 +106,7 @@
 
     <section class="methodology" id="lab-tasks" aria-labelledby="lab-tasks-title">
       <div class="section-heading"><div><span class="eyebrow dark">TEACHING ASSIGNMENT / IE-DES-01</span><h2 id="lab-tasks-title">从一键运行，到能独立核验的课程实验</h2>
-        <p>先作预测，再用固定协议实验，最后解释反例与工程约束。以下是可交付的课堂学习任务，不计入 L2 正式成绩。</p></div></div>
+        <p>先作预测，再用固定协议实验，最后解释反例与工程约束。以下是可交付的课堂学习任务，不计入 正式成绩。</p></div></div>
       <div class="method-grid">
         <article class="method-card"><span>01 / 实验前预测</span><h3>先不运行，算负荷率</h3><p>计算 ρ＝平均工时 ÷（平均到达间隔 × 工位数）。分别判断 A/B 是否满足 ρ &lt; 1，并预测等待时间方向。</p></article>
         <article class="method-card"><span>02 / 模型逻辑验证</span><h3>用微型算例手算</h3><p>三件任务：到达 0、0.5、1 分钟，服务时长 2、2、1 分钟。手算单工位与双工位的排队开始时间，再核对独立参考实现。</p></article>
@@ -138,14 +138,11 @@
     </section>
 
     <section id="learning-path" class="learning-path" aria-labelledby="path-title">
-      <div class="section-heading"><div><span class="eyebrow dark">COURSE CATALOG / THREE RUNNABLE CASES</span><h2 id="path-title">从基础模型到真实工业系统的六级案例路线</h2><p>按模型复杂度递进；只有标记“可运行”的案例已提供在线实验，其余是后续课程建设方向。</p></div></div>
+      <div class="section-heading"><div><span class="eyebrow dark">COURSE CATALOG / THREE RUNNABLE CASES</span><h2 id="path-title">仿真案例</h2><p>选择案例，进行实验与分析。</p></div></div>
       <div class="case-grid">
         <article class="case-card live"><span>01 · DES 基础</span><h3>检修工位与排队系统</h3><p>实体—事件—资源、重复仿真、共同随机数</p><b>可运行 · 当前案例</b></article>
         <article class="case-card live"><span>02 · MONTE CARLO</span><h3>随机需求与库存策略</h3><p>需求分布、服务水平、缺货风险、补货策略</p><b>可运行 · <a href="inventory-lab.html">进入库存实验 ↗</a></b></article>
         <article class="case-card live"><span>03 · MANUFACTURING</span><h3>双工序生产线与缓冲区</h3><p>有限缓冲、BAS 阻塞、WIP、吞吐量、瓶颈</p><b>可运行 · <a href="flow-lab.html">进入生产线实验 ↗</a></b></article>
-        <article class="case-card"><span>04 · LOGISTICS</span><h3>仓储搬运与 AGV 系统</h3><p>物流事件、交通冲突、共享资源、调度规则</p><b>课程规划中</b></article>
-        <article class="case-card"><span>05 · RELIABILITY</span><h3>设备故障与预防性维护</h3><p>失效分布、可用度、维修策略、产能损失</p><b>课程规划中</b></article>
-        <article class="case-card"><span>06 · CLOSED LOOP</span><h3>动态调度与仿真优化</h3><p>重调度、预测误差、随机事件、反馈决策</p><b>课程规划中</b></article>
       </div>
       <p class="catalog-reference">参考 <a href="official-examples.html">Gurobi / SCIP / PySCIPOpt 官方 Examples</a>，把优化建模与系统仿真连成一门完整课程。三例均为合成教学数据的本地演示；正式作业仍由 OJ 服务端评测。</p>
     </section>

@@ -1,5 +1,5 @@
 /**
- * SCIP-OJ 学生端主应用逻辑 — 题单大厅、L1 WASM 练习与正式作业提交流程
+ * SCIP-OJ 学生端主应用逻辑 — 题单大厅、WASM 练习与正式作业提交流程
  * 依赖: ScipOJPlatform, ScipOJRuntime, ScipOJJudge, ScipOJAssignment, marked
  */
 
@@ -630,7 +630,7 @@ async function refreshAssignmentMeta(problemId) {
     }
     if (btnSubmitFormal) {
       btnSubmitFormal.disabled = false;
-      btnSubmitFormal.title = "提交至服务端触发 PySCIPOpt 权威评测并记入正式成绩";
+      btnSubmitFormal.title = "提交作业并记录成绩";
       btnSubmitFormal.style.opacity = "1";
     }
   } else {
@@ -641,13 +641,13 @@ async function refreshAssignmentMeta(problemId) {
 
     let hint;
     if (!configured) {
-      hint = "🌿 <strong>离线练习模式</strong>：未配置后端服务，正式作业提交不可用；L1 练习评分可正常使用。";
+      hint = "🌿 <strong>离线练习模式</strong>：未配置后端服务，正式作业提交不可用；练习评分可正常使用。";
     } else if (!loggedIn) {
-      hint = "🔐 <strong>未登录</strong>：登录并绑定学号、加入班级后即可提交正式作业；当前可先进行 L1 练习。";
+      hint = "🔐 <strong>未登录</strong>：登录并绑定学号、加入班级后即可提交正式作业；当前可先进行 练习。";
     } else if (enrollments.length === 0) {
       hint = "🎓 <strong>尚未加入班级</strong>：请点击右上角「选课」输入教师提供的邀请码，之后即可提交正式作业。";
     } else {
-      hint = "🌿 <strong>自主练习模式</strong>：本题目当前未作为您所在班级的正式作业发布，您可在此进行 L1 练习评分与算例调试。";
+      hint = "🌿 <strong>自主练习模式</strong>：本题目当前未作为您所在班级的正式作业发布，您可在此进行 练习评分与算例调试。";
     }
 
     metaBar.innerHTML = `<div class="meta-item" style="color:var(--text-secondary);">${hint}</div>`;
@@ -712,7 +712,7 @@ function setupActionButtons(meta, id) {
     }
   };
 
-  // ── L1 练习评分（浏览器 WASM 本地真跑，不写入正式数据库） ──
+  // ── 练习评分（浏览器 WASM 本地真跑，不写入正式数据库） ──
   btnGradeL1.onclick = async () => {
     showConsoleTab("result");
     const userCode = getCodeValue();
@@ -722,7 +722,7 @@ function setupActionButtons(meta, id) {
     btnGradeL1.disabled = true;
     reportEl.textContent = "";
     statusEl.className = "status-badge";
-    statusEl.innerHTML = `<span class="badge badge-running">⏳ 准备 Python WASM 环境...</span>`;
+    statusEl.innerHTML = `<span class="badge badge-running">⏳ 正在准备运行环境…</span>`;
 
     let runtimeAvailable = false;
     if (window.ScipOJRuntime && typeof window.ScipOJRuntime.ensureReady === "function") {
@@ -739,7 +739,7 @@ function setupActionButtons(meta, id) {
     try {
       let report;
       if (runtimeAvailable) {
-        statusEl.innerHTML = `<span class="badge badge-running">⚙️ 正在执行 Python WASM 练习（超时限制 ${timeLimitSec}s）...</span>`;
+        statusEl.innerHTML = `<span class="badge badge-running">⚙️ 正在运行练习（超时限制 ${timeLimitSec}s）...</span>`;
         const studentSolve = async (instance) => {
           return await window.ScipOJRuntime.runSolve(userCode, instance, timeLimitSec);
         };
@@ -751,40 +751,22 @@ function setupActionButtons(meta, id) {
         report.execution_mode = "python-wasm-student-code";
         report.execution_note = "浏览器 Python WASM 真实执行（练习自测，不写正式数据库）";
       } else {
-        statusEl.innerHTML = `<span class="badge badge-queued">⚠️ 降级使用内置 Demo 评分...</span>`;
-        if (grader === "assignment") {
-          report = await window.ScipOJAssignment.runL1Assignment(window.ScipOJAssignment.demoSolveAssignment, meta);
-        } else {
-          report = await window.ScipOJJudge.runL1(window.ScipOJJudge.demoSolve, meta);
-        }
-        report.execution_mode = "demo-solve-fallback";
-        report.execution_note = "降级提示：浏览器 Python 运行时未能启动，此评分为内置 Demo 兜底评分。";
+        throw new Error("运行环境未能启动，未执行代码。请重试或从课程实验打开 Notebook。");
       }
 
-      reportEl.textContent = JSON.stringify(report, null, 2);
+      reportEl.textContent = JSON.stringify({ ...report, layer: "练习" }, null, 2);
       const isPass = report.passed;
-      const isDemoFallback = report.execution_mode === "demo-solve-fallback";
+      statusEl.innerHTML = isPass
+        ? `<span class="badge badge-done">✓ 练习通过 · ${report.score} 分</span>`
+        : `<span class="badge badge-system_error">✗ 练习未通过 · ${report.score} 分</span>`;
 
-      if (isDemoFallback) {
-        // 兜底 Demo 跑的不是学生代码，绝不能显示成「练习通过」并写入练习缓存
-        statusEl.innerHTML = `<span class="badge badge-queued">⚠️ 未执行你的代码 · 仅供参考的 Demo 结果（${report.score} 分）</span>`;
-        window.ScipOJPlatform?.showToast(
-          "Python 运行时未启动，本次显示的是内置 Demo 结果，不代表你的代码成绩；请刷新重试或改用 JupyterLab 环境。",
-          "warning",
-        );
-      } else {
-        statusEl.innerHTML = isPass
-          ? `<span class="badge badge-done">✓ L1 练习通过 · ${report.score} 分</span>`
-          : `<span class="badge badge-system_error">✗ L1 练习未通过 · ${report.score} 分</span>`;
-
-        // 仅存 localStorage 作为练习缓存，不写正式库
-        try { localStorage.setItem("scip-oj-practice:" + id, JSON.stringify({ score: report.score, at: Date.now() })); } catch { /* private browsing */ }
-        window.ScipOJPlatform?.showToast(isPass ? `L1 练习通过：${report.score} 分` : `L1 练习未及格：${report.score} 分`, isPass ? "success" : "warning");
-      }
+      // 仅存 localStorage 作为练习缓存，不写正式库
+      try { localStorage.setItem("scip-oj-practice:" + id, JSON.stringify({ score: report.score, at: Date.now() })); } catch { /* private browsing */ }
+      window.ScipOJPlatform?.showToast(isPass ? `练习通过：${report.score} 分` : `练习未及格：${report.score} 分`, isPass ? "success" : "warning");
     } catch (e) {
       statusEl.innerHTML = `<span class="badge badge-system_error">评测异常</span>`;
       reportEl.textContent = "执行异常:\n" + String(e?.stack || e?.message || e);
-      window.ScipOJPlatform?.showToast("L1 练习执行异常: " + (e?.message || e), "error");
+      window.ScipOJPlatform?.showToast("练习执行异常: " + (e?.message || e), "error");
     } finally {
       btnGradeL1.disabled = false;
     }
@@ -793,7 +775,7 @@ function setupActionButtons(meta, id) {
   // ── 提交正式作业（服务端权威评测 + Actions） ──
   btnSubmitFormal.onclick = async () => {
     if (!window.ScipOJPlatform || !window.ScipOJPlatform.isConfigured()) {
-      window.ScipOJPlatform?.showToast("离线练习模式：未配置 Supabase 服务端，暂不支持在线提交正式作业；请使用「⚡ L1 练习评分」自测。", "warning");
+      window.ScipOJPlatform?.showToast("正式提交暂不可用，请先使用练习评分。", "warning");
       return;
     }
 
