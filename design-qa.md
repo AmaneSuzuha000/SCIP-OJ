@@ -1,46 +1,47 @@
-# SCIP/LAB — concise interface QA
+# SCIP/LAB — restore visual hierarchy
 
 ## Brief and evidence
 
-The user asked to remove unnecessary secondary labels and descriptions and let the layout explain the structure. This is a scoped edit to the existing design. The course / extension purpose boundary remains the source of navigation and content ownership.
+The user clarified that concise copy should retain the selected visual design. The previous reduction flattened headlines and experimental content too aggressively. This correction restores the earlier typography, content depth and illustration composition while keeping redundant section labels absent and preserving the teaching / extension boundary.
 
-- Source: `docs/design-evidence/course-desktop.jpg` and `learning-desktop.jpg`, both 1348 × 926. The selected style reference remains `reference-learning.jpg`; its earlier copy is superseded by this request.
-- Implementation: `concise-course-desktop.jpg` and `concise-learning-desktop.jpg`, both 1348 × 926, in `docs/design-evidence/`.
-- Desktop state: anonymous, loaded course index and artwork, top of each route. Cloud browser CSS viewport 1363 × 936, DPR 1; source and implementation captures use the same content dimensions and need no scaling.
-- Full paired inputs: `concise-course-comparison.jpg` and `concise-learning-comparison.jpg`, 2696 × 926, source left / implementation right, pasted at original size.
-- Focused input: `concise-detail-comparison.jpg`, 2060 × 181. Original-size course-flow crops show the removal of the duplicated heading and step descriptions; padding aligns the unequal heights without scaling.
-- Mobile: `concise-course-mobile.jpg` and `concise-learning-mobile.jpg`, 390 × 844 exact crops from cloud-browser screenshots of a 390 × 844 iframe. Content width 375 plus the native scrollbar; no horizontal overflow.
+- Style truth: `docs/design-evidence/reference-learning.jpg` (1487 × 1058), with purpose-corrected source captures `course-desktop.jpg` and `learning-desktop.jpg` (1348 × 926 each).
+- Previous over-reduction: `concise-course-desktop.jpg` and `concise-learning-desktop.jpg` in the same directory.
+- Current implementation: `visual-course-desktop.jpg` and `visual-learning-desktop.jpg` (1348 × 926 each).
+- Desktop viewport: 1363 × 936 CSS px, DPR 1; source and implementation capture content dimensions match. Anonymous, loaded index and illustration, top of each route.
+- Full paired evidence: `visual-learning-comparison.jpg`, 2696 × 926, original source left / current implementation right. Images pasted at original size without scaling.
+- Focused evidence: `visual-course-detail.jpg`, 2050 × 130, original-size crops of the P001 row. The crops follow the row's changed page position and demonstrate restored number, title, supporting detail and action hierarchy.
+- Mobile: `visual-learning-mobile.jpg`, 390 × 844 exact crop of a cloud-browser capture of a 390 × 844 iframe, DPR 1. Content width 375 plus native scrollbar. Illustration renders at 300 × 200 CSS px and is fully loaded and visible.
 
 ## Findings and comparison history
 
-No actionable P0/P1/P2 differences were found in the first scoped comparison. The visible density changes are requested: shorter headings, single-line notebook rows, fewer sidebar captions, and four step names without repeated explanations. The original purpose split, teal actions, spacing system, illustration and icons remain intact.
+1. **[P1, fixed] Copy reduction also weakened the selected visual hierarchy.** The concise captures replace the two-line feature headline with a short title and reduce course experiments to nearly uniform single-line rows. Current captures restore the original display headline, large course numbers, separate problem IDs, subject-specific experiment descriptions and model summaries. Generic page subtitles, sidebar group captions and decorative eyebrows remain absent.
+2. **[P2, fixed] Phone layout omitted the illustration entirely.** Earlier phone captures and the inherited responsive rule hide the artwork below 1050 px. The revised layout retains the same real asset below the primary action, with a 300 px maximum width on phones. Current phone evidence shows the complete three-station image, reachable action and all three extension navigation entries; measured document width equals client width.
 
-An early phone capture caught an incomplete compositor frame for the resources button. The settled capture `concise-learning-mobile.jpg` shows its label and caret correctly; no speculative CSS fix was made.
+No actionable P0/P1/P2 findings remain under the corrected brief. Intentional differences from the source are concise navigation copy, fewer repeated labels, and visible phone artwork.
 
 ## Required fidelity surfaces
 
 | Surface | Result |
 | --- | --- |
-| Fonts / typography | Existing families, CJK fallbacks, weights and sizes retained. Primary headings remain distinct from section headings and row titles. Shorter copy wraps cleanly on phones. |
-| Spacing / layout | Sidebar groups use spacing and rules. Course workflows use four ordered names; notebook rows use problem IDs, titles and actions. The extension illustration's top margin was adjusted after reducing the hero copy. Both mobile navigation layouts remain complete. |
-| Colors / tokens | White background, dark text, teal primary action and pale active navigation retained. No new color or badge system. |
-| Image quality / assets | Existing workshop WebP and Phosphor assets retained. No replacement drawings, new raster assets or font substitutions. |
-| Copy / content | Removed brand subtitle, decorative eyebrows, resource captions, generic page descriptions, redundant step text and notebook summaries. Kept concrete experiment goal, class access requirements, draft status, scoring distinction and detailed scoring disclosure. Button names use “练习评分 / 正式提交”. |
+| Fonts / typography | Original font system and weights restored. Desktop feature uses the selected two-line 40 px headline; phone uses 29 px. Course rows again distinguish large sequence numbers, small problem IDs, titles and model details. |
+| Spacing / layout | Original section rhythm and course row proportions restored. Feature artwork top margin is adjusted to the shorter supporting copy. Phone artwork follows the action, keeping the main task accessible without hiding the illustration. |
+| Colors / tokens | Existing white, dark text, teal actions, pale selected navigation and amber secondary icon accent retained. |
+| Image quality / assets | Original 1536 × 1024 workshop WebP remains unchanged, proportionally displayed without cropping. Original Phosphor icons remain unchanged. No substitute artwork, drawn imitations or new raster assets. |
+| Copy / content | Course / extension ownership retained. Concise “练习评分 / 正式提交” buttons and access requirements retained. Restored descriptions identify model content rather than explaining the surrounding layout. |
 
 ## Interaction and accessibility
 
-- Cloud browser verified default teaching, extension switching, course problem list, P001 editor, and scoring disclosure expansion/collapse.
-- Phone verified four course entries, three extension entries, purpose switching, and resources expansion/collapse. The extension menu exposes only extension resources.
-- Both editor actions keep their existing IDs and handlers. Class state and formal submission restrictions retain their logic; no real student records were read or submitted.
-- Named navigation landmarks, headings, field labels, accessible current state and skip link retained. Removing visible group captions does not remove navigation names.
-- No application console errors in the reviewed editor session; extension-origin metadata errors were excluded.
-- Local checks: UI DOM contract, purpose routing, four Python UI integration tests, JS syntax and whitespace checks passed. Repository CI runs the existing Chromium journey and full judge regressions before merge.
+- Cloud browser reviewed both desktop spaces, phone purpose switching, four course navigation entries, three extension entries, and resources expansion/collapse.
+- Phone content measures 375 / 375 px scroll / client width; illustration measured 300 × 200 px and complete.
+- No application console errors in the reviewed desktop session; browser-extension metadata errors excluded.
+- Existing navigation names, heading relationships, current-link states, field labels, draft guards and submission handlers retained. No authentication or student records changed.
+- Local UI contract and purpose routing regressions passed. Existing Chromium journey and complete judge CI run before merge.
 
 ## Checklist
 
-- [x] Compare before / after together at full and focused sizes.
-- [x] Check desktop and phone layout.
-- [x] Keep actionable status and scoring guidance.
-- [x] Preserve course / extension ownership and navigation.
+- [x] Compare original and rendered implementation together.
+- [x] Inspect headline, image composition and detailed course typography.
+- [x] Restore phone illustration and check width / navigation.
+- [x] Keep concise operational copy and purpose boundaries.
 
 final result: passed
