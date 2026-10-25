@@ -1,9 +1,9 @@
 /**
- * SCIP-OJ L1 Python runtime.
+ * SCIP-OJ Python runtime.
  *
  * Student code MUST run in a dedicated Worker, never synchronously on the UI
  * thread. A Promise timeout cannot interrupt py.runPython() on the main thread.
- * L1 is untrusted/local practice; authoritative grades use isolated L2.
+ * is untrusted/local practice; authoritative grades use isolated .
  */
 (function () {
   "use strict";
@@ -79,7 +79,7 @@
           } else if (data.type === "solve_error") {
             const message = String(data.error || "Python 运行失败");
             callback.reject(new Error(/No module named [\u0027\u0022]?pyscipopt/i.test(message)
-              ? "当前 L1 Pyodide 不含 PySCIPOpt；请到顶部 JupyterLab 使用完整的 PySCIPOpt 环境。本地运行未计入正式成绩。"
+              ? "此练习环境不支持 PySCIPOpt，请从课程实验打开 Notebook 运行模型。"
               : message));
           }
         };
