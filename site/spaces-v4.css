@@ -7,13 +7,11 @@ body.student-page{--rail-width:236px;background:#fff;color:#152a32;font-size:15p
 .student-page .brand-logo-icon{background:#075c60!important;box-shadow:none!important;border-radius:10px!important}
 .student-page .brand-logo-icon .ui-icon{width:30px;height:30px;filter:brightness(0) invert(1)}
 .student-page .brand-logo .brand-name{font-size:23px;font-weight:800}
-.student-page .workbench-topbar .brand-tag{font-size:12px}
 .student-page .space-switcher{display:flex;align-self:stretch;align-items:stretch;gap:28px;margin-right:auto;white-space:nowrap}
 .student-page .space-switcher a{display:flex;align-items:center;color:#5d7279;font-weight:650;font-size:14px;position:relative;text-decoration:none;padding:0 2px}
 .student-page .space-switcher a.active{color:#122d34;font-weight:800}
 .student-page .space-switcher a.active:after{content:"";position:absolute;bottom:13px;left:0;right:0;height:2px;background:#087a76}
 .student-page .studio-rail{padding:34px 18px 20px;gap:23px;background:#fff}
-.student-page .rail-section-label{font-size:12px;letter-spacing:.02em;color:#6f858a;margin:0 0 12px 8px}
 .student-page .studio-rail .nav-links{gap:7px}
 .student-page .studio-rail .nav-item{min-height:44px;gap:14px;font-size:14px;font-weight:600;padding:11px 13px;color:#34515b;border-radius:9px;white-space:normal;line-height:1.45}
 .student-page .studio-rail .nav-item:hover{transform:none;background:#f1f8f6}
@@ -24,32 +22,26 @@ body.student-page{--rail-width:236px;background:#fff;color:#152a32;font-size:15p
 .student-page .main-content.studio-content{padding:32px 42px 40px;background:#fff}
 .student-page .space-heading{margin:0 0 20px}
 .student-page .space-heading h1{font-size:44px;line-height:1.3;letter-spacing:-.055em;color:#132931;margin:0 0 8px;font-weight:800}
-.student-page .space-heading>p{font-size:18px;line-height:1.65;color:#4e6771;margin:0}
-.student-page .space-heading .space-eyebrow{font-size:12px;letter-spacing:.1em;color:#14756f;font-weight:700;margin-bottom:9px}
 .student-page .learning-overview .studio-case-grid{display:block}
 .student-page .learning-feature{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);align-items:center;gap:12px;min-height:0;padding:0 0 26px;margin:0;background:#fff;color:#132931;border-radius:0;overflow:visible;border:0;box-shadow:none}
 .student-page .learning-feature:before{display:none}
 .student-page .learning-feature-copy{position:relative;z-index:1;min-width:0}
-.student-page .learning-feature .task-label{color:#096764;font-size:13px;font-weight:750;letter-spacing:.11em;margin:3px 0 14px}
 .student-page .learning-feature h2{font-size:40px;line-height:1.35;letter-spacing:-.05em;font-weight:800;margin:0 0 17px;white-space:normal}
 .student-page .task-description{font-size:16px;line-height:1.8;color:#506974;margin:0 0 24px;max-width:550px}
-.student-page .learning-feature-art{margin:-65px -30px 0 -85px;min-width:0;align-self:start;padding-top:10px}
+.student-page .learning-feature-art{margin:-15px -30px 0 -85px;min-width:0;align-self:start;padding-top:10px}
 .student-page .learning-feature-art img{display:block;width:100%;height:auto;aspect-ratio:3/2;object-fit:contain}
 .student-page .learning-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:0;margin:0 0 24px;list-style:none}
 .student-page .learning-steps li{min-width:0}
 .student-page .learning-steps li>span{display:grid;place-items:center;width:36px;height:36px;margin-bottom:9px;border-radius:50%;background:#eef3f3;color:#47606c;font-size:15px;font-weight:750}
 .student-page .learning-steps li:first-child>span{background:#086f70;color:#fff}
 .student-page .learning-steps strong{display:block;font-size:14px;line-height:1.5;font-weight:750;color:#142f37}
-.student-page .learning-steps small{display:block;font-size:12px;line-height:1.6;color:#5f747e;margin-top:3px}
 .student-page a.studio-case-card{transform:none;box-shadow:none;background:transparent;min-height:0;border-radius:0;color:inherit}
 .student-page a.studio-case-card:after{display:none}
 .student-page a.primary-action{display:inline-flex;align-items:center;justify-content:center;gap:16px;padding:14px 24px;min-height:52px;border:0;border-radius:8px;background:#076a6c;color:#fff;font-weight:750;font-size:16px;text-decoration:none}
 .student-page a.primary-action:hover{background:#06565b;color:#fff}
 .student-page .primary-action .ui-icon{filter:brightness(0) invert(1);width:20px;height:20px}
 .student-page .section-title{margin-bottom:18px}
-.student-page .section-title>span{display:block;font-size:12px;letter-spacing:.07em;color:#11756f;font-weight:700;margin-bottom:8px}
 .student-page .section-title h2{font-size:25px;line-height:1.45;letter-spacing:-.035em;margin:0 0 5px;font-weight:760;color:#18333b}
-.student-page .section-title p{margin:0;color:#5b727d;font-size:14px;line-height:1.7}
 .student-page .explore-section{border-top:1px solid #dfe8e4;margin:0;padding-top:25px}
 .student-page .explore-row{display:flex!important;gap:24px;align-items:center;padding:17px 4px!important;border:0!important;border-bottom:1px solid #e2e9e6!important;text-decoration:none!important}
 .student-page .explore-row:hover{background:#f6faf8}
@@ -59,20 +51,15 @@ body.student-page{--rail-width:236px;background:#fff;color:#152a32;font-size:15p
 .student-page .explore-icon .ui-icon{width:28px;height:28px;filter:invert(31%) sepia(21%) saturate(1052%) hue-rotate(125deg)}
 .student-page .explore-icon.amber .ui-icon{filter:invert(37%) sepia(82%) saturate(780%) hue-rotate(355deg)}
 .student-page .explore-row h3{font-size:17px;line-height:1.6;letter-spacing:-.02em;margin:0;color:#19323a;font-weight:700}
-.student-page .explore-row p{font-size:13px;line-height:1.6;color:#5f7580;margin:2px 0 0;min-height:0}
 .student-page .text-action{display:inline-flex;align-items:center;gap:11px;font-weight:700;color:#096c69;font-size:14px;text-decoration:none;min-height:38px}
 .student-page .text-action:hover{color:#024f4c;text-decoration:underline}
 .student-page .learning-practice-link{margin-top:13px}
-.student-page .local-study-note{color:#647b83;font-size:12px;margin:3px 0 0}
-.student-page .open-learning-label{margin-left:auto;padding:8px 14px;border:1px solid #dce9e5;border-radius:8px;font-size:12px;color:#476e6a;white-space:nowrap}
 .student-page .teaching-actions{display:flex;align-items:center;gap:24px;flex-wrap:wrap;margin:0 0 34px}
 .student-page .teaching-overview .course-banner{margin-bottom:20px}
 .student-page .extension-notebooks{margin-top:34px;padding-top:25px;border-top:1px solid #dfe8e4;scroll-margin-top:105px}
 .student-page .extension-notebook-list{margin-bottom:16px}
 .student-page .extension-notebook{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 4px;border-bottom:1px solid #e2e9e6;text-decoration:none;color:#19323a}
 .student-page .extension-notebook:hover{background:#f6faf8}
-.student-page .extension-notebook strong,.student-page .extension-notebook small{display:block;line-height:1.7}
-.student-page .extension-notebook small{color:#5f7580;font-size:13px;margin-top:2px}
 .student-page .course-banner{padding:19px 22px;background:#f5f9f7;border:1px solid #e0e9e4;box-shadow:none;border-radius:11px;margin:0 0 35px;gap:18px}
 .student-page .course-title-group h2{font-size:16px;line-height:1.65;margin:0}
 .student-page .course-title-group p{font-size:13px;line-height:1.65;margin:3px 0 0}
@@ -81,16 +68,13 @@ body.student-page{--rail-width:236px;background:#fff;color:#152a32;font-size:15p
 .student-page .course-path li{padding:0 18px;border-right:1px solid #e2ebe6;counter-increment:path}
 .student-page .course-path li:first-child{padding-left:0}
 .student-page .course-path li:last-child{border-right:0}
-.student-page .course-path strong{display:block;font-size:15px;margin-bottom:5px}
+.student-page .course-path strong{display:block;font-size:15px;margin:0}
 .student-page .course-path strong:before{content:counter(path,decimal-leading-zero) " / ";color:#1c7b74;font-size:12px}
-.student-page .course-path span{display:block;font-size:12px;line-height:1.75;color:#5d747b}
 .student-page .course-cases{margin-bottom:37px;scroll-margin-top:104px}
 .student-page .course-case-row{display:flex;align-items:center;gap:22px;padding:20px 0;border-bottom:1px solid #e3eae6}
-.student-page .lesson-index{font:700 24px/1.5 var(--font-mono);color:#3a827b;width:43px;flex:none}
+.student-page .lesson-index{font:600 14px/1.5 var(--font-mono);color:#3a827b;width:52px;flex:none}
 .student-page .course-case-row>div{flex:1;min-width:0}
-.student-page .course-case-row small{color:#5e767f;font-size:12px}
 .student-page .course-case-row h3{font-size:19px;margin:4px 0;line-height:1.6;color:#17343a}
-.student-page .course-case-row p{font-size:13px;line-height:1.7;color:#5d747c;margin:0}
 .student-page .assessment-guide{scroll-margin-top:104px;border-top:1px solid #e3eae6;padding-top:25px}
 .student-page .assessment-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:38px}
 .student-page .assessment-columns h3{font-size:17px;margin:0 0 8px}
@@ -110,7 +94,6 @@ body.student-page{--rail-width:236px;background:#fff;color:#152a32;font-size:15p
 .student-page .studio-footer .footer-container{gap:8px}
 .student-page.workbench-active .main-content.studio-content{padding-top:16px}
 @media(max-width:1200px){
- .student-page .brand-tag{display:none!important}
  .student-page .learning-feature{grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr)}
  .student-page .learning-feature h2{font-size:32px}
  .student-page .learning-feature-art{margin:-25px -14px 0 -50px}
@@ -131,7 +114,6 @@ body.student-page{--rail-width:236px;background:#fff;color:#152a32;font-size:15p
  .student-page .workbench-topbar .navbar-container{display:grid;grid-template-columns:1fr auto;gap:8px 15px}
  .student-page .navbar.workbench-topbar{padding:9px 16px 0;min-height:109px}
  .student-page .workbench-topbar .auth-section{max-width:none;grid-column:2;grid-row:1}
- .student-page .open-learning-label{grid-column:2;grid-row:1}
  .student-page .space-switcher{grid-column:1/-1;grid-row:2;justify-content:center;gap:40px;min-height:42px;margin:0}
  .student-page .space-switcher a.active:after{bottom:0}
  .student-page .studio-rail{padding:7px 12px;gap:0}
@@ -150,31 +132,27 @@ body.student-page{--rail-width:236px;background:#fff;color:#152a32;font-size:15p
 @media(max-width:650px){
  .student-page .space-heading{margin-bottom:26px}
  .student-page .space-heading h1{font-size:30px}
- .student-page .space-heading>p{font-size:15px}
  .student-page .main-content.studio-content{padding:24px 17px 32px}
  .student-page .learning-feature{padding-bottom:27px}
  .student-page .learning-feature h2{font-size:29px}
  .student-page .task-description{font-size:15px;line-height:1.75}
  .student-page .learning-steps{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 12px;margin-bottom:24px}
  .student-page .learning-steps li{display:grid;grid-template-columns:33px 1fr;gap:0 9px}
- .student-page .learning-steps li>span{width:31px;height:31px;grid-row:1/3;margin:0;font-size:13px}
+ .student-page .learning-steps li>span{width:31px;height:31px;margin:0;font-size:13px;align-self:center}
  .student-page .learning-steps strong{font-size:13px}
- .student-page .learning-steps small{font-size:11px;line-height:1.6}
  .student-page a.primary-action{min-height:49px;padding:12px 22px;font-size:15px}
  .student-page .section-title h2{font-size:22px}
  .student-page .explore-row{gap:13px;padding:16px 0!important}
  .student-page .explore-row .explore-icon{width:43px;height:43px}
  .student-page .explore-row h3{font-size:15px}
- .student-page .explore-row p{font-size:12px}
  .student-page .course-banner{padding:16px;flex-wrap:wrap}
  .student-page .course-title-group{min-width:0;flex-basis:100%}
  .student-page .course-case-row{gap:10px;flex-wrap:wrap}
- .student-page .course-case-row .text-action{margin-left:52px}
+ .student-page .course-case-row .text-action{margin-left:62px}
  .student-page .course-case-row h3{font-size:17px}
- .student-page .course-case-row>div{flex-basis:calc(100% - 55px)}
+ .student-page .course-case-row>div{flex-basis:calc(100% - 65px)}
  .student-page .assessment-columns{grid-template-columns:1fr;gap:24px}
  .student-page .course-path li{padding-left:12px;padding-right:12px}
  .student-page .course-path strong{font-size:13px}
- .student-page .course-path span{font-size:11px}
  .student-page .studio-footer .footer-container{display:block;line-height:1.8}
 }
