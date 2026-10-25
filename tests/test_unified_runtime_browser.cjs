@@ -20,6 +20,7 @@ const assert = require('node:assert/strict');
   await page.evaluate(code=>{setCodeValue(code);},code);
   await page.locator('#btn-open-notebook').click();
   await page.locator('#btn-return-code').waitFor({state:'visible',timeout:120000});
+  assert.equal(await page.locator('.workspace-problem').isVisible(),false);
   await page.screenshot({path:'ui-artifacts/10-unified-notebook.png',fullPage:true});
   const changed=code+'\n# notebook edit';
   await page.evaluate(async source=>{
@@ -32,6 +33,7 @@ const assert = require('node:assert/strict');
   assert.equal(await page.evaluate(()=>localStorage.getItem('scipoj:draft:P001')),changed);
   await page.locator('#btn-return-code').click();
   assert.equal(await page.locator('.editor-container').isVisible(),true);
+  assert.equal(await page.locator('.workspace-problem').isVisible(),true);
   await page.locator('#btn-open-notebook').click();
   await page.locator('#btn-return-code').waitFor({state:'visible',timeout:120000});
   const notes=await page.evaluate(async()=>{
