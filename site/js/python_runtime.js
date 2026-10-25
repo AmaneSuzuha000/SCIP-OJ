@@ -143,7 +143,10 @@
     changed = () => { try { onChange(readCode(),null); } catch(e) { onChange(null,e); } };
     notebook.content.model.contentChanged.connect(changed);
     changed();
+    app.shell.collapseLeft?.();
+    app.shell.collapseRight?.();
     getFrame().hidden = false;
+    getFrame().contentWindow.dispatchEvent(new Event('resize'));
     return notebook;
   }
   function hideNotebook() { if (frame) frame.hidden = true; }
