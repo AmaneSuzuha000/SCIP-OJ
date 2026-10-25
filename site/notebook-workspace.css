@@ -1,0 +1,3 @@
+/* Notebook uses the full work area; code mode retains the established split. */
+.student-page .workspace-layout.notebook-mode{grid-template-columns:minmax(0,1fr)}
+.student-page .workspace-layout.notebook-mode .workspace-problem{display:none}
