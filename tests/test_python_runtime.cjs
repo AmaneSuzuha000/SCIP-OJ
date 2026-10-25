@@ -7,7 +7,7 @@ const source=fs.readFileSync('site/js/python_runtime.js','utf8');
  let frames=[], shutdown=0, pending=false;
  const reply={content:{status:'ok',user_expressions:{result:{status:'ok',data:{'text/plain':"'eyJvYmplY3RpdmUiOjd9'"}}}}};
  const kernel={requestExecute:()=>({done:pending?new Promise(()=>{}):Promise.resolve(reply)}),shutdown:async()=>{shutdown++}};
- const app={started:Promise.resolve(),serviceManager:{ready:Promise.resolve(),kernelspecs:{specs:{default:'xpython',kernelspecs:{xpython:{}}}},kernels:{startNew:async()=>kernel}}};
+ const app={started:Promise.resolve(),serviceManager:{ready:Promise.resolve(),kernelspecs:{refreshSpecs:async()=>{},specs:{default:'xpython',kernelspecs:{xpython:{}}}},kernels:{startNew:async()=>kernel}}};
  const window={dispatchEvent:()=>{}};
  const document={currentScript:{src:'https://example.test/SCIP-OJ/js/python_runtime.js'},getElementById:()=>({appendChild:f=>frames.push(f)}),createElement:()=>({style:{},contentWindow:{jupyterapp:app},remove(){this.removed=true;}})};
  vm.runInNewContext(source,{window,document,URL,Event,TextEncoder,TextDecoder,Uint8Array,btoa,atob,setTimeout,clearTimeout});

@@ -6,6 +6,8 @@ const assert = require('node:assert/strict');
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  try {
   const page=await browser.newPage();
+  page.on('console',m=>{if(m.type()==='error') console.error('runtime console:',m.text());});
+  page.on('pageerror',e=>console.error('runtime pageerror:',e.message));
   await page.goto((process.env.SCIP_UI_TEST_ORIGIN||'http://127.0.0.1:8765')+'/index.html#P001');
   await page.locator('#workspace[aria-busy="false"]').waitFor();
   const nb=JSON.parse(fs.readFileSync('content/01_P001_knapsack_PySCIPOpt.ipynb','utf8'));

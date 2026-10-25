@@ -5,6 +5,7 @@
   'use strict';
   const runtimeURL = new URL('../notebooks/lab/index.html', document.currentScript.src);
   let readyApp, frame, appPromise, busy = false, generation = 0, notebook, changed;
+  const managedWidgets = new Map();
   function getFrame() {
     if (!frame) {
       frame = document.createElement('iframe');
@@ -22,6 +23,7 @@
   }
   function reset() {
     generation++;
+    managedWidgets.clear();
     detachNotebook();
     frame?.remove(); frame = null; appPromise = null; readyApp = null;
     window.dispatchEvent(new Event('scip-runtime-reset'));
@@ -40,10 +42,17 @@
             let readinessTimer;
             try {
               await Promise.race([
-                Promise.all([app.started, app.serviceManager.ready]),
+                Promise.all([app.started, app.restored, app.serviceManager.ready]),
                 new Promise((_, reject) => { readinessTimer=setTimeout(() => reject(new Error('建模环境初始化超时')),120000); })
               ]);
             } finally { clearTimeout(readinessTimer); }
+            // Lite starts before asynchronous kernel providers finish registration.
+            await app.serviceManager.kernelspecs.refreshSpecs();
+            const specs = app.serviceManager.kernelspecs.specs;
+            if (!Object.keys(specs?.kernelspecs || {}).length) {
+              if (Date.now() - started > 120000) throw new Error('Python 内核未能加载');
+              setTimeout(inspect,150); return;
+            }
             if (epoch !== generation) return reject(new Error('运行环境已重置'));
             onProgress?.('建模环境已就绪');
             readyApp = app;
@@ -113,11 +122,12 @@
       {cell_type:'code',metadata:{},execution_count:null,outputs:[],source:`import json\ninstance = json.loads(${JSON.stringify(JSON.stringify(instance))})\nsolve(instance)`}
     ]};
     // Save/close the previous widget before replacing its content from the canonical draft.
-    const old = app.docRegistry ? app.shell.widgets?.('main') : null;
-    if (old) for (const widget of old) if (widget.context?.path === path) { await widget.context.save(); widget.dispose(); }
+    const old = managedWidgets.get(path);
+    if (old && !old.isDisposed) { await old.context.save(); old.dispose(); }
     await contents.save(path,{type:'notebook',format:'json',content:model});
     notebook = await app.commands.execute('docmanager:open',{path,factory:'Notebook'});
     await notebook.context.ready;
+    managedWidgets.set(path,notebook);
     changed = () => { try { onChange(readCode(),null); } catch(e) { onChange(null,e); } };
     notebook.content.model.contentChanged.connect(changed);
     getFrame().hidden = false;
