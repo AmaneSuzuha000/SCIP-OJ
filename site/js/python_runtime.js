@@ -1,153 +1,151 @@
-/**
- * SCIP-OJ Python runtime.
- *
- * Student code MUST run in a dedicated Worker, never synchronously on the UI
- * thread. A Promise timeout cannot interrupt py.runPython() on the main thread.
- * is untrusted/local practice; authoritative grades use isolated .
+/** One xeus/PySCIPOpt runtime for course code and notebook views.
+ * Browser results are practice only; formal grades use the isolated server.
  */
 (function () {
-  "use strict";
-
-  // Capture currentScript during evaluation. It is usually null later when
-  // the student clicks Run. The Worker lives beside this file under /js/.
-  const scriptUrl = document.currentScript?.src ||
-    new URL("js/python_runtime.js", window.location.href).href;
-  const workerScriptUrl = new URL("pyodide_worker.js", scriptUrl).href;
-
-  let worker = null;
-  let workerReady = false;
-  let initPromise = null;
-  let requestCounter = 0;
-  const pending = new Map();
-
-  function failWorker(error) {
-    const reason = error instanceof Error ? error : new Error(String(error));
-    const old = worker;
-    worker = null;
-    workerReady = false;
-    initPromise = null;
-    if (old) {
-      try { old.terminate(); } catch (_) { /* worker already gone */ }
+  'use strict';
+  const runtimeURL = new URL('../notebooks/lab/index.html', document.currentScript.src);
+  let readyApp, frame, appPromise, busy = false, generation = 0, notebook, changed;
+  const managedWidgets = new Map();
+  function getFrame() {
+    if (!frame) {
+      frame = document.createElement('iframe');
+      frame.title = '课程建模实验';
+      frame.style.cssText = 'width:100%;height:650px;border:0';
+      frame.hidden = true;
+      frame.src = runtimeURL.href;
+      document.getElementById('notebook-host').appendChild(frame);
     }
-    for (const callback of pending.values()) callback.reject(reason);
-    pending.clear();
+    return frame;
   }
-
-  function initWorker(onProgress) {
-    if (worker && workerReady) return Promise.resolve();
-    if (initPromise) return initPromise;
-
-    initPromise = new Promise(function (resolve, reject) {
-      let initTimer = null;
-      let settled = false;
-      function rejectInit(error) {
-        if (settled) return;
-        settled = true;
-        if (initTimer) clearTimeout(initTimer);
-        failWorker(error);
-        reject(error);
-      }
-
-      try {
-        if (onProgress) onProgress("正在启动隔离的 Python Web Worker...");
-        const created = new Worker(workerScriptUrl);
-        worker = created;
-        created.onmessage = function (event) {
-          if (worker !== created) return;
-          const data = event.data || {};
-          if (data.type === "init_ok") {
-            if (settled) return;
-            settled = true;
-            if (initTimer) clearTimeout(initTimer);
-            workerReady = true;
-            if (onProgress) onProgress("Python WASM 运行环境就绪");
-            resolve();
-            return;
-          }
-          if (data.type === "init_error") {
-            rejectInit(new Error(data.error || "Python Worker 初始化失败"));
-            return;
-          }
-          const callback = pending.get(data.id);
-          if (!callback) return;
-          if (data.type === "solve_ok") {
+  function detachNotebook() {
+    if (notebook && changed) notebook.content.model.contentChanged.disconnect(changed);
+    notebook = changed = null;
+  }
+  function reset() {
+    generation++;
+    managedWidgets.clear();
+    detachNotebook();
+    frame?.remove(); frame = null; appPromise = null; readyApp = null;
+    window.dispatchEvent(new Event('scip-runtime-reset'));
+  }
+  function ensureReady(onProgress) {
+    if (appPromise) return appPromise;
+    onProgress?.('正在加载建模环境，首次使用需要下载…');
+    const f = getFrame(), epoch = generation;
+    appPromise = new Promise((resolve, reject) => {
+      const started = Date.now();
+      const inspect = async () => {
+        if (epoch !== generation) return reject(new Error('运行环境已重置'));
+        try {
+          const app = f.contentWindow?.jupyterapp;
+          if (app) {
+            let readinessTimer;
             try {
-              callback.resolve(JSON.parse(data.resultJson));
-            } catch (error) {
-              callback.reject(new Error("Python 返回值 JSON 解析失败: " + error.message));
+              await Promise.race([
+                Promise.all([app.started, app.restored, app.serviceManager.ready]),
+                new Promise((_, reject) => { readinessTimer=setTimeout(() => reject(new Error('建模环境初始化超时')),120000); })
+              ]);
+            } finally { clearTimeout(readinessTimer); }
+            // Lite starts before asynchronous kernel providers finish registration.
+            await app.serviceManager.kernelspecs.refreshSpecs();
+            const specs = app.serviceManager.kernelspecs.specs;
+            if (!Object.keys(specs?.kernelspecs || {}).length) {
+              if (Date.now() - started > 120000) throw new Error('Python 内核未能加载');
+              setTimeout(inspect,150); return;
             }
-          } else if (data.type === "solve_error") {
-            const message = String(data.error || "Python 运行失败");
-            callback.reject(new Error(/No module named [\u0027\u0022]?pyscipopt/i.test(message)
-              ? "此练习环境不支持 PySCIPOpt，请从课程实验打开 Notebook 运行模型。"
-              : message));
+            if (epoch !== generation) return reject(new Error('运行环境已重置'));
+            onProgress?.('建模环境已就绪');
+            readyApp = app;
+            return resolve(app);
           }
-        };
-        created.onerror = function () {
-          const error = new Error("Python Worker 运行异常，请刷新页面重试");
-          if (!workerReady) rejectInit(error);
-          else failWorker(error);
-        };
-        initTimer = setTimeout(function () {
-          rejectInit(new Error("Python Worker 初始化超过 120 秒，请检查网络后重试"));
-        }, 120000);
-        if (onProgress) onProgress("正在加载浏览器 Python WASM（首次需要下载运行时）...");
-        created.postMessage({ type: "init" });
-      } catch (error) {
-        rejectInit(error);
-      }
-    }).catch(function (error) {
-      initPromise = null;
-      throw error;
+          if (Date.now() - started > 120000) throw new Error('建模环境加载超时，请检查网络后重试');
+          setTimeout(inspect, 150);
+        } catch (e) { reset(); reject(e); }
+      };
+      inspect();
     });
-    return initPromise;
+    return appPromise;
   }
-
-  async function ensureReady(onProgress) {
+  function encode(value) {
+    return btoa(Array.from(new TextEncoder().encode(JSON.stringify(value)), c => String.fromCharCode(c)).join(''));
+  }
+  async function runSolve(code, instance, seconds = 15) {
+    if (busy) throw new Error('请等待当前运行结束');
+    busy = true;
+    let kernel, timer;
     try {
-      await initWorker(onProgress);
-      return "worker";
-    } catch (error) {
-      throw new Error("安全的 Worker 运行环境不可用，已停止本地执行以避免卡死浏览器。请检查网络或在 JupyterLab 中练习。原因：" + (error.message || error));
-    }
-  }
-
-  async function runSolve(userCode, instance, timeoutSec = 10) {
-    await ensureReady();
-    if (!worker || !workerReady) throw new Error("Python Worker 未就绪");
-    const limit = Number(timeoutSec);
-    if (!Number.isFinite(limit) || limit <= 0 || limit > 120) {
-      throw new RangeError("Python 运行超时设置须在 0–120 秒内");
-    }
-    const instanceJson = JSON.stringify(instance);
-    return new Promise(function (resolve, reject) {
-      const id = ++requestCounter;
-      const timer = setTimeout(function () {
-        failWorker(new Error("执行超时（超过 " + limit + " 秒），已终止隔离 Worker"));
-      }, limit * 1000);
-      pending.set(id, {
-        resolve: function (result) {
-          clearTimeout(timer);
-          pending.delete(id);
-          resolve(result);
-        },
-        reject: function (error) {
-          clearTimeout(timer);
-          pending.delete(id);
-          reject(error);
-        }
+      const app = await ensureReady();
+      const specs = app.serviceManager.kernelspecs.specs;
+      const name = Object.keys(specs.kernelspecs).find(n => /xpython|xeus/i.test(n)) || specs.default;
+      const execution = (async () => {
+        const epoch = generation;
+        kernel = await app.serviceManager.kernels.startNew({name});
+        if (epoch !== generation) { await kernel.shutdown(); throw new Error('运行已取消'); }
+        const payload = encode({code, instance});
+        const source = `import json as __j, base64 as __b\n__p=__j.loads(__b.b64decode('${payload}'))\n__scope={'__name__':'__student__'}\nexec(compile(__p['code'], 'solution.py', 'exec'), __scope)\n__scip_result=__scope['solve'](__p['instance'])`;
+        const future = kernel.requestExecute({code:source,stop_on_error:true,store_history:false,user_expressions:{result:"__import__('base64').b64encode(__import__('json').dumps(__scip_result,allow_nan=False).encode()).decode()"}});
+        const reply = await future.done;
+        if (reply.content.status !== 'ok') throw new Error(reply.content.evalue || '代码运行失败');
+        const result = reply.content.user_expressions.result;
+        if (result.status !== 'ok') throw new Error(result.evalue || '返回值不能转换为 JSON');
+        const encoded = result.data['text/plain'];
+        if (!/^['"][A-Za-z0-9+/=]*['"]$/.test(encoded)) throw new Error('返回值格式错误');
+        return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(encoded.slice(1,-1)), c=>c.charCodeAt(0))));
+      })();
+      const timeout = new Promise((_, reject) => {
+        timer = setTimeout(() => { reset(); reject(new Error('运行超时，环境已重置；作业代码已保留。')); }, Math.max(.01, Math.min(Number(seconds) || 15, 60))*1000);
       });
-      try {
-        worker.postMessage({ type: "solve", id, code: userCode, instanceJson });
-      } catch (error) {
-        failWorker(error);
-      }
-    });
+      return await Promise.race([execution, timeout]);
+    } finally {
+      clearTimeout(timer);
+      // A timed-out iframe is destroyed, which terminates its kernel workers.
+      if (frame && kernel) kernel.shutdown().catch(()=>{});
+      busy = false;
+    }
   }
-
-  window.ScipOJRuntime = {
-    ensureReady,
-    runSolve,
-    isReady: function () { return workerReady && !!worker; }
-  };
+  function readCode() {
+    const cells = notebook?.content.model.toJSON().cells || [];
+    const sources = cells.filter(c=>c.cell_type==='code' && c.metadata?.tags?.includes('submission')).map(c=>Array.isArray(c.source)?c.source.join(''):c.source);
+    if (sources.length !== 1) throw new Error('请保留唯一的作业代码单元（submission）');
+    return sources[0];
+  }
+  async function openNotebook(id, code, instance, onChange) {
+    const app = await ensureReady();
+    detachNotebook();
+    const contents = app.serviceManager.contents;
+    const path = `SCIP_${id}_assignment.ipynb`;
+    const specs = app.serviceManager.kernelspecs.specs;
+    const name = Object.keys(specs.kernelspecs).find(n=>/xpython|xeus/i.test(n)) || specs.default;
+    let model = {nbformat:4,nbformat_minor:5,metadata:{kernelspec:{name,display_name:'Python · PySCIPOpt',language:'python'},scip_oj:{problem_id:id}},cells:[
+      {cell_type:'markdown',metadata:{},source:`# ${id} 课程作业\n作业代码单元与代码视图同步。实验输出不计入正式成绩。`},
+      {cell_type:'code',metadata:{tags:['submission']},execution_count:null,outputs:[],source:code},
+      {cell_type:'code',metadata:{},execution_count:null,outputs:[],source:`import json\ninstance = json.loads(${JSON.stringify(JSON.stringify(instance))})\nsolve(instance)`}
+    ]};
+    // Save/close the previous widget before replacing its content from the canonical draft.
+    const old = managedWidgets.get(path);
+    if (old && !old.isDisposed) { await old.context.save(); old.dispose(); }
+    try {
+      const existing = await contents.get(path,{content:true});
+      if (existing.type !== 'notebook' || !Array.isArray(existing.content?.cells)) throw new Error('作业文件格式错误');
+      model = existing.content;
+      const submissions = model.cells.filter(c=>c.cell_type==='code' && c.metadata?.tags?.includes('submission'));
+      if (submissions.length === 1) {
+        submissions[0].source = code;
+        submissions[0].outputs = []; submissions[0].execution_count = null;
+      }
+    } catch (e) {
+      if (e.response?.status !== 404) throw e;
+    }
+    await contents.save(path,{type:'notebook',format:'json',content:model});
+    notebook = await app.commands.execute('docmanager:open',{path,factory:'Notebook'});
+    await notebook.context.ready;
+    managedWidgets.set(path,notebook);
+    changed = () => { try { onChange(readCode(),null); } catch(e) { onChange(null,e); } };
+    notebook.content.model.contentChanged.connect(changed);
+    changed();
+    getFrame().hidden = false;
+    return notebook;
+  }
+  function hideNotebook() { if (frame) frame.hidden = true; }
+  window.ScipOJRuntime = {ensureReady,runSolve,openNotebook,readCode,hideNotebook,detachNotebook,reset,isReady:()=>!!readyApp};
 })();

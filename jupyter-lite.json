@@ -3,7 +3,9 @@
   "jupyter-config-data": {
     "appName": "SCIP-OJ JupyterLite",
     "appVersion": "0.1.0",
-    "appUrl": "/SCIP-OJ/lab",
-    "baseUrl": "/SCIP-OJ/"
+    "appUrl": "./lab",
+    "baseUrl": "./",
+    "exposeAppInBrowser": true,
+    "contentsStorageName": "JupyterLite Storage - /SCIP-OJ/"
   }
 }

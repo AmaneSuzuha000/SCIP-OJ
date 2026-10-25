@@ -5,12 +5,22 @@ on:
     branches: [main]
     paths:
       - "site/**"
+      - "scripts/**"
+      - "content/**"
+      - "jupyter-lite.json"
+      - "environment.yml"
+      - "tests/test_unified_runtime_browser.cjs"
       - "judge/ie_des01_reference.py"
       - "tests/test_ui_browser.cjs"
       - ".github/workflows/ui-visual-smoke.yml"
   pull_request:
     paths:
       - "site/**"
+      - "scripts/**"
+      - "content/**"
+      - "jupyter-lite.json"
+      - "environment.yml"
+      - "tests/test_unified_runtime_browser.cjs"
       - "judge/ie_des01_reference.py"
       - "tests/test_ui_browser.cjs"
       - ".github/workflows/ui-visual-smoke.yml"
@@ -22,7 +32,7 @@ permissions:
 jobs:
   ui-chromium-smoke:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -41,13 +51,16 @@ jobs:
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install chromium --only-shell
-      - name: Assemble preview exactly like the Pages web shell
-        run: |
-          mkdir -p ui-preview/problems ui-preview/docs
-          cp -r site/* ui-preview/
-          cp -r problems/* ui-preview/problems/
-          cp -r docs/* ui-preview/docs/
-          cp README.md ui-preview/README.md
+      - uses: mamba-org/setup-micromamba@v1
+        with:
+          micromamba-version: "1.5.8-0"
+          environment-file: .github/build-environment.yml
+          cache-environment: true
+      - name: Build real JupyterLite runtime
+        shell: bash -l {0}
+        run: jupyter lite build --contents content --output-dir lite-build
+      - name: Assemble the same distribution as production
+        run: python3 scripts/assemble_site.py --lite lite-build --output ui-preview
       - name: Start read-only course website preview
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 --directory ui-preview > /tmp/scip-ui-preview.log 2>&1 &
@@ -59,7 +72,9 @@ jobs:
           done
           exit 1
       - name: Exercise responsive workbench, three labs, downloads and independent replay
-        run: node tests/test_ui_browser.cjs
+        run: |
+          node tests/test_ui_browser.cjs
+          node tests/test_unified_runtime_browser.cjs
       - name: Save review screenshots
         if: always()
         uses: actions/upload-artifact@v4
