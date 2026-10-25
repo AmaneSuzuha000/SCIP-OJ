@@ -29,7 +29,7 @@ const ScipOJPlatform = (() => {
   // ── 初始化平台服务 ──
   async function init() {
     if (!isConfigured()) {
-      console.log("[Platform] 未检测到 Supabase 配置，平台运行于离线练习模式（L1 WASM 练习正常可用）");
+      console.log("[Platform] 未检测到 Supabase 配置，平台运行于离线练习模式（WASM 练习正常可用）");
       updateAuthUI();
       showConfigWarning();
       return false;
@@ -909,7 +909,7 @@ const ScipOJPlatform = (() => {
 
     if (!isConfigured()) {
       authArea.innerHTML = `
-        <span class="user-info" style="color:var(--text-secondary); background:var(--bg-subtle); padding:0.35rem 0.65rem; border-radius:6px; font-size:0.82rem;" title="未配置 Supabase 服务端。力扣壳处于离线练习模式，L1 WASM 正常工作。">
+        <span class="user-info" style="color:var(--text-secondary); background:var(--bg-subtle); padding:0.35rem 0.65rem; border-radius:6px; font-size:0.82rem;" title="课程服务暂不可用，可使用本地练习。">
           🌿 离线练习模式
         </span>
       `;
@@ -1085,7 +1085,7 @@ const ScipOJPlatform = (() => {
   // ── 弹窗: 登录 ──
   function showLoginDialog() {
     if (!isConfigured()) {
-      showToast("平台未配置云端服务，无需登录即可使用「L1 练习评分」", "info");
+      showToast("平台未配置云端服务，无需登录即可使用「练习评分」", "info");
       return;
     }
 
@@ -1194,7 +1194,7 @@ const ScipOJPlatform = (() => {
     errEl.hidden = true;
 
     // 强制门禁也保留“稍后填写（仅练习）”出口：
-    // 关闭弹窗不会影响 L1 练习；正式提交仍由服务端门禁校验学号，安全边界不变。
+    // 关闭弹窗不会影响 练习；正式提交仍由服务端门禁校验学号，安全边界不变。
     const isForcedBlocking = forced && !currentProfile?.student_no;
     btnCancel.hidden = false;
     btnCancel.textContent = isForcedBlocking ? "稍后填写（仅练习）" : "取消";
@@ -1205,7 +1205,7 @@ const ScipOJPlatform = (() => {
     btnCancel.onclick = () => {
       close();
       if (isForcedBlocking) {
-        showToast("已跳过学号绑定：可继续 L1 练习，提交正式作业前需补齐学号", "info");
+        showToast("已跳过学号绑定：可继续 练习，提交正式作业前需补齐学号", "info");
       }
     };
     btnX.onclick = close;
@@ -1569,7 +1569,7 @@ const ScipOJPlatform = (() => {
     const el = document.createElement("div");
     el.id = "config-warning";
     el.className = "config-warning";
-    el.innerHTML = `⚠️ <strong>离线练习模式</strong>：未检测到 <code>config.js</code>（Supabase 配置未注入）。L1 练习可正常使用；正式作业提交、选课与成绩功能暂不可用。管理员请检查部署 Secrets <code>SUPABASE_URL</code> / <code>SUPABASE_ANON_KEY</code> 后重新部署。`;
+    el.innerHTML = `课程服务暂不可用，选课、正式提交和成绩查询暂时无法使用。你可以继续本地练习，请稍后重试。`;
     main.insertBefore(el, main.firstChild);
   }
 
