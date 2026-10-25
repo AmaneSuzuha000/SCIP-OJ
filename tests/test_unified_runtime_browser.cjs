@@ -20,10 +20,11 @@ const assert = require('node:assert/strict');
   await page.evaluate(code=>{setCodeValue(code);},code);
   await page.locator('#btn-open-notebook').click();
   await page.locator('#btn-return-code').waitFor({state:'visible',timeout:120000});
+  await page.screenshot({path:'ui-artifacts/10-unified-notebook.png',fullPage:true});
   const changed=code+'\n# notebook edit';
   await page.evaluate(async source=>{
     const app=document.querySelector('#notebook-host iframe').contentWindow.jupyterapp;
-    const widget=app.shell.currentWidget;
+    const widget=await app.commands.execute('docmanager:open',{path:'SCIP_P001_assignment.ipynb',factory:'Notebook'});
     widget.content.model.cells.get(1).sharedModel.setSource(source);
   },changed);
   assert.equal(await page.evaluate(()=>getCodeValue()),changed);
