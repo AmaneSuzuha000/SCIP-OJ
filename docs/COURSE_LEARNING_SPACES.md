@@ -22,6 +22,6 @@
 5. 原有 `#list` 与题号书签继续进入课程教学；旧 `#course-cases` 书签跟随仿真内容进入拓展区。
 6. 原有考试草稿保护与服务端成绩契约保留。学习用途分区不要求复制数据库、认证或求解器。
 
-Notebook 链接按 JupyterLite 官方 `path` 参数直接打开具体文件，采用 single-document 模式。课程使用 01/02，拓展使用 03–06。构建时保留生成页的 `jupyter-config-data` 到自定义首页，修复 Lab/REPL 读取根页配置时的白屏故障；`scripts/merge_jupyter_shell.py` 与回归测试记录该契约。
+Notebook 链接按 JupyterLite 官方 `path` 参数直接打开具体文件，采用 single-document 模式。课程使用 01/02，拓展使用 03–06。门户与 JupyterLite 分别构建，运行资源位于 `notebooks/`，旧 Lab/REPL 路由保留重定向；构建不再覆盖 JupyterLite 根页。统一组装入口为 `scripts/assemble_site.py`。
 
 视觉设计保留已选定的白底、青绿色、侧栏、任务优先布局与实际检修工位插图。分区用途更正不重新引入合并式首页。视觉验证见根目录 `design-qa.md`。
