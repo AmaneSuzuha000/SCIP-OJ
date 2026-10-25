@@ -12,7 +12,7 @@ const css = fs.readFileSync(path.join(root, "workbench-v3.css"), "utf8");
 for (const id of [
   "main-content", "auth-area", "teacher-link", "current-course-banner",
   "banner-course-title", "banner-course-desc", "banner-course-action",
-  "btn-banner-join-course", "problem-list-section",
+  "btn-banner-join-course", "overview-problems", "problem-list-section",
   "problem-list", "problem-count", "problem-search-input", "filter-difficulty",
   "filter-progress", "view-list", "view-grid", "workspace", "btn-back-to-list",
   "btn-prev-problem", "btn-next-problem", "title", "readme", "history-tab",
