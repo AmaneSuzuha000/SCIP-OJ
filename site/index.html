@@ -64,7 +64,7 @@
         </div>
       </div>
 
-      <div class="workspace-intro"><span class="section-kicker">PROBLEM WORKBENCH / PYTHON</span><h2 id="title"></h2><p>左侧阅读题目与约束，右侧编写、练习和提交求解代码。</p></div>
+      <div class="workspace-intro"><span class="section-kicker">PYTHON</span><h2 id="title"></h2><p>左侧阅读题目与约束，右侧编写、练习和提交求解代码。</p></div>
 
       <!-- 作业元数据状态栏（截止时间、及格线、计分规则） -->
       <div id="assignment-meta-bar" class="meta-bar"></div>
@@ -72,8 +72,8 @@
         <summary><span><strong>评测与评分说明</strong><small>先确保模型可执行，再比较可行性与解质量；正式成绩以服务端为准</small></span><span aria-hidden="true">＋</span></summary>
         <div class="studio-grade-grid">
           <div><b>01 · 自定义测试</b><p>用自己的 JSON 实例检查 solve(instance) 的输入输出。这只是调试，不产生课程分数。</p></div>
-          <div><b>02 · L1 浏览器练习</b><p>即时反馈仅作学习参考，浏览器运行环境不等于服务端 PySCIPOpt 环境，不能据此认定正式通过。</p></div>
-          <div><b>03 · L2 正式提交</b><p>服务端使用隔离的真实求解器与未公开测试实例，验证接口、可行性和目标值，记录成绩与评测证据。</p></div>
+          <div><b>02 · 浏览器练习</b><p>即时反馈仅作学习参考，浏览器运行环境不等于服务端 PySCIPOpt 环境，不能据此认定正式通过。</p></div>
+          <div><b>03 · 正式提交</b><p>服务端使用隔离的真实求解器与未公开测试实例，验证接口、可行性和目标值，记录成绩与评测证据。</p></div>
         </div>
         <p class="studio-grade-note">课程通过线与最终计分策略以当前作业信息栏为准。成绩不是代码行数或运行按钮次数；求解器耗时也不单独决定模型质量。</p>
       </details>
@@ -117,10 +117,10 @@
       <!-- 执行与提交操作栏 -->
       <div class="actions-bar">
         <button id="btn-grade" type="button" class="btn-green" title="在浏览器本地通过 WebAssembly 快速自测，不写正式数据库">
-          ⚡ L1 练习评分（浏览器 WASM）
+          练习评分
         </button>
-        <button id="btn-submit-formal" type="button" class="btn-blue" title="提交至服务端触发 PySCIPOpt 权威评测并记入正式成绩">
-          🚀 提交正式作业（服务端评测）
+        <button id="btn-submit-formal" type="button" class="btn-blue" title="提交作业并记录成绩">
+          正式提交
         </button>
         <div id="status" class="status-badge" role="status" aria-live="polite"></div>
       </div>
@@ -154,7 +154,7 @@
       <!-- 我的提交记录卡片 -->
       <section id="my-submissions-section" style="margin-top:2.5rem; padding-top:1.5rem; border-top:1px solid var(--border-default);">
         <div class="section-header">
-          <div class="section-heading-group"><span class="section-kicker">SUBMISSION HISTORY</span><h3>我的正式提交记录</h3><p>正式成绩以服务端自动评测记录为准。</p></div>
+          <div class="section-heading-group"><span class="section-kicker">提交记录</span><h3>我的正式提交记录</h3><p>正式成绩以服务端自动评测记录为准。</p></div>
           <div style="display:flex; gap:0.5rem;">
             <button id="btn-show-leaderboard" type="button" class="btn-secondary" style="font-size:0.8rem; padding:0.35rem 0.65rem;">
               🏆 课程排行榜
@@ -187,17 +187,17 @@
   <!-- 依赖脚本 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="config.js?v=ui2" onerror="console.log('[SCIP-OJ] config.js not found, fallback to defaults')"></script>
-  <script src="js/platform.js?v=identity5"></script>
+  <script src="js/platform.js?v=product1"></script>
   <script src="js/marked.min.js"></script>
   <script src="js/purify.min.js"></script>
   <script src="js/knapsack_judge.js"></script>
   <script src="js/assignment_judge.js"></script>
-  <script src="js/python_runtime.js?v=worker2"></script>
+  <script src="js/python_runtime.js?v=product1"></script>
   <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.20/lib/codemirror.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.20/mode/python/python.min.js"></script>
   <script src="js/editor.js?v=leetcode1"></script>
   <script src="js/exam-integrity.js?v=leetcode1"></script>
   <script src="js/spaces.js?v=purposes2"></script>
-  <script src="js/app.js?v=purposes2"></script>
+  <script src="js/app.js?v=product1"></script>
 </body>
 </html>
