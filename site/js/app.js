@@ -625,6 +625,7 @@ function validNotebookSource() {
   return false;
 }
 function leaveNotebookView() {
+  document.querySelector('.workspace-layout')?.classList.remove('notebook-mode');
   document.getElementById('workspace')?.removeAttribute('data-notebook-invalid');
   window.ScipOJRuntime?.hideNotebook();
   window.ScipOJRuntime?.detachNotebook();
@@ -658,6 +659,7 @@ function setupActionButtons(meta, id) {
         notebookState.textContent = '作业代码已同步';
       });
       if (activeProblemId !== id || window.ScipOJExam?.getPolicy() !== 'standard') { leaveNotebookView(); return; }
+      document.querySelector('.workspace-layout').classList.add('notebook-mode');
       document.querySelector('.editor-container').hidden = true;
       notebookButton.hidden = true;
       document.getElementById('btn-return-code').hidden = false;
