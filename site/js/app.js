@@ -264,51 +264,7 @@ async function main() {
   });
   handleRouteHash();
 
-  // 7. 预热 Python WASM 运行环境
-  if (window.ScipOJRuntime && typeof window.ScipOJRuntime.ensureReady === "function") {
-    window.ScipOJRuntime.ensureReady().catch((e) => {
-      console.log("[App] Python WASM 预热:", e);
-    });
-  }
 
-  // 8. 监听登录状态变化
-  if (window.ScipOJPlatform) {
-    window.ScipOJPlatform.onAuthChange(async () => {
-      updateBannerCourseInfo();
-      if (activeProblemId) {
-        const problemId = activeProblemId;
-        await refreshAssignmentMeta(problemId);
-        if (activeProblemId === problemId) refreshSubmissionsList();
-      } else if (document.body.dataset.teachingView === "records") refreshSubmissionsList();
-    });
-
-    // 选课/退课成功后立即刷新横幅与作业门禁，无需刷新页面
-    document.addEventListener("scipoj:enrollments-changed", async () => {
-      updateBannerCourseInfo();
-      if (activeProblemId) {
-        await refreshAssignmentMeta(activeProblemId);
-        await refreshSubmissionsList();
-      }
-    });
-  }
-
-  updateBannerCourseInfo();
-
-  // 9. 排行榜按钮
-  const btnLeaderboard = document.getElementById("btn-show-leaderboard");
-  if (btnLeaderboard) {
-    btnLeaderboard.onclick = () => showLeaderboardDialog();
-  }
-
-  // 10. 清空控制台按钮
-  const btnClearConsole = document.getElementById("btn-clear-console");
-  if (btnClearConsole) {
-    btnClearConsole.onclick = () => {
-      const rep = document.getElementById("report");
-      if (rep) rep.textContent = "";
-      showConsoleTab("result");
-    };
-  }
 }
 
 /** 动态更新顶部班级横幅 */
@@ -378,6 +334,7 @@ function placeSubmissionPanel(globalHistory) {
 }
 
 function closeWorkspace(updateHash = true) {
+  leaveNotebookView();
   openSeq++;
   assignmentFetchSeq++;
   submissionsFetchSeq++;
@@ -625,6 +582,7 @@ async function refreshAssignmentMeta(problemId) {
 
     window.ScipOJExam?.activate(activeAssignment.integrity_policy || "standard", problemId);
     if (activeAssignment.integrity_policy && activeAssignment.integrity_policy !== "standard") {
+      leaveNotebookView();
       const badge = activeAssignment.integrity_policy === "exam_block" ? "考试 · 限制粘贴" : "考试 · 操作提示";
       metaBar.insertAdjacentHTML("beforeend", `<div class="meta-item"><strong class="tag-pending">${badge}</strong></div>`);
     }
@@ -661,8 +619,57 @@ async function refreshAssignmentMeta(problemId) {
   }
 }
 
+function validNotebookSource() {
+  if (!document.getElementById('workspace').dataset.notebookInvalid) return true;
+  window.ScipOJPlatform?.showToast('请先恢复唯一的作业代码单元，再运行或提交。', 'warning');
+  return false;
+}
+function leaveNotebookView() {
+  document.getElementById('workspace')?.removeAttribute('data-notebook-invalid');
+  window.ScipOJRuntime?.hideNotebook();
+  window.ScipOJRuntime?.detachNotebook();
+  const editor = document.querySelector('.editor-container');
+  if (editor) editor.hidden = false;
+  document.getElementById('btn-open-notebook').hidden = false;
+  document.getElementById('btn-return-code').hidden = true;
+  window.ScipOJEditor?.refresh();
+}
+window.addEventListener('scip-runtime-reset', leaveNotebookView);
+
 /** 绑定评测与提交操作 */
 function setupActionButtons(meta, id) {
+  leaveNotebookView();
+  const notebookState = document.getElementById('notebook-state');
+  const notebookButton = document.getElementById('btn-open-notebook');
+  notebookButton.onclick = async () => {
+    if (window.ScipOJExam?.getPolicy() !== 'standard') {
+      window.ScipOJPlatform?.showToast('考试期间请使用代码视图。', 'info'); return;
+    }
+    notebookButton.disabled = true;
+    notebookState.textContent = '正在打开建模环境…';
+    try {
+      await window.ScipOJRuntime.openNotebook(id, getCodeValue(), publicSampleInstance(meta), (code, error) => {
+        if (activeProblemId !== id) return;
+        if (error) { document.getElementById('workspace').dataset.notebookInvalid = 'true'; notebookState.textContent = error.message; return; }
+        if (window.ScipOJExam?.getPolicy() !== 'standard') return;
+        document.getElementById('workspace').removeAttribute('data-notebook-invalid');
+        setCodeValue(code);
+        document.getElementById('code').dispatchEvent(new Event('input', {bubbles:true}));
+        notebookState.textContent = '作业代码已同步';
+      });
+      if (activeProblemId !== id || window.ScipOJExam?.getPolicy() !== 'standard') { leaveNotebookView(); return; }
+      document.querySelector('.editor-container').hidden = true;
+      notebookButton.hidden = true;
+      document.getElementById('btn-return-code').hidden = false;
+      notebookState.textContent = '作业代码自动同步；正式提交使用该代码单元';
+    } catch (e) { notebookState.textContent = e.message; }
+    finally { notebookButton.disabled = false; }
+  };
+  document.getElementById('btn-return-code').onclick = () => {
+    try { setCodeValue(window.ScipOJRuntime.readCode()); leaveNotebookView(); notebookState.textContent = ''; }
+    catch (e) { notebookState.textContent = e.message; }
+  };
+
   const btnGradeL1 = document.getElementById("btn-grade");
   const btnSubmitFormal = document.getElementById("btn-submit-formal");
   const statusEl = document.getElementById("status");
@@ -677,6 +684,7 @@ function setupActionButtons(meta, id) {
     if (customInput) customInput.value = JSON.stringify(publicSampleInstance(meta), null, 2);
   };
   if (btnRunCustom) btnRunCustom.onclick = async () => {
+    if (!validNotebookSource()) return;
     const raw = customInput?.value || "";
     if (raw.length > 20000) {
       window.ScipOJPlatform?.showToast("测试输入不能超过 20000 字符", "warning");
@@ -714,6 +722,7 @@ function setupActionButtons(meta, id) {
 
   // ── 练习评分（浏览器 WASM 本地真跑，不写入正式数据库） ──
   btnGradeL1.onclick = async () => {
+    if (!validNotebookSource()) return;
     showConsoleTab("result");
     const userCode = getCodeValue();
     const grader = meta.grader || "knapsack";
@@ -774,6 +783,7 @@ function setupActionButtons(meta, id) {
 
   // ── 提交正式作业（服务端权威评测 + Actions） ──
   btnSubmitFormal.onclick = async () => {
+    if (!validNotebookSource()) return;
     if (!window.ScipOJPlatform || !window.ScipOJPlatform.isConfigured()) {
       window.ScipOJPlatform?.showToast("正式提交暂不可用，请先使用练习评分。", "warning");
       return;

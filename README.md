@@ -44,7 +44,7 @@ SCIP-OJ 采用**双轨制**，兼顾轻量免配置练习与可信正式成绩�
 
 | 层次 | 适用场景 | 运行方式 | 成绩记录 |
 |---|---|---|---|
-| **浏览器练习** | 课堂即时自测、算法探索 | 浏览器内 WebAssembly (Pyodide) 运行学生 Python 代码；多实例**算术平均**；通过线 **90** | **仅本地练习反馈**，记录在浏览器缓存，**绝不作为正式课程成绩** |
+| **浏览器练习** | 课堂即时自测、算法探索 | 浏览器内 JupyterLite / xeus-python / PySCIPOpt 运行学生 Python 代码；多实例**算术平均**；通过线 **90** | **仅本地练习反馈**，记录在浏览器缓存，**绝不作为正式课程成绩** |
 | **JupyterLab** | MIP 建模交互调试 | 浏览器 WASM 预装 `xeus-python` + `pyscipopt`，支持 `from pyscipopt import Model` | 用于交互式建模实验、画图与调试 |
 | **正式作业轨** | 课程正式作业提交与评定 | 学生在网页端使用 GitHub OAuth 登录并绑定学号，输入邀请码选课；服务端通过 **GitHub Actions 隔离 Docker / PySCIPOpt** 运行私有随机测试，可信主进程独立判分，按评分任务 UUID + Actions 运行引用 HMAC 签名回调入库 | **正式课程成绩**：持久化记录于数据库 `course_gradebook`，教师面板可查、支持证据核验、批量复判与 CSV 导出 |
 
@@ -148,3 +148,7 @@ SCIP-OJ 采用**双轨制**，兼顾轻量免配置练习与可信正式成绩�
 ## 维护文档
 
 部署阶段记录、历史验证报告和建设路线保留在 `docs/`，供维护与追溯使用，不作为师生操作指南。
+
+## 应用结构
+
+课程门户和 Notebook 运行环境独立构建，统一由 `scripts/assemble_site.py` 组装。运行环境位于 `notebooks/`；旧 `lab/` 和 `repl/` 链接继续重定向。文档唯一来源为 `docs/`。课程工作台的代码与 Notebook 视图同步作业代码，正式评测仍由课程服务独立完成。详见 [运行与作业契约](docs/WORKBENCH_RUNTIME_CONTRACT.md)。
