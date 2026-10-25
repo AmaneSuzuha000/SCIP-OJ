@@ -661,7 +661,7 @@ function setupActionButtons(meta, id) {
       document.querySelector('.editor-container').hidden = true;
       notebookButton.hidden = true;
       document.getElementById('btn-return-code').hidden = false;
-      notebookState.textContent = '作业代码自动同步；正式提交使用该代码单元';
+      if (!document.getElementById('workspace').dataset.notebookInvalid) notebookState.textContent = '作业代码自动同步；正式提交使用该代码单元';
     } catch (e) { notebookState.textContent = e.message; }
     finally { notebookButton.disabled = false; }
   };

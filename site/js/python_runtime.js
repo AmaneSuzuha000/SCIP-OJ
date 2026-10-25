@@ -116,7 +116,7 @@
     const path = `SCIP_${id}_assignment.ipynb`;
     const specs = app.serviceManager.kernelspecs.specs;
     const name = Object.keys(specs.kernelspecs).find(n=>/xpython|xeus/i.test(n)) || specs.default;
-    const model = {nbformat:4,nbformat_minor:5,metadata:{kernelspec:{name,display_name:'Python · PySCIPOpt',language:'python'},scip_oj:{problem_id:id}},cells:[
+    let model = {nbformat:4,nbformat_minor:5,metadata:{kernelspec:{name,display_name:'Python · PySCIPOpt',language:'python'},scip_oj:{problem_id:id}},cells:[
       {cell_type:'markdown',metadata:{},source:`# ${id} 课程作业\n作业代码单元与代码视图同步。实验输出不计入正式成绩。`},
       {cell_type:'code',metadata:{tags:['submission']},execution_count:null,outputs:[],source:code},
       {cell_type:'code',metadata:{},execution_count:null,outputs:[],source:`import json\ninstance = json.loads(${JSON.stringify(JSON.stringify(instance))})\nsolve(instance)`}
@@ -124,12 +124,25 @@
     // Save/close the previous widget before replacing its content from the canonical draft.
     const old = managedWidgets.get(path);
     if (old && !old.isDisposed) { await old.context.save(); old.dispose(); }
+    try {
+      const existing = await contents.get(path,{content:true});
+      if (existing.type !== 'notebook' || !Array.isArray(existing.content?.cells)) throw new Error('作业文件格式错误');
+      model = existing.content;
+      const submissions = model.cells.filter(c=>c.cell_type==='code' && c.metadata?.tags?.includes('submission'));
+      if (submissions.length === 1) {
+        submissions[0].source = code;
+        submissions[0].outputs = []; submissions[0].execution_count = null;
+      }
+    } catch (e) {
+      if (e.response?.status !== 404) throw e;
+    }
     await contents.save(path,{type:'notebook',format:'json',content:model});
     notebook = await app.commands.execute('docmanager:open',{path,factory:'Notebook'});
     await notebook.context.ready;
     managedWidgets.set(path,notebook);
     changed = () => { try { onChange(readCode(),null); } catch(e) { onChange(null,e); } };
     notebook.content.model.contentChanged.connect(changed);
+    changed();
     getFrame().hidden = false;
     return notebook;
   }
