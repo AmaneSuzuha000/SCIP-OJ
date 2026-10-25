@@ -34,25 +34,18 @@ jobs:
       - name: Build JupyterLite site
         shell: bash -l {0}
         run: |
-          cp README.md content/
-          jupyter lite build --contents content --output-dir dist
+          jupyter lite build --contents content --output-dir lite-build
 
-      - name: Merge LeetCode Shell and Assets into dist
+      - name: Assemble course portal and notebook runtime
         shell: bash
         env:
           SCIP_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SCIP_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          cp dist/index.html dist/lite.html
-          cp -r site/* dist/
-          python3 scripts/merge_jupyter_shell.py dist
+          python3 scripts/assemble_site.py --lite lite-build --output dist
           if [ -n "$SCIP_SUPABASE_URL" ] && [ -n "$SCIP_SUPABASE_ANON_KEY" ]; then
             python3 -c 'import json,os,pathlib; pathlib.Path("dist/config.js").write_text("window.SCIP_OJ_CONFIG = " + json.dumps({"SUPABASE_URL": os.environ["SCIP_SUPABASE_URL"], "SUPABASE_ANON_KEY": os.environ["SCIP_SUPABASE_ANON_KEY"], "MOCK_MODE": False}, indent=2) + ";\n")'
           fi
-          mkdir -p dist/problems dist/docs
-          cp -r problems/* dist/problems/
-          cp -r docs/* dist/docs/
-          cp README.md dist/README.md
           touch dist/.nojekyll
 
       - name: Upload Pages artifact
