@@ -43,6 +43,24 @@ const assert = require('node:assert/strict');
   });
   assert.equal(notes,'# retained experiment notes');
   assert.equal(await page.evaluate(()=>getCodeValue()),changed);
+  // Missing or duplicate submission tags must block running/submitting.
+  for (const tags of [[], ['submission']]) {
+    await page.evaluate(async tags=>{
+      const app=document.querySelector('#notebook-host iframe').contentWindow.jupyterapp;
+      const widget=await app.commands.execute('docmanager:open',{path:'SCIP_P001_assignment.ipynb',factory:'Notebook'});
+      const index=tags.length?2:1;
+      widget.content.model.cells.get(index).sharedModel.setMetadata({tags});
+    },tags);
+    await page.waitForFunction(()=>document.getElementById('workspace').dataset.notebookInvalid==='true');
+    assert.equal(await page.evaluate(()=>validNotebookSource()),false);
+    await page.evaluate(async()=>{
+      const app=document.querySelector('#notebook-host iframe').contentWindow.jupyterapp;
+      const widget=await app.commands.execute('docmanager:open',{path:'SCIP_P001_assignment.ipynb',factory:'Notebook'});
+      widget.content.model.cells.get(1).sharedModel.setMetadata({tags:['submission']});
+      widget.content.model.cells.get(2).sharedModel.setMetadata({tags:[]});
+    });
+    await page.waitForFunction(()=>!document.getElementById('workspace').dataset.notebookInvalid);
+  }
   await page.locator('#btn-return-code').click();
   await assert.rejects(page.evaluate(()=>window.ScipOJRuntime.runSolve('def solve(instance):\n while True: pass',{},5)),/运行超时/);
   const next=await page.evaluate(()=>window.ScipOJRuntime.runSolve('def solve(instance): return {"objective":7}',{},30));
