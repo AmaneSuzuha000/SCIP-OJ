@@ -478,12 +478,14 @@
             attempt_no,
             created_at,
             metadata,
+            assignments(pass_score),
             gradings (
               id,
               status,
               score,
               passed,
               report_json,
+              config_snapshot,
               error_message,
               started_at,
               finished_at,
@@ -500,8 +502,7 @@
 
         detailCode.textContent = subData.code_text || "（空代码内容）";
 
-        const gradingsList = Array.isArray(subData.gradings) ? subData.gradings : (subData.gradings ? [subData.gradings] : []);
-        const latestGrading = gradingsList[0] || null;
+        const { latestAttempt:latestGrading, effectiveGrade } = window.ScipOJGradingState.normalizeSubmission(subData);
 
         if (latestGrading) {
           const reportObj = latestGrading.report_json;
@@ -512,6 +513,9 @@
           detailReport.textContent = "暂无评分记录";
         }
 
+        if (effectiveGrade && effectiveGrade.id !== latestGrading?.id) {
+          detailReport.textContent += `\n\n当前有效成绩：${effectiveGrade.score} 分（最近一次成功评测）`;
+        }
         if (subData.metadata?.integrity) {
           detailReport.textContent += "\n\n--- 考试模式记录（浏览器自报；不可直接认定作弊） ---\n" +
             JSON.stringify(subData.metadata.integrity, null, 2);

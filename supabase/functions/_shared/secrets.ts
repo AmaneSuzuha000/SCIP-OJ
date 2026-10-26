@@ -1,10 +1,10 @@
 // supabase/functions/_shared/secrets.ts
 // 密钥解析：优先 Deno.env，其次回退至 public.platform_secrets (RLS 仅 service_role 可查)
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
 
 export async function getPlatformSecret(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   name: string,
 ): Promise<string | null> {
   // 1. 优先从 Deno.env 获取
@@ -32,7 +32,7 @@ export async function getPlatformSecret(
 
 /** 创建默认的 Supabase 服务端 Service Client */
 export function createServiceClient(): {
-  supabase: ReturnType<typeof createClient>;
+  supabase: SupabaseClient;
   supabaseUrl: string;
   serviceRoleKey: string;
 } {

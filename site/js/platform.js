@@ -344,6 +344,16 @@ const ScipOJPlatform = (() => {
     }
   }
 
+  let requestKeys;
+  function retryKeys() {
+    if (!requestKeys) {
+      let storage;
+      try { storage = window.localStorage; } catch { storage = null; }
+      requestKeys = window.ScipOJRequestKeys.create(storage, window.crypto);
+    }
+    return requestKeys;
+  }
+
   async function submitAssignment(assignmentId, codeText, clientIntegrity = null) {
     if (!isConfigured()) {
       throw new Error("未配置平台后端服务，无法提交正式作业");
@@ -372,13 +382,15 @@ const ScipOJPlatform = (() => {
       };
     }
 
+    const requestScope = `${currentUser.id}:submit:${assignmentId}`;
+    const requestKey = await retryKeys().get(requestScope,{assignment_id:assignmentId,code_text:codeText});
     const resp = await fetch(`${cfg.SUPABASE_URL}/functions/v1/submit-assignment`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify({ assignment_id: assignmentId, code_text: codeText, client_integrity: clientIntegrity }),
+      body: JSON.stringify({ assignment_id: assignmentId, code_text: codeText, client_integrity: clientIntegrity, request_key:requestKey }),
     });
 
     const json = await resp.json().catch(() => ({ error: `HTTP ${resp.status} ${resp.statusText}` }));
@@ -405,6 +417,8 @@ const ScipOJPlatform = (() => {
       }
       throw new Error(json.error || `提交作业失败 (HTTP ${resp.status})`);
     }
+    if (!json.ok || !json.submission_id) throw new Error("提交响应未确认，请重试查询");
+    retryKeys().acknowledge(requestScope,requestKey);
     return json;
   }
 
@@ -420,13 +434,15 @@ const ScipOJPlatform = (() => {
           attempt_no,
           created_at,
           metadata,
-          assignments (problem_id, courses (name, code)),
+          assignments (problem_id, pass_score, courses (name, code)),
           gradings (
             id,
             status,
             score,
             passed,
             report_json,
+            config_snapshot,
+            created_at,
             error_message,
             finished_at
           )
@@ -445,7 +461,7 @@ const ScipOJPlatform = (() => {
         console.warn("[Platform] getMySubmissions error:", error);
         throw new Error("加载提交记录失败：" + (error.message || "数据库查询错误"));
       }
-      return data || [];
+      return (data || []).map(window.ScipOJGradingState.normalizeSubmission);
     } catch (e) {
       if (e instanceof Error && e.message.startsWith("加载提交记录失败")) throw e;
       console.warn("[Platform] getMySubmissions exception:", e);
@@ -715,36 +731,36 @@ const ScipOJPlatform = (() => {
     if (!session) throw new Error("请先登录教师账号");
 
     const cfg = window.SCIP_OJ_CONFIG;
+    const requestScope = `${currentUser.id}:regrade:${submissionId}`;
+    const payload = { submission_id:submissionId,reason:reason||"教师手动复判" };
+    const requestKey = await retryKeys().get(requestScope,payload);
     const resp = await fetch(`${cfg.SUPABASE_URL}/functions/v1/regrade`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify({ submission_id: submissionId, reason: reason || "教师手动复判" }),
+      body: JSON.stringify({...payload,request_key:requestKey}),
     });
 
     const json = await resp.json().catch(() => ({ error: `HTTP ${resp.status}` }));
     if (!resp.ok) {
       throw new Error(json.error || "复判请求失败");
     }
+    if (!json.ok || !json.grading_id) throw new Error("复判响应未确认，请重试查询");
+    retryKeys().acknowledge(requestScope,requestKey);
     return json;
   }
 
   const REGRADE_BATCH_LIMIT = 50;
 
-  async function postRegradeBatch(payload, session, cfg) {
+  async function postRegradeBatch(payload, session, cfg, requestKey) {
     const resp = await fetch(`${cfg.SUPABASE_URL}/functions/v1/regrade-batch`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify(payload),
+      method: "POST", headers: {"Content-Type":"application/json",Authorization:`Bearer ${session.access_token}`},
+      body:JSON.stringify({...payload,request_key:requestKey}),
     });
-    let json = null;
-    try { json = await resp.json(); } catch (_) { /* 非 JSON 响应 */ }
-    return { resp, json };
+    const json=await resp.json().catch(()=>null);
+    return {resp,json};
   }
 
   async function requestBatchRegrade(submissionIds, reason, onProgress) {
@@ -757,100 +773,33 @@ const ScipOJPlatform = (() => {
     if (!session) throw new Error("请先登录");
 
     const cfg = window.SCIP_OJ_CONFIG;
-    const ids = Array.from(new Set(submissionIds.filter(Boolean)));
+    const ids = Array.from(new Set(submissionIds.filter(Boolean))).sort();
     const chunks = [];
     for (let i = 0; i < ids.length; i += REGRADE_BATCH_LIMIT) {
       chunks.push(ids.slice(i, i + REGRADE_BATCH_LIMIT));
     }
 
-    let endpointMissing = false;
-    let totalSuccess = 0;
-    const allResults = [];
-
-    for (let c = 0; c < chunks.length; c++) {
-      const chunk = chunks[c];
-      try {
-        const { resp, json } = await postRegradeBatch({ submission_ids: chunk, reason }, session, cfg);
-        if (resp.ok && json) {
-          totalSuccess += Number(json.success_count || 0);
-          if (Array.isArray(json.results)) allResults.push(...json.results);
-          if (typeof onProgress === "function") {
-            onProgress(Math.min((c + 1) * REGRADE_BATCH_LIMIT, ids.length), ids.length);
-          }
-          continue;
-        }
-        if (resp.status === 404) {
-          endpointMissing = true;
-          break;
-        }
-        // 服务端明确拒绝（权限不足、参数错误等）时直接抛错，不再静默降级
-        const msg = json?.error || `批量复判失败 (HTTP ${resp.status})`;
-        const err = new Error(msg);
-        err.code = json?.code;
-        throw err;
-      } catch (e) {
-        if (e.name === "TypeError" || /Failed to fetch|NetworkError|Load failed/i.test(e.message || "")) {
-          endpointMissing = true;
-          break;
-        }
-        throw e;
-      }
+    const scope=`${currentUser.id}:regrade-batch`;
+    const operationKey=await retryKeys().get(scope,{ids,reason});
+    let totalSuccess=0;
+    const allResults=[];
+    for(let c=0;c<chunks.length;c++) {
+      const bytes=new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(`${operationKey}:${c}`)));
+      const h=Array.from(bytes).map(x=>x.toString(16).padStart(2,"0")).join("").slice(0,32);
+      const key=`${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
+      const {resp,json}=await postRegradeBatch({submission_ids:chunks[c],reason},session,cfg,key);
+      if(!resp.ok||!json?.ok) throw new Error(json?.error||"批量复判响应未确认，请重试；已保存任务不会重复创建");
+      totalSuccess+=Number(json.success_count||0);
+      allResults.push(...(json.results||[]));
+      if(typeof onProgress==="function") onProgress(Math.min((c+1)*REGRADE_BATCH_LIMIT,ids.length),ids.length);
     }
-
-    if (!endpointMissing) {
-      return { ok: true, total: ids.length, success_count: totalSuccess, results: allResults };
-    }
-
-    // 仅在端点未部署 / 网络不可达时回退为单条复判
-    console.warn("[Platform] regrade-batch 端点不可用，回退单条循环复判");
-    let successCount = 0;
-    const results = [];
-    for (let i = 0; i < ids.length; i++) {
-      const subId = ids[i];
-      try {
-        await requestRegrade(subId, reason);
-        successCount++;
-        results.push({ id: subId, success: true });
-      } catch (err) {
-        results.push({ id: subId, success: false, error: err.message });
-      }
-      if (typeof onProgress === "function") {
-        onProgress(i + 1, ids.length);
-      }
-    }
-    return { ok: true, total: ids.length, success_count: successCount, results };
+    if(totalSuccess===ids.length) retryKeys().acknowledge(scope,operationKey);
+    return {ok:true,total:ids.length,success_count:totalSuccess,results:allResults};
   }
 
-  async function requestProblemRegrade(courseId, problemId, reason, onProgress) {
-    if (!supabase || !currentUser) throw new Error("请先登录教师账号");
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error("请先登录");
-
-    const cfg = window.SCIP_OJ_CONFIG;
-    try {
-      const { resp, json } = await postRegradeBatch(
-        { course_id: courseId, problem_id: problemId, reason },
-        session,
-        cfg,
-      );
-      if (resp.ok && json) return json;
-      if (resp.status !== 404) {
-        // 超过单次上限时，前端改为按 50 条分片调用同一端点
-        if (json?.code === "BATCH_LIMIT_EXCEEDED") {
-          return await requestProblemRegradeChunked(courseId, problemId, reason, onProgress);
-        }
-        const err = new Error(json?.error || `整题复判失败 (HTTP ${resp.status})`);
-        err.code = json?.code;
-        throw err;
-      }
-    } catch (e) {
-      if (!(e.name === "TypeError" || /Failed to fetch|NetworkError|Load failed/i.test(e.message || ""))) {
-        throw e;
-      }
-      console.warn("[Platform] regrade-batch 整题重判端点不可用，回退查询提交列表");
-    }
-
-    return await requestProblemRegradeChunked(courseId, problemId, reason, onProgress);
+  async function requestProblemRegrade(courseId,problemId,reason,onProgress) {
+    // Resolve a stable, explicit list, then use exactly the same batch path.
+    return requestProblemRegradeChunked(courseId,problemId,reason,onProgress);
   }
 
   async function requestProblemRegradeChunked(courseId, problemId, reason, onProgress) {
