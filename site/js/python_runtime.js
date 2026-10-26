@@ -6,6 +6,7 @@
   const runtimeURL = new URL('../notebooks/lab/index.html', document.currentScript.src);
   let readyApp, frame, appPromise, busy = false, generation = 0, notebook, changed;
   const managedWidgets = new Map();
+  let notebookRequest = 0, notebookQueue = Promise.resolve();
   function getFrame() {
     if (!frame) {
       frame = document.createElement('iframe');
@@ -18,11 +19,16 @@
     return frame;
   }
   function detachNotebook() {
+    notebookRequest++;
+    disconnectNotebook();
+  }
+  function disconnectNotebook() {
     if (notebook && changed) notebook.content.model.contentChanged.disconnect(changed);
     notebook = changed = null;
   }
   function reset() {
     generation++;
+    notebookQueue = Promise.resolve();
     managedWidgets.clear();
     detachNotebook();
     frame?.remove(); frame = null; appPromise = null; readyApp = null;
@@ -60,7 +66,7 @@
           }
           if (Date.now() - started > 120000) throw new Error('建模环境加载超时，请检查网络后重试');
           setTimeout(inspect, 150);
-        } catch (e) { reset(); reject(e); }
+        } catch (e) { if (epoch === generation) reset(); reject(e); }
       };
       inspect();
     });
@@ -109,9 +115,25 @@
     if (sources.length !== 1) throw new Error('请保留唯一的作业代码单元（submission）');
     return sources[0];
   }
-  async function openNotebook(id, code, instance, onChange) {
-    const app = await ensureReady();
+  function openNotebook(id, code, instance, onChange) {
     detachNotebook();
+    const request = notebookRequest, epoch = generation;
+    const check = () => {
+      if (request !== notebookRequest || epoch !== generation) {
+        const error = new Error('Notebook 打开已取消');
+        error.code = 'NOTEBOOK_CANCELLED';
+        throw error;
+      }
+    };
+    // Serialize file operations: a cancelled save cannot overwrite a newer open.
+    const task = notebookQueue.catch(()=>{}).then(()=>openNotebookSession(id,code,instance,onChange,check));
+    notebookQueue = task.catch(()=>{});
+    return task;
+  }
+  async function openNotebookSession(id, code, instance, onChange, check) {
+    check();
+    const app = await ensureReady();
+    check();
     const contents = app.serviceManager.contents;
     const path = `SCIP_${id}_assignment.ipynb`;
     const specs = app.serviceManager.kernelspecs.specs;
@@ -123,9 +145,10 @@
     ]};
     // Save/close the previous widget before replacing its content from the canonical draft.
     const old = managedWidgets.get(path);
-    if (old && !old.isDisposed) { await old.context.save(); old.dispose(); }
+    if (old && !old.isDisposed) { await old.context.save(); check(); old.dispose(); }
     try {
       const existing = await contents.get(path,{content:true});
+      check();
       if (existing.type !== 'notebook' || !Array.isArray(existing.content?.cells)) throw new Error('作业文件格式错误');
       model = existing.content;
       const submissions = model.cells.filter(c=>c.cell_type==='code' && c.metadata?.tags?.includes('submission'));
@@ -136,11 +159,19 @@
     } catch (e) {
       if (e.response?.status !== 404) throw e;
     }
+    check();
     await contents.save(path,{type:'notebook',format:'json',content:model});
-    notebook = await app.commands.execute('docmanager:open',{path,factory:'Notebook'});
-    await notebook.context.ready;
+    check();
+    const widget = await app.commands.execute('docmanager:open',{path,factory:'Notebook'});
+    try { await widget.context.ready; check(); }
+    catch (error) { widget.dispose(); throw error; }
+    notebook = widget;
     managedWidgets.set(path,notebook);
-    changed = () => { try { onChange(readCode(),null); } catch(e) { onChange(null,e); } };
+    changed = () => {
+      if (notebook !== widget) return;
+      try { check(); } catch { return; }
+      try { onChange(readCode(),null); } catch(e) { onChange(null,e); }
+    };
     notebook.content.model.contentChanged.connect(changed);
     changed();
     app.shell.collapseLeft?.();
