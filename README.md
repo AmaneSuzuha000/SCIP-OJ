@@ -94,13 +94,13 @@ SCIP-OJ 采用**双轨制**，兼顾轻量免配置练习与可信正式成绩�
 
 ---
 
-## 正式提交限流与私有测试（V3）
+## 正式提交与可信评分
 
 - 正式提交由 PostgreSQL **事务级限制**：同题两次提交至少间隔 20 秒，每道作业每小时最多 12 次，每位用户每日最多 60 次；触发限制返回 HTTP 429，**不产生虚假成绩或提交记录**，本地练习不受影响。
 - 服务端使用加锁序号和数据库唯一索引保证并发提交不产生重复 `attempt_no`。
 - 正式 评测使用独立随机实例族：背包规模 16–30 个物品，指派规模 6–9 人，最优值只在可信主机计算。浏览器练习 继续使用小规模教学题。
-- 内部开发用的 `GRADE_RUNNER=mock` 不得在生产意外给学生固定分；需额外显式设置 `SCIP_OJ_ALLOW_MOCK_GRADES=true` 才启用。
-- 部署详情与安全限制：[正式评测 V3 验收说明](docs/SECURITY_VALIDATION_V3.md)。
+- 正式提交与教师复判不提供 Mock 虚拟评分；系统故障保持空分，不伪造通过成绩。
+- 提交、评测快照、幂等重试、故障恢复和有效成绩：[正式提交与成绩契约](docs/GRADING_CONTRACT.md)。
 
 ---
 
@@ -123,32 +123,29 @@ SCIP-OJ 采用**双轨制**，兼顾轻量免配置练习与可信正式成绩�
    - 一键保存发布至 `assignments`，无需手写 SQL。
 5. **只读课程排行榜**：
    - 提供班级题目最高分排行榜，学号自动脱敏处理（`2026****01`），兼顾教学激励与隐私合规。
-6. **现代化 OJ 交互体验 (Phase 3 打磨)**：
+6. **课程工作台**：
    - LeetCode 式题单列表/卡片、搜索筛选、双栏代码编辑器、JSON 自定义测试与深浅对比教学视觉系统；
    - 模块化 Edge Functions 架构（`_shared/` 统一 CORS、JWT 鉴权、Secrets 解析与 GitHub 触发）；
    - 数据库 005 安全防护（防止普通用户提权修改 `profiles.role`，补齐核心索引）。
 
 ---
 
-## 本地自动化全链路烟测
-
-仓库提供 3 套端到端自动化业务烟测脚本：
+## 开发与验证
 
 ```bash
-# 1. Phase 1 评测引擎、系统异常隔离与 HMAC 回调验签自测
-./platform/scripts/smoke_phase1.sh
-
-# 2. Phase 2 邀请码、花名册对齐、作业发布、迟交标记、批量重判与 CSV 烟测
-./platform/scripts/smoke_phase2.sh
-
-# 3. Phase 3 前端静态代码无密钥扫描、Edge 共享模块、005 安全迁移与 UI 完整性深度验证
-./platform/scripts/smoke_phase3.sh
+npm ci
+npm run dev
+npm run test:database
+npm run test:grading
+python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-## 维护文档
+数据库测试执行仓库的真实迁移、事务失败注入、权限与恢复场景。本地使用嵌入式 PostgreSQL；CI 使用 PostgreSQL 17 多个独立连接检查并发。隔离 Docker 和完整 JupyterLite / PySCIPOpt 浏览器测试在 CI 单独运行；这些检查不能替代隔离测试课程中的真实师生验收。
 
-部署阶段记录、历史验证报告和建设路线保留在 `docs/`，供维护与追溯使用，不作为师生操作指南。
+历史阶段报告和安全审计保留在 `docs/` 供追溯；早期 SQLite 替身脚本已移除。相似度人工审查工具位于 `scripts/audit_similarity.py`。
 
 ## 应用结构
 
 课程门户和 Notebook 运行环境独立构建，统一由 `scripts/assemble_site.py` 组装。运行环境位于 `notebooks/`；旧 `lab/` 和 `repl/` 链接继续重定向。文档唯一来源为 `docs/`。课程工作台的代码与 Notebook 视图同步作业代码，正式评测仍由课程服务独立完成。详见 [运行与作业契约](docs/WORKBENCH_RUNTIME_CONTRACT.md)。
+
+服务端的业务真源位于 `supabase/`，可信判题位于 `judge/`，构建与维护工具统一位于 `scripts/`；不存在第二套 `platform/` 后端。具体边界与迁移顺序见 [架构方案](docs/ARCHITECTURE.md)。

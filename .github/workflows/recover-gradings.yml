@@ -1,5 +1,8 @@
 name: Recover and dispatch saved gradings
 on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/recover-gradings.yml']
   schedule:
     - cron: '*/5 * * * *'
   workflow_dispatch:
