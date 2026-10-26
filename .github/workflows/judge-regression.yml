@@ -21,7 +21,9 @@ jobs:
       - name: Browser scoring regressions
         run: node tests/test_browser_judge.cjs
       - name: Shared submission state and retry identity
-        run: node tests/test_grading_state.cjs
+        run: |
+          node tests/test_grading_state.cjs
+          node tests/test_grading_api.cjs
       - name: Exam-mode browser regression tests
         run: node tests/test_exam_integrity.cjs
       - name: Industrial engineering simulation reproducibility tests
@@ -51,6 +53,7 @@ jobs:
           node --check site/js/teacher.js
           node --check site/js/platform.js
           node --check site/js/grading-state.js
+          node --check site/js/grading-api.js
           node --check site/js/request-keys.js
           node --check site/js/editor.js
           node --check site/js/exam-integrity.js
