@@ -624,7 +624,9 @@ function validNotebookSource() {
   window.ScipOJPlatform?.showToast('请先恢复唯一的作业代码单元，再运行或提交。', 'warning');
   return false;
 }
+let notebookViewSeq = 0;
 function leaveNotebookView() {
+  notebookViewSeq++;
   document.querySelector('.workspace-layout')?.classList.remove('notebook-mode');
   document.getElementById('workspace')?.removeAttribute('data-notebook-invalid');
   window.ScipOJRuntime?.hideNotebook();
@@ -632,6 +634,7 @@ function leaveNotebookView() {
   const editor = document.querySelector('.editor-container');
   if (editor) editor.hidden = false;
   document.getElementById('btn-open-notebook').hidden = false;
+  document.getElementById('btn-open-notebook').disabled = false;
   document.getElementById('btn-return-code').hidden = true;
   window.ScipOJEditor?.refresh();
 }
@@ -646,11 +649,12 @@ function setupActionButtons(meta, id) {
     if (window.ScipOJExam?.getPolicy() !== 'standard') {
       window.ScipOJPlatform?.showToast('考试期间请使用代码视图。', 'info'); return;
     }
+    const viewSeq = ++notebookViewSeq;
     notebookButton.disabled = true;
     notebookState.textContent = '正在打开建模环境…';
     try {
       await window.ScipOJRuntime.openNotebook(id, getCodeValue(), publicSampleInstance(meta), (code, error) => {
-        if (activeProblemId !== id) return;
+        if (viewSeq !== notebookViewSeq || activeProblemId !== id) return;
         if (error) { document.getElementById('workspace').dataset.notebookInvalid = 'true'; notebookState.textContent = error.message; return; }
         if (window.ScipOJExam?.getPolicy() !== 'standard') return;
         document.getElementById('workspace').removeAttribute('data-notebook-invalid');
@@ -658,14 +662,15 @@ function setupActionButtons(meta, id) {
         document.getElementById('code').dispatchEvent(new Event('input', {bubbles:true}));
         notebookState.textContent = '作业代码已同步';
       });
+      if (viewSeq !== notebookViewSeq) return;
       if (activeProblemId !== id || window.ScipOJExam?.getPolicy() !== 'standard') { leaveNotebookView(); return; }
       document.querySelector('.workspace-layout').classList.add('notebook-mode');
       document.querySelector('.editor-container').hidden = true;
       notebookButton.hidden = true;
       document.getElementById('btn-return-code').hidden = false;
       if (!document.getElementById('workspace').dataset.notebookInvalid) notebookState.textContent = '作业代码自动同步；正式提交使用该代码单元';
-    } catch (e) { notebookState.textContent = e.message; }
-    finally { notebookButton.disabled = false; }
+    } catch (e) { if (viewSeq === notebookViewSeq && e.code !== 'NOTEBOOK_CANCELLED') notebookState.textContent = e.message; }
+    finally { if (viewSeq === notebookViewSeq) notebookButton.disabled = false; }
   };
   document.getElementById('btn-return-code').onclick = () => {
     try { setCodeValue(window.ScipOJRuntime.readCode()); leaveNotebookView(); notebookState.textContent = ''; }
