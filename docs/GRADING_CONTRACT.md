@@ -53,3 +53,12 @@
 4. `npm run test:database` 在本地嵌入式 PostgreSQL 执行完整迁移和事务失败注入；CI 使用 PostgreSQL 17 的独立连接验证并发请求与租约竞争。`npm run test:grading` 验证前端成绩和重试身份；既有判题、考试、仿真及真实 Notebook 回归继续执行。
 
 生产中的真实师生完整验收仍需授权测试账号和隔离测试课程。没有执行这一步时，应明确区分代码/数据库验证与真实课堂验收。
+
+
+## 2026-10-26 部署验收
+
+PR [#34](https://github.com/AmaneSuzuha000/SCIP-OJ/pull/34) 已合并，功能提交 `32d7448e3bf505f6091f46002110d959efe0becc`。数据库迁移已应用，submit-assignment / grade-callback / regrade / regrade-batch 分别部署为版本 9 / 6 / 8 / 7。
+
+主分支 [判题与 PostgreSQL 回归](https://github.com/AmaneSuzuha000/SCIP-OJ/actions/runs/40277450519)、[真实浏览器与 Notebook 回归](https://github.com/AmaneSuzuha000/SCIP-OJ/actions/runs/40277450559)、[Pages 部署](https://github.com/AmaneSuzuha000/SCIP-OJ/actions/runs/40277450552) 均成功。包含 49 项 Python 回归、共享成绩与请求键测试、Deno 类型检查、真实 PostgreSQL 独立连接竞争、隔离 Docker 与 PySCIPOpt Notebook 验证。
+
+生产权限复核：浏览器不能直接插入正式提交、读取派发私有输入或执行内部入队 RPC，服务端可以完成评测；无签名回调返回 403。恢复函数在空待办上实际执行成功。历史提交和评分仍分别为 4 条，本轮没有使用真实学生成绩试错，也未完成真实师生账号的正式作业端到端验收。

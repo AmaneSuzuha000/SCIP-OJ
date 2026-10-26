@@ -4,7 +4,7 @@ from pathlib import Path
 import unittest
 
 
-PATH = Path(__file__).resolve().parents[1] / "platform/scripts/audit_similarity.py"
+PATH = Path(__file__).resolve().parents[1] / "scripts/audit_similarity.py"
 spec = importlib.util.spec_from_file_location("similarity_audit", PATH)
 audit = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(audit)

@@ -5,8 +5,8 @@ Input: JSON list [{id, user_id, assignment_id, code_text}, ...]
 Output: candidate pairs only, NEVER an automatic cheating accusation.
 
 Examples:
-  python platform/scripts/audit_similarity.py submissions.json --threshold 0.72
-  python platform/scripts/audit_similarity.py submissions.json --template problems/P001_knapsack/template.py
+  python scripts/audit_similarity.py submissions.json --threshold 0.72
+  python scripts/audit_similarity.py submissions.json --template problems/P001_knapsack/template.py
 Notes:
 - Compare within the same assignment, across different users.
 - Normalize identifiers and literals; discard comments and shared template n-grams.
