@@ -49,15 +49,15 @@ const assert = require('node:assert/strict');
       const app=document.querySelector('#notebook-host iframe').contentWindow.jupyterapp;
       const widget=await app.commands.execute('docmanager:open',{path:'SCIP_P001_assignment.ipynb',factory:'Notebook'});
       const index=tags.length?2:1;
-      widget.content.model.cells.get(index).sharedModel.setMetadata('tags',tags);
+      widget.content.model.cells.get(index).sharedModel.setMetadata({tags});
     },tags);
     await page.waitForFunction(()=>document.getElementById('workspace').dataset.notebookInvalid==='true');
     assert.equal(await page.evaluate(()=>validNotebookSource()),false);
     await page.evaluate(async()=>{
       const app=document.querySelector('#notebook-host iframe').contentWindow.jupyterapp;
       const widget=await app.commands.execute('docmanager:open',{path:'SCIP_P001_assignment.ipynb',factory:'Notebook'});
-      widget.content.model.cells.get(1).sharedModel.setMetadata('tags',['submission']);
-      widget.content.model.cells.get(2).sharedModel.setMetadata('tags',[]);
+      widget.content.model.cells.get(1).sharedModel.setMetadata({tags:['submission']});
+      widget.content.model.cells.get(2).sharedModel.setMetadata({tags:[]});
     });
     await page.waitForFunction(()=>!document.getElementById('workspace').dataset.notebookInvalid);
   }
