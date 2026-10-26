@@ -66,7 +66,7 @@
           }
           if (Date.now() - started > 120000) throw new Error('建模环境加载超时，请检查网络后重试');
           setTimeout(inspect, 150);
-        } catch (e) { reset(); reject(e); }
+        } catch (e) { if (epoch === generation) reset(); reject(e); }
       };
       inspect();
     });

@@ -21,6 +21,21 @@ const source=fs.readFileSync('site/js/python_runtime.js','utf8');
  pending=false;
  assert.equal((await runtime.runSolve('code',{},1)).objective,7);
  assert.equal(frames.length,2);
+ // An error from a discarded initialization must not reset its successor.
+ runtime.reset();
+ let rejectStale, markWaiting, calls=0;
+ const initializing=new Promise(resolve=>{markWaiting=resolve;});
+ app.serviceManager.kernelspecs.refreshSpecs=async()=>{
+   if(++calls===1) {markWaiting();await new Promise((_,reject)=>{rejectStale=reject;});}
+ };
+ const staleReady=assert.rejects(runtime.ensureReady(),/stale initialization/);
+ await initializing;
+ runtime.reset();await runtime.ensureReady();
+ const currentFrame=frames.at(-1);
+ rejectStale(new Error('stale initialization'));await staleReady;
+ assert.notEqual(currentFrame.removed,true);
+ assert.equal(runtime.isReady(),true);
+ app.serviceManager.kernelspecs.refreshSpecs=async()=>{};
  // Delay an old notebook read while the user starts another assignment.
  const files=new Map(), events=[];
  let release, entered;
