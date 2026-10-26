@@ -1,7 +1,7 @@
 // supabase/functions/_shared/auth.ts
 // 统一身份认证与角色鉴权助手
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
 
 export interface AuthResult {
   user: any;
@@ -13,7 +13,7 @@ export interface AuthResult {
  */
 export async function getAuthenticatedUser(
   req: Request,
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
 ): Promise<AuthResult | null> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) return null;
@@ -37,7 +37,7 @@ export async function getAuthenticatedUser(
  * 校验用户是否为某课程的任课教师、助教或管理员
  */
 export async function isTeacherOrAdmin(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   userId: string,
   courseId: string,
 ): Promise<boolean> {

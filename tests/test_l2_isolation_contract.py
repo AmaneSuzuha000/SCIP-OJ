@@ -40,10 +40,28 @@ class SandboxContractTests(unittest.TestCase):
         github = (root / "supabase/functions/_shared/github.ts").read_text()
         self.assertIn("grading_id: gradingId", github)
         self.assertIn("GRADING_ID: ${{ inputs.grading_id }}", workflow)
-        self.assertIn('"grading_id": os.environ["GRADING_ID"]', workflow)
-        self.assertIn('.eq("id", grading_id)', callback)
-        self.assertIn("pending.runner_ref !== runner_ref", callback)
+        transport = (root / "scripts/grading_transport.py").read_text()
+        sql = (root / "supabase/migrations/20261026054644_reliable_grading_lifecycle.sql").read_text()
+        self.assertIn('"grading_id": os.environ["GRADING_ID"]', transport)
+        self.assertIn('"complete_grading"', callback)
+        self.assertIn("g.runner_ref IS DISTINCT FROM p_runner_ref", sql)
         self.assertNotIn('.order("created_at", { ascending: false })', callback)
+
+    def test_private_instance_snapshot_is_replayable_without_seed_disclosure(self):
+        recorded = []
+        def execute(path, instance, timeout):
+            recorded.append(instance)
+            return {"objective": 0, "solution": [0] * instance["n"]}, None
+        class OK: returncode = 0
+        config = {"n_instances": 2, "instance_seed": "private-attempt-seed"}
+        with patch("judge.runner_l2_isolated.subprocess.run", return_value=OK()), \
+             patch("judge.runner_l2_isolated._run_isolated", side_effect=execute):
+            first = grade_file(Path("problems/P001_knapsack/template.py"), "P001", config)
+            grade_file(Path("problems/P001_knapsack/template.py"), "P001", config)
+        self.assertEqual(recorded[:2], recorded[2:])
+        self.assertNotEqual(recorded[0], recorded[1])
+        self.assertNotIn("private-attempt-seed", str(first))
+        self.assertNotIn("optimal_value", str(recorded))
 
     def test_missing_docker_marks_system_error_not_zero_score(self):
         with patch("judge.runner_l2_isolated.subprocess.run", side_effect=FileNotFoundError()):
