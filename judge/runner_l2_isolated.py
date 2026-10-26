@@ -7,6 +7,7 @@ isolation is defense-in-depth, not a guarantee against all kernel escapes.
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import resource
 import secrets
@@ -124,10 +125,16 @@ def grade_file(path: Path, problem_id: str | None = None,
         if inspected.returncode != 0:
             raise SystemJudgeError("可信评测容器未构建完成")
         reports = []
-        for _ in range(n):
+        for index in range(n):
             # Cryptographically unpredictable per-attempt L2 tests: never use
             # published meta.seed_base or send the oracle to the container.
-            inst = gen(secrets.randbits(64))
+            seed = secrets.randbits(64)
+            # Only service-owned context may supply this private, persistent
+            # seed. It is never part of browser-readable config or reports.
+            if assignment_meta and assignment_meta.get("instance_seed"):
+                raw = f"{assignment_meta['instance_seed']}:{index}".encode()
+                seed = int.from_bytes(hashlib.sha256(raw).digest()[:8], "big")
+            inst = gen(seed)
             public = {key: value for key, value in inst.items()
                       if key != "optimal_value"}
             result, error = _run_isolated(path, public, int(meta.get("time_limit_sec", 30)))

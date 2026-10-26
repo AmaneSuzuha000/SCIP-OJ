@@ -22,7 +22,8 @@ class SubmissionQuotaContract(unittest.TestCase):
 
     def test_submit_api_returns_429_for_database_quota_failure(self):
         edge = (ROOT / "supabase/functions/submit-assignment/index.ts").read_text()
-        self.assertIn("errorResponse(message, 429, quotaReason)", edge)
+        shared = (ROOT / "supabase/functions/_shared/grading.ts").read_text()
+        self.assertIn("errorResponse(message, 429, quotaReason)", shared)
         self.assertIn("new TextEncoder().encode(code_text).byteLength", edge)
 
 
