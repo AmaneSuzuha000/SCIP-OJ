@@ -5,19 +5,19 @@
 // 权限：仅限该课程的教师/助教/管理员
 // 流程：创建新 grading 行 → 写入 grade_audits → 触发 GitHub Actions
 
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
 import { handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
-import { createServiceClient, getPlatformSecret } from "../_shared/secrets.ts";
+import { createServiceClient } from "../_shared/secrets.ts";
 import { getAuthenticatedUser, isTeacherOrAdmin } from "../_shared/auth.ts";
-import { dispatchGitHubWorkflow } from "../_shared/github.ts";
+import { dispatchQueued, gradingRevision, gradingError, UUID_RE } from "../_shared/grading.ts";
 
 interface RegradeBody {
   submission_id: string;
   reason?: string;
+  request_key?: string;
 }
 
-serve(async (req: Request): Promise<Response> => {
+Deno.serve(async (req: Request): Promise<Response> => {
   const corsResp = handleCors(req);
   if (corsResp) return corsResp;
 
@@ -78,108 +78,21 @@ serve(async (req: Request): Promise<Response> => {
       return errorResponse("权限不足：仅该课程的任课教师或助教可发起复判", 403, "TEACHER_ROLE_REQUIRED");
     }
 
-    // 5. 查询最近一次评分记录（用于审计）
-    const { data: lastGrading } = await supabase
-      .from("gradings")
-      .select("id, score")
-      .eq("submission_id", submission_id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    const oldScore = lastGrading?.score ?? null;
-
-    // 6. 创建新的待评测行 (status: queued)
-    const { data: newGrading, error: insertGradingErr } = await supabase
-      .from("gradings")
-      .insert({
-        submission_id,
-        status: "queued",
-      })
-      .select("id")
-      .single();
-
-    if (insertGradingErr || !newGrading) {
-      console.error("[Regrade] 插入新 grading 失败:", insertGradingErr?.message);
-      return errorResponse("创建复判记录失败", 500, "DB_INSERT_FAILED");
-    }
-
-    // 7. 写入审计日志 grade_audits
-    const { error: auditErr } = await supabase.from("grade_audits").insert({
-      grading_id: newGrading.id,
-      submission_id,
-      actor_id: user.id,
-      old_score: oldScore,
-      new_score: null,
-      reason: String(reason).slice(0, 500),
+    const requestKey = body.request_key || crypto.randomUUID();
+    if (!UUID_RE.test(requestKey)) return errorResponse("请求编号无效",400,"INVALID_REQUEST_KEY");
+    let revision: string | null = null;
+    try { revision = await gradingRevision(supabase); }
+    catch { /* A replay returns the committed receipt even during a GitHub outage. */ }
+    const { data: accepted, error } = await supabase.rpc("enqueue_grading", {
+      p_user_id: user.id, p_assignment_id: null, p_submission_id: submission_id,
+      p_code_text: null, p_request_key: requestKey, p_grader_ref: revision,
+      p_metadata: {}, p_reason: String(reason).slice(0,500),
     });
-    if (auditErr) {
-      // 审计写入失败不应静默：记录日志，便于管理员排查
-      console.error("[Regrade] 写入 grade_audits 失败:", auditErr.message);
-    }
-
-    // 8. 调度评测任务
-    const gradeRunner = await getPlatformSecret(supabase, "GRADE_RUNNER");
-
-    if (gradeRunner === "mock") {
-      await supabase
-        .from("gradings")
-        .update({
-          status: "done",
-          score: 95,
-          passed: true,
-          report_json: {
-            message: "Mock 复判测试出分",
-            score: 95,
-            passed: true,
-            breakdown: { F: 10, C: 35, I: 10, O: 35, R: 5 },
-          },
-          finished_at: new Date().toISOString(),
-        })
-        .eq("id", newGrading.id);
-
-      await supabase
-        .from("grade_audits")
-        .update({ new_score: 95 })
-        .eq("grading_id", newGrading.id);
-    } else {
-      const callbackUrl = `${supabaseUrl}/functions/v1/grade-callback`;
-      const ghToken = await getPlatformSecret(supabase, "GITHUB_TOKEN");
-      const ghRepo = await getPlatformSecret(supabase, "GITHUB_REPO");
-
-      try {
-        await dispatchGitHubWorkflow(
-          submission_id,
-          problemId,
-          callbackUrl,
-          ghToken ?? "",
-          ghRepo ?? "",
-          newGrading.id,
-        );
-      } catch (dispatchErr: any) {
-        console.error("[Regrade] dispatch 异常:", dispatchErr?.message);
-        await supabase
-          .from("gradings")
-          .update({
-            status: "system_error",
-            error_message: "复判自动化评测调度异常，请重试",
-            finished_at: new Date().toISOString(),
-          })
-          .eq("id", newGrading.id);
-
-        return errorResponse("自动化评测任务分发失败，请重试", 502, "DISPATCH_FAILED");
-      }
-    }
-
-    return jsonResponse({
-      ok: true,
-      message: "复判请求已成功提交至评测队列",
-      grading_id: newGrading.id,
-      submission_id,
-      status: "queued",
-    });
+    if (error) return gradingError(error);
+    await dispatchQueued(supabase, supabaseUrl, accepted.grading_id);
+    return jsonResponse({ ...accepted, message: "复判已保存，系统将自动调度评测" });
   } catch (err: any) {
-    console.error("[Regrade] 未捕获异常:", err?.message || err);
-    return errorResponse("服务器内部处理异常", 500, "INTERNAL_ERROR");
+    console.error("[Regrade] request failed");
+    return errorResponse("复判请求未被确认，请重试",503,"GRADING_UNAVAILABLE");
   }
 });

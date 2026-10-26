@@ -13,9 +13,11 @@ class VerifiedRosterTests(unittest.TestCase):
             self.assertIn(expected,sql)
     def test_exam_gate_before_submission_write(self):
         edge=(ROOT/"supabase/functions/submit-assignment/index.ts").read_text()
-        self.assertIn('"is_verified_course_student"',edge)
-        self.assertIn('"IDENTITY_VERIFICATION_REQUIRED"',edge)
-        self.assertLess(edge.index('"is_verified_course_student"'),edge.index('.from("submissions")'))
+        sql=(ROOT/"supabase/migrations/20261026054644_reliable_grading_lifecycle.sql").read_text()
+        self.assertIn('"enqueue_grading"',edge)
+        self.assertNotIn('.from("submissions").insert',edge)
+        self.assertLess(sql.index('public.is_verified_course_student(a.course_id,p_user_id)'),
+                        sql.index('INSERT INTO public.submissions'))
     def test_teacher_button_not_auto_verified(self):
         teacher=(ROOT/"site/js/teacher.js").read_text()
         self.assertIn("学号已匹配（未必已核验）",teacher)

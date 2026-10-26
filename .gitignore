@@ -11,3 +11,4 @@ site/config.js
 _grading_tmp/
 
 supabase/.temp/
+node_modules/

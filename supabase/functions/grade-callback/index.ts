@@ -5,7 +5,6 @@
 // 安全：通过 HMAC-SHA256 签名验证请求来源
 // 更新 gradings 表的评分结果
 
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
 import { handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { createServiceClient, getPlatformSecret } from "../_shared/secrets.ts";
@@ -62,7 +61,7 @@ interface GradeCallbackBody {
   error_message?: string;
 }
 
-serve(async (req: Request): Promise<Response> => {
+Deno.serve(async (req: Request): Promise<Response> => {
   // 1. CORS 处理（支持 OPTIONS 探测）
   const corsResp = handleCors(req);
   if (corsResp) return corsResp;
@@ -87,6 +86,7 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     const rawBody = await req.text();
+    if (new TextEncoder().encode(rawBody).byteLength>2_000_000) return errorResponse("报告过大",413,"REPORT_TOO_LARGE");
     const isValid = await verifyHmacSignature(rawBody, signature, callbackSecret);
     if (!isValid) {
       console.warn("[GradeCallback] 签名验证不通过，可能被篡改或密钥不一致");
@@ -114,7 +114,7 @@ serve(async (req: Request): Promise<Response> => {
     if (typeof grading_id !== "string" || !uuidRe.test(grading_id)) {
       return errorResponse("grading_id 格式不正确", 400, "INVALID_GRADING_ID");
     }
-    if (typeof runner_ref !== "string" || !/^run_[0-9]+$/.test(runner_ref)) {
+    if (typeof runner_ref !== "string" || !/^run_[0-9]+(?:_[0-9]+)?$/.test(runner_ref)) {
       return errorResponse("runner_ref 格式不正确", 400, "INVALID_RUNNER_REF");
     }
 
@@ -124,7 +124,7 @@ serve(async (req: Request): Promise<Response> => {
 
     // done 必须有合法分数：绝不允许把“已完成但无分数”写进成绩表
     if (status === "done") {
-      if (typeof score !== "number" || !Number.isFinite(score) || score < 0 || score > 100) {
+      if (typeof score !== "number" || !Number.isInteger(score) || score < 0 || score > 100) {
         return errorResponse("status=done 时 score 必须是 0-100 的数字", 400, "INVALID_SCORE");
       }
       if (typeof passed !== "boolean") {
@@ -132,79 +132,20 @@ serve(async (req: Request): Promise<Response> => {
       }
     }
 
-    // 4. 构建入库更新
-    const updateData: Record<string, unknown> = {
-      status,
-      finished_at: new Date().toISOString(),
-    };
-
-    if (status === "done") {
-      updateData.score = score;
-      updateData.passed = !!passed;
-      updateData.report_json = report || null;
-      updateData.error_message = null;
-    } else {
-      // 核心硬边界：系统故障 != 学生 0 分，score 必须置为 null
-      updateData.score = null;
-      updateData.passed = false;
-      updateData.error_message = error_message || "评测环境系统故障";
-      if (report) updateData.report_json = report;
+    // The database applies attempt ownership, terminal idempotency, the
+    // frozen pass threshold and teacher audit completion in one transaction.
+    const { data, error } = await supabase.rpc("complete_grading", {
+      p_grading_id: grading_id, p_submission_id: submission_id, p_runner_ref: runner_ref,
+      p_status: status, p_score: score, p_passed: passed,
+      p_report: report, p_error: error_message || null,
+    });
+    if (error) {
+      const code = ["GRADING_NOT_FOUND","RUNNER_MISMATCH","CALLBACK_CONFLICT","INVALID_SCORE"]
+        .find(c=>error.message.includes(c));
+      return errorResponse("评测回调未被接受", code === "GRADING_NOT_FOUND" ? 404 : code ? 409 : 503,
+        code || "GRADING_UNAVAILABLE");
     }
-
-    // Explicit attempt binding prevents out-of-order regrades from crossing.
-    const { data: pending, error: pendingErr } = await supabase
-      .from("gradings")
-      .select("id, submission_id, runner_ref, status")
-      .eq("id", grading_id)
-      .eq("submission_id", submission_id)
-      .maybeSingle();
-
-    if (pendingErr) {
-      console.error("[GradeCallback] 读取任务失败:", pendingErr.message);
-      return errorResponse("更新评测结果失败", 500, "DB_QUERY_FAILED");
-    }
-    if (!pending) {
-      return errorResponse("任务与提交记录不匹配", 404, "GRADING_NOT_FOUND");
-    }
-    if (pending.status === "done" || pending.status === "system_error") {
-      return jsonResponse({ ok: true, duplicate: true, grading_id });
-    }
-    // Only the job that successfully claimed this attempt may submit a score.
-    // If its fetch step failed, a signed system_error may close a queued task.
-    if (status === "done" &&
-        (pending.status !== "running" || pending.runner_ref !== runner_ref)) {
-      return errorResponse("未由当前评测运行认领任务", 409, "RUNNER_MISMATCH");
-    }
-    if (pending.runner_ref && pending.runner_ref !== runner_ref) {
-      return errorResponse("评分任务归属其他运行器", 409, "RUNNER_MISMATCH");
-    }
-
-    let mutation = supabase.from("gradings").update(updateData)
-      .eq("id", grading_id)
-      .eq("submission_id", submission_id)
-      .eq("status", pending.status);
-    if (pending.runner_ref) mutation = mutation.eq("runner_ref", runner_ref);
-    else mutation = mutation.is("runner_ref", null);
-    const { data: updated, error: updateError } = await mutation.select("id");
-    if (updateError) {
-      console.error("[GradeCallback] 更新评分失败:", updateError.message);
-      return errorResponse("更新评测结果失败", 500, "DB_UPDATE_FAILED");
-    }
-    if (!updated?.length) return jsonResponse({ ok: true, duplicate: true, grading_id });
-
-    // 回填审计日志的 new_score，保证教师复判审计链完整
-    if (status === "done") {
-      const { error: auditErr } = await supabase
-        .from("grade_audits")
-        .update({ new_score: score })
-        .eq("grading_id", grading_id)
-        .is("new_score", null);
-      if (auditErr) {
-        console.error("[GradeCallback] 回填 grade_audits.new_score 失败:", auditErr.message);
-      }
-    }
-
-    return jsonResponse({ ok: true, grading_id });
+    return jsonResponse(data);
   } catch (err: any) {
     console.error("[GradeCallback] 未捕获异常:", err?.message || err);
     return errorResponse("服务器内部处理异常", 500, "INTERNAL_ERROR");

@@ -15,6 +15,7 @@ export async function dispatchGitHubWorkflow(
 
   const url = `https://api.github.com/repos/${repo}/actions/workflows/grade-submission.yml/dispatches`;
   const res = await fetch(url, {
+    signal: AbortSignal.timeout(15_000),
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -39,4 +40,17 @@ export async function dispatchGitHubWorkflow(
     console.error(`[GitHub] workflow_dispatch 失败 HTTP ${res.status}: ${errText.slice(0, 200)}`);
     throw new Error(`GitHub Actions 评测任务触发失败 (${res.status})`);
   }
+}
+
+/** Resolve a trusted revision before accepting a new grading snapshot. */
+export async function resolveGraderRevision(token: string, repo: string): Promise<string> {
+  if (!token || !/^[\w.-]+\/[\w.-]+$/.test(repo)) throw new Error("评测服务配置缺失");
+  const res = await fetch(`https://api.github.com/repos/${repo}/git/ref/heads/main`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!res.ok) throw new Error("暂时无法确定评分器版本，请保留代码后重试");
+  const sha = (await res.json()).object?.sha;
+  if (typeof sha !== "string" || !/^[0-9a-f]{40}$/.test(sha)) throw new Error("评分器版本无效");
+  return sha;
 }

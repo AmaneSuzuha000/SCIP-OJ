@@ -29,268 +29,47 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
+      - name: Preserve trusted transport
+        run: cp scripts/grading_transport.py "$RUNNER_TEMP/grading_transport.py"
+      - name: Claim the exact queued grading
+        id: claim
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUBMISSION_ID: ${{ inputs.submission_id }}
+          GRADING_ID: ${{ inputs.grading_id }}
+        run: python "$RUNNER_TEMP/grading_transport.py" claim
+      - name: Check out the frozen scorer and problem definitions
+        if: steps.claim.outputs.claimed == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.claim.outputs.grader_ref }}
+          clean: false
       - name: Build isolated student-execution image
+        if: steps.claim.outputs.claimed == 'true'
         run: |
           docker build --pull --file judge/Dockerfile.sandbox --tag scip-oj-student:ci .
           docker run --rm --network none --entrypoint python scip-oj-student:ci \
             -c 'from pyscipopt import Model; print("SCIP image ready")'
-
-      - name: Fetch submission code
-        id: fetch
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          SUBMISSION_ID: ${{ inputs.submission_id }}
-          GRADING_ID: ${{ inputs.grading_id }}
-          INPUT_PROBLEM_ID: ${{ inputs.problem_id }}
-          GITHUB_RUN_ID: ${{ github.run_id }}
-        run: |
-          python << 'PYEOF'
-          import os, json, urllib.request, urllib.error, sys, uuid
-
-          supabase_url = os.environ.get("SUPABASE_URL", "")
-          service_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
-          submission_id = os.environ["SUBMISSION_ID"]
-          grading_id = os.environ["GRADING_ID"]
-          try:
-              uuid.UUID(grading_id)
-          except ValueError:
-              print("::error::Invalid grading UUID")
-              sys.exit(1)
-
-          if not supabase_url or not service_key:
-              print("::error::Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY secrets")
-              sys.exit(1)
-
-          # Fetch submission from Supabase
-          url = f"{supabase_url}/rest/v1/submissions?id=eq.{submission_id}&select=id,code_text,assignment_id,assignments(problem_id,pass_score,n_instances)"
-          req = urllib.request.Request(url, headers={
-              "apikey": service_key,
-              "Authorization": f"Bearer {service_key}",
-              "Accept": "application/json"
-          })
-          try:
-              resp = urllib.request.urlopen(req)
-              data = json.loads(resp.read().decode())
-          except Exception as e:
-              print(f"::error::Failed to fetch submission: {e}")
-              sys.exit(1)
-
-          if not data:
-              print(f"::error::Submission {submission_id} not found")
-              sys.exit(1)
-
-          sub = data[0]
-          code_text = sub["code_text"]
-          assignments = sub.get("assignments")
-          if isinstance(assignments, dict):
-              problem_id = assignments.get("problem_id", "")
-          elif isinstance(assignments, list) and len(assignments) > 0:
-              problem_id = assignments[0].get("problem_id", "")
-          else:
-              problem_id = ""
-
-          if not problem_id:
-              problem_id = os.environ.get("INPUT_PROBLEM_ID", "")
-
-          if not problem_id:
-              print("::error::Could not determine problem_id for submission")
-              sys.exit(1)
-
-          # Write code to temp file
-          os.makedirs("_grading_tmp", exist_ok=True)
-          code_path = f"_grading_tmp/{problem_id}.py"
-          with open(code_path, "w", encoding="utf-8") as f:
-              f.write(code_text)
-
-          # Assignment settings come from the trusted service-role lookup.
-          # These values never enter the untrusted execution container.
-          cfg = assignments if isinstance(assignments, dict) else (assignments[0] if isinstance(assignments, list) and assignments else {})
-          grade_settings = {
-              "pass_score": cfg.get("pass_score", 90),
-              "n_instances": cfg.get("n_instances", 3),
-          }
-          with open("_grading_tmp/grade-context.json", "w", encoding="utf-8") as f:
-              json.dump(grade_settings, f)
-
-          # Set outputs
-          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-              f.write(f"problem_id={problem_id}\n")
-              f.write(f"code_path={code_path}\n")
-
-          # Claim EXACT queued attempt using the signed dispatch grading ID.
-          # No more "latest queued" lookup, which races with regrades.
-          from datetime import datetime, timezone
-          patch_url = (
-              f"{supabase_url}/rest/v1/gradings?id=eq.{grading_id}"
-              f"&submission_id=eq.{submission_id}&status=eq.queued"
-          )
-          patch_data = json.dumps({
-              "status": "running",
-              "started_at": datetime.now(timezone.utc).isoformat(),
-              "runner_ref": f"run_{os.environ['GITHUB_RUN_ID']}"
-          }).encode()
-          patch_req = urllib.request.Request(patch_url, data=patch_data, method="PATCH", headers={
-              "apikey": service_key,
-              "Authorization": f"Bearer {service_key}",
-              "Content-Type": "application/json",
-              "Prefer": "return=representation",
-          })
-          try:
-              with urllib.request.urlopen(patch_req) as resp:
-                  changed = json.loads(resp.read().decode())
-              if len(changed) != 1 or changed[0]["id"] != grading_id:
-                  print("::error::grading_id was not queued for this submission")
-                  sys.exit(1)
-          except Exception as exc:
-              print(f"::error::Cannot claim grading attempt: {exc}")
-              sys.exit(1)
-          PYEOF
-
-      - name: Run judge
-        id: judge
-        env:
-          PROBLEM_ID: ${{ steps.fetch.outputs.problem_id }}
-          CODE_PATH: ${{ steps.fetch.outputs.code_path }}
-        run: |
-          python << 'PYEOF'
-          import json, os, sys
-          from pathlib import Path
-
-          problem_id = os.environ.get("PROBLEM_ID", "")
-          code_path = Path(os.environ.get("CODE_PATH", ""))
-
-          try:
-              from judge.runner_l2_isolated import grade_file
-              settings = json.loads(Path("_grading_tmp/grade-context.json").read_text(encoding="utf-8"))
-              report = grade_file(code_path, problem_id=problem_id, assignment_meta=settings)
-          except Exception as e:
-              report = {
-                  "ok": False,
-                  "error": f"评测执行异常: {e}",
-                  "score": None,
-                  "passed": False,
-                  "status": "system_error"
-              }
-
-          os.makedirs("_grading_tmp", exist_ok=True)
-          # Write report
-          Path("_grading_tmp/report.json").write_text(
-              json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
-          )
-
-          # Determine status
-          status = report.get("status", "done" if report.get("ok") else "system_error")
-          if status == "system_error":
-              score = None  # NOT 0
-              passed = False
-              error_msg = report.get("error", "系统评测故障")
-          else:
-              score = report.get("score", 0)
-              passed = report.get("passed", False)
-              error_msg = report.get("error") if not report.get("ok") else None
-
-          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-              f.write(f"status={status}\n")
-              f.write(f"score={score if score is not None else ''}\n")
-              f.write(f"passed={passed}\n")
-              if error_msg:
-                  f.write(f"error_message={error_msg}\n")
-
-          print(f"Grade result: status={status} score={score} passed={passed}")
-          PYEOF
-
+      - name: Run frozen judge
+        if: steps.claim.outputs.claimed == 'true'
+        run: python -m scripts.run_formal_grade
       - name: Post grade callback
-        if: always()
+        if: always() && steps.claim.outputs.claimed == 'true'
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GRADE_CALLBACK_SECRET: ${{ secrets.GRADE_CALLBACK_SECRET }}
           SUBMISSION_ID: ${{ inputs.submission_id }}
           GRADING_ID: ${{ inputs.grading_id }}
-          RUNNER_REF: run_${{ github.run_id }}
-          CALLBACK_URL: ${{ inputs.callback_url || secrets.GRADE_CALLBACK_URL }}
-          STATUS: ${{ steps.judge.outputs.status || 'system_error' }}
-          SCORE: ${{ steps.judge.outputs.score }}
-          PASSED: ${{ steps.judge.outputs.passed || 'false' }}
-          ERROR_MESSAGE: ${{ steps.judge.outputs.error_message || '' }}
-        run: |
-          python << 'PYEOF'
-          import hashlib, hmac, json, os, urllib.request, urllib.error, sys
-          from pathlib import Path
-
-          callback_url = os.environ.get("CALLBACK_URL", "").strip()
-          secret = os.environ.get("GRADE_CALLBACK_SECRET", "")
-          submission_id = os.environ["SUBMISSION_ID"]
-
-          # Load report if exists
-          report_path = Path("_grading_tmp/report.json")
-          report = {}
-          if report_path.exists():
-              try:
-                  report = json.loads(report_path.read_text(encoding="utf-8"))
-              except Exception:
-                  pass
-
-          status = os.environ.get("STATUS", "system_error")
-          score_raw = os.environ.get("SCORE", "").strip()
-          if status == "system_error" or not score_raw or score_raw == "None":
-              score = None
-          else:
-              score = int(score_raw)
-
-          body = {
-              "submission_id": submission_id,
-              "grading_id": os.environ["GRADING_ID"],
-              "runner_ref": os.environ["RUNNER_REF"],
-              "score": score,
-              "passed": os.environ.get("PASSED", "false").lower() == "true",
-              "report": report,
-              "status": status,
-              "error_message": os.environ.get("ERROR_MESSAGE") or None,
-          }
-
-          body_bytes = json.dumps(body, ensure_ascii=False).encode("utf-8")
-
-          # Compute HMAC signature
-          sig = hmac.new(secret.encode("utf-8"), body_bytes, hashlib.sha256).hexdigest()
-
-          if not callback_url:
-              supabase_url = os.environ.get("SUPABASE_URL", "")
-              if supabase_url:
-                  callback_url = f"{supabase_url}/functions/v1/grade-callback"
-              else:
-                  print("No callback URL configured, writing report only")
-                  sys.exit(0)
-
-          req = urllib.request.Request(
-              callback_url,
-              data=body_bytes,
-              method="POST",
-              headers={
-                  "Content-Type": "application/json",
-                  "X-Grade-Signature": sig,
-              }
-          )
-          try:
-              resp = urllib.request.urlopen(req)
-              print(f"Callback response: {resp.status} {resp.read().decode()}")
-          except urllib.error.HTTPError as e:
-              print(f"::error::Callback failed: {e.code} {e.read().decode()}")
-              sys.exit(1)
-          except Exception as e:
-              print(f"::error::Callback request error: {e}")
-              sys.exit(1)
-          PYEOF
-
+        run: python "$RUNNER_TEMP/grading_transport.py" callback
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.claim.outputs.claimed == 'true'
         with:
-          name: grading-report-${{ inputs.submission_id }}
+          name: grading-report-${{ inputs.grading_id }}-${{ github.run_attempt }}
           path: _grading_tmp/report.json
-          if-no-files-found: warn
+      - name: Remove private execution inputs
+        if: always()
+        run: rm -rf _grading_tmp

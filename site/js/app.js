@@ -976,7 +976,7 @@ function renderSubmissionsTable(container, list) {
         ${globalHistory ? '<th>题目 / 班级</th>' : ''}
         <th>轮次</th>
         <th>评测状态</th>
-        <th>得分</th>
+        <th>有效成绩</th>
         <th>判定</th>
         <th>提交时间</th>
         <th>操作</th>
@@ -984,10 +984,10 @@ function renderSubmissionsTable(container, list) {
     </thead>
     <tbody>
       ${list.map((sub, idx) => {
-        const grading = Array.isArray(sub.gradings) ? sub.gradings[0] : sub.gradings;
+        const { latestAttempt: grading, effectiveGrade } = window.ScipOJGradingState.normalizeSubmission(sub);
         const status = grading?.status || "queued";
-        const score = grading?.score;
-        const passed = grading?.passed;
+        const score = effectiveGrade?.score;
+        const passed = effectiveGrade?.passed;
 
         let statusBadge = "";
         if (status === "queued") {
@@ -1001,7 +1001,7 @@ function renderSubmissionsTable(container, list) {
         }
 
         let scoreDisplay = "-";
-        if (status === "done") {
+        if (effectiveGrade) {
           scoreDisplay = score != null
             ? `<strong class="${passed ? 'pass' : 'fail'}">${score} 分</strong>`
             : '<span style="color:var(--text-secondary);">未出分</span>';
@@ -1010,10 +1010,10 @@ function renderSubmissionsTable(container, list) {
         }
 
         let passDisplay = "-";
-        if (status === "done") {
+        if (effectiveGrade) {
           passDisplay = passed ? '<span class="tag-normal">✓ 通过</span>' : '<span class="tag-late">✗ 未通过</span>';
         } else if (status === "system_error") {
-          passDisplay = '<span class="tag-pending">等待重试</span>';
+          passDisplay = '<span class="tag-pending">暂未出分</span>';
         }
 
         const isLate = sub.metadata?.late;
@@ -1061,7 +1061,7 @@ function renderSubmissionsTable(container, list) {
 
 /** 弹出提交详情与报告 */
 function showReportDialog(sub) {
-  const grading = Array.isArray(sub.gradings) ? sub.gradings[0] : sub.gradings;
+  const { latestAttempt: grading, effectiveGrade } = window.ScipOJGradingState.normalizeSubmission(sub);
   let dialog = document.getElementById("report-dialog");
   if (!dialog) {
     dialog = document.createElement("div");
@@ -1086,7 +1086,7 @@ function showReportDialog(sub) {
           <div>提交时间: <strong>${new Date(sub.created_at).toLocaleString("zh-CN")}</strong></div>
           <div>轮次: <strong>第 ${sub.attempt_no || 1} 次</strong></div>
           <div>状态: <strong>${grading?.status || 'queued'}</strong></div>
-          <div>得分: <strong class="${grading?.passed ? 'pass' : 'fail'}">${grading?.score != null ? grading.score + ' 分' : '未出分'}</strong></div>
+          <div>有效成绩: <strong class="${effectiveGrade?.passed ? 'pass' : 'fail'}">${effectiveGrade?.score != null ? effectiveGrade.score + ' 分' : '未出分'}</strong></div>
         </div>
 
         <div class="form-group">

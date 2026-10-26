@@ -4,14 +4,13 @@
 // POST { submission_ids: string[], reason?: string }
 //   或 { course_id: string, problem_id: string, reason?: string } (整题一键重判)
 
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
 import { handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
-import { createServiceClient, getPlatformSecret } from "../_shared/secrets.ts";
+import { createServiceClient } from "../_shared/secrets.ts";
 import { getAuthenticatedUser, isTeacherOrAdmin } from "../_shared/auth.ts";
-import { dispatchGitHubWorkflow } from "../_shared/github.ts";
+import { gradingRevision, batchRequestKey, UUID_RE } from "../_shared/grading.ts";
 
-serve(async (req: Request): Promise<Response> => {
+Deno.serve(async (req: Request): Promise<Response> => {
   const corsResp = handleCors(req);
   if (corsResp) return corsResp;
 
@@ -83,131 +82,22 @@ serve(async (req: Request): Promise<Response> => {
       return errorResponse("单次批量复判上限为 50 条，请缩小筛选范围", 400, "BATCH_LIMIT_EXCEEDED");
     }
 
-    const gradeRunner = await getPlatformSecret(supabase, "GRADE_RUNNER");
-    const callbackUrl = `${supabaseUrl}/functions/v1/grade-callback`;
-    const ghToken = await getPlatformSecret(supabase, "GITHUB_TOKEN");
-    const ghRepo = await getPlatformSecret(supabase, "GITHUB_REPO");
-
-    const results: Array<{ id: string; success: boolean; error?: string }> = [];
-
-    for (const subId of targetSubmissionIds) {
-      let newGradingId: string | null = null;
-      try {
-        const { data: submission } = await supabase
-          .from("submissions")
-          .select("id, assignment_id, assignments!inner(id, course_id, problem_id)")
-          .eq("id", subId)
-          .maybeSingle();
-
-        if (!submission) {
-          results.push({ id: subId, success: false, error: "提交记录不存在" });
-          continue;
-        }
-
-        const assignment = (submission as any).assignments;
-        const courseId = assignment.course_id;
-        const problemId = assignment.problem_id;
-
-        // 校验权限
-        const hasPerm = await isTeacherOrAdmin(supabase, user.id, courseId);
-        if (!hasPerm) {
-          results.push({ id: subId, success: false, error: "无权限操作该提交" });
-          continue;
-        }
-
-        // 获取上次分数
-        const { data: lastGrading } = await supabase
-          .from("gradings")
-          .select("id, score")
-          .eq("submission_id", subId)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        const oldScore = lastGrading?.score ?? null;
-
-        // 插入新 grading
-        const { data: newGrading, error: gradingErr } = await supabase
-          .from("gradings")
-          .insert({ submission_id: subId, status: "queued" })
-          .select("id")
-          .single();
-
-        if (gradingErr || !newGrading) {
-          console.error("[RegradeBatch] 创建评分记录失败:", gradingErr?.message);
-          results.push({ id: subId, success: false, error: "创建评分记录失败" });
-          continue;
-        }
-        newGradingId = newGrading.id;
-
-        // 记录审计日志
-        const { error: auditErr } = await supabase.from("grade_audits").insert({
-          grading_id: newGrading.id,
-          submission_id: subId,
-          actor_id: user.id,
-          old_score: oldScore,
-          new_score: null,
-          reason,
-        });
-        if (auditErr) console.error("[RegradeBatch] 写入 grade_audits 失败:", auditErr.message);
-
-        // 调度评测
-        if (gradeRunner === "mock") {
-          await supabase
-            .from("gradings")
-            .update({
-              status: "done",
-              score: 90,
-              passed: true,
-              report_json: { message: "Mock 批量复判出分" },
-              finished_at: new Date().toISOString(),
-            })
-            .eq("id", newGrading.id);
-          await supabase
-            .from("grade_audits")
-            .update({ new_score: 90 })
-            .eq("grading_id", newGrading.id);
-        } else {
-          try {
-            await dispatchGitHubWorkflow(
-              subId,
-              problemId,
-              callbackUrl,
-              ghToken ?? "",
-              ghRepo ?? "",
-          newGrading.id,
-            );
-          } catch (dispatchErr: any) {
-            // 单条调度失败必须把该 grading 标记为 system_error，
-            // 否则会留下永远 queued 的“僵尸任务”。
-            console.error("[RegradeBatch] dispatch 失败:", dispatchErr?.message);
-            await supabase
-              .from("gradings")
-              .update({
-                status: "system_error",
-                error_message: "复判评测任务调度失败，请重试",
-                finished_at: new Date().toISOString(),
-              })
-              .eq("id", newGrading.id);
-            results.push({ id: subId, success: false, error: "评测任务调度失败" });
-            continue;
-          }
-        }
-
-        results.push({ id: subId, success: true });
-      } catch (e: any) {
-        if (newGradingId) {
-          await supabase
-            .from("gradings")
-            .update({
-              status: "system_error",
-              error_message: e?.message || "复判异常",
-              finished_at: new Date().toISOString(),
-            })
-            .eq("id", newGradingId);
-        }
-        results.push({ id: subId, success: false, error: e?.message || String(e) });
-      }
+    const requestKey = body.request_key || crypto.randomUUID();
+    if (!UUID_RE.test(requestKey)) return errorResponse("请求编号无效",400,"INVALID_REQUEST_KEY");
+    let revision: string | null = null;
+    try { revision = await gradingRevision(supabase); }
+    catch { /* Existing per-item receipts can still be replayed. */ }
+    // Each item is a complete transaction with its own audit and outbox.
+    // Scheduled consumers drain batches, avoiding Edge execution time limits.
+    const results: Array<{ id: string; success: boolean; grading_id?: string; error?: string }> = [];
+    for (const id of targetSubmissionIds) {
+      const { data, error } = await supabase.rpc("enqueue_grading", {
+        p_user_id: user.id, p_assignment_id: null, p_submission_id: id,
+        p_code_text: null, p_request_key: await batchRequestKey(requestKey,id),
+        p_grader_ref: revision, p_metadata: {}, p_reason: reason,
+      });
+      results.push(error ? { id, success:false, error:"复判保存失败或无权访问，请核对后重试" }
+        : { id, success:true, grading_id:data.grading_id });
     }
 
     return jsonResponse({
