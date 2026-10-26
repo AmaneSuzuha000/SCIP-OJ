@@ -22,12 +22,12 @@ These counts can be spoofed, reset or bypassed. Visibility changes can occur fro
 
 ## Code similarity
 
-`platform/scripts/audit_similarity.py` is a local, teacher-run, standard-library CLI for preliminary pairwise reviews within the same assignment. It normalizes identifiers/literals, compares seven-token fingerprints, excludes supplied starter-template fingerprints, and identifies exact source hashes. Results contain only submission identifiers and similarity scores—not the source code. Default threshold 0.72 is heuristic, not a misconduct probability.
+`scripts/audit_similarity.py` is a local, teacher-run, standard-library CLI for preliminary pairwise reviews within the same assignment. It normalizes identifiers/literals, compares seven-token fingerprints, excludes supplied starter-template fingerprints, and identifies exact source hashes. Results contain only submission identifiers and similarity scores—not the source code. Default threshold 0.72 is heuristic, not a misconduct probability.
 
 Example, after a teacher-authorized export of submissions:
 
 ```bash
-python platform/scripts/audit_similarity.py submissions.json \
+python scripts/audit_similarity.py submissions.json \
   --template problems/P001_knapsack/template.py --threshold 0.72
 ```
 
