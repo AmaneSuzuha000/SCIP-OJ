@@ -63,12 +63,12 @@ function renderProblemList(list) {
         const tagsHtml = (p.tags || []).map(t => `<span class="topic-tag">${escapeHtml(t)}</span>`).join("");
         const progress = getPracticeProgress(p.id);
         const solved = progress && Number(progress.score) >= 90;
-        const state = solved ? "✓" : "○";
+        const solvedMark = solved ? "✓" : "○";
         const difficulty = normalizeDifficulty(p.difficulty);
         const difficultyLabel = { easy: "简单", medium: "中等", hard: "困难" }[difficulty];
         if (state.listViewMode === "table") {
             return `<a class="problem-card problem-row" href="#${escapeHtml(p.id)}" data-id="${escapeHtml(p.id)}" data-path="${escapeHtml(p.path)}">
-        <span class="problem-progress ${solved ? "solved" : ""}" aria-label="${solved ? "本地练习已通过" : "尚未通过"}">${state}</span>
+        <span class="problem-progress ${solved ? "solved" : ""}" aria-label="${solved ? "本地练习已通过" : "尚未通过"}">${solvedMark}</span>
         <span class="problem-row-title"><b class="problem-number">${escapeHtml(p.id)}</b><strong>${escapeHtml(p.title)}</strong></span>
         <span class="problem-row-difficulty ${diffClass}">${difficultyLabel}</span>
         <span class="problem-tags">${tagsHtml}</span>
