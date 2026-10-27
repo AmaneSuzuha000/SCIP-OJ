@@ -1,0 +1,11 @@
+export const state = {};
+state.supabase = null;
+state.currentUser = null;
+state.currentProfile = null;
+state.currentEnrollments = [];
+state.enrollmentsLoadFailed = false;
+state.authListeners = [];
+state.gradingClient = undefined;
+state.MIGRATION_006 = "supabase/migrations/006_security_hardening_and_leaderboard.sql";
+state.modalStack = [];
+state.FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]):not([hidden]), input:not([disabled]):not([hidden]), select:not([disabled]):not([hidden]), textarea:not([disabled]):not([hidden]), [tabindex]:not([tabindex="-1"])';
