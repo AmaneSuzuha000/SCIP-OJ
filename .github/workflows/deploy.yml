@@ -24,6 +24,12 @@ jobs:
         with:
           python-version: "3.12"
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Build portal components
+        run: npm ci && npm run build
       - name: Install micromamba & build environment
         uses: mamba-org/setup-micromamba@v1
         with:

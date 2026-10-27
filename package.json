@@ -3,13 +3,15 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "node scripts/preview.mjs",
+    "dev": "node scripts/build_portal.mjs && node scripts/preview.mjs",
     "test:database": "node tests/test_grading_database.mjs",
-    "test:grading": "node tests/test_grading_state.cjs"
+    "test:grading": "node tests/test_grading_state.cjs && node tests/test_grading_api.cjs",
+    "build": "node scripts/build_portal.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.3.14",
     "@supabase/supabase-js": "2.118.0",
+    "esbuild": "0.25.11",
     "pg": "8.16.3"
   }
 }

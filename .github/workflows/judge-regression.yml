@@ -16,6 +16,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci && npm run build
       - name: Python scoring and oracle isolation regressions
         run: python -m unittest discover -s tests -p 'test_*.py' -v
       - name: Browser scoring regressions
@@ -24,6 +29,7 @@ jobs:
         run: |
           node tests/test_grading_state.cjs
           node tests/test_grading_api.cjs
+          node tests/test_auth_context.mjs
       - name: Exam-mode browser regression tests
         run: node tests/test_exam_integrity.cjs
       - name: Industrial engineering simulation reproducibility tests
@@ -44,7 +50,7 @@ jobs:
         run: node tests/test_spaces.cjs
       - name: Check frontend JavaScript syntax
         run: |
-          node --check site/js/app.js
+          node --check .portal-build/js/app.js
           node --check site/js/spaces.js
           node --check site/js/simulation-core.js
           node --check site/js/inventory-core.js
@@ -52,14 +58,14 @@ jobs:
           node --check site/js/teaching-labs.js
           node --check site/js/case-studio.js
           node --check site/js/python_runtime.js
-          node --check site/js/teacher.js
-          node --check site/js/platform.js
+          node --check .portal-build/js/teacher.js
+          node --check .portal-build/js/platform.js
           node --check site/js/grading-state.js
           node --check site/js/grading-api.js
           node --check site/js/request-keys.js
           node --check site/js/editor.js
           node --check site/js/exam-integrity.js
-          node --check site/js/teacher.js
+          node --check .portal-build/js/teacher.js
 
   grading-database:
     runs-on: ubuntu-latest

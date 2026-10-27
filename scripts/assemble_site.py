@@ -13,7 +13,12 @@ def assemble(lite, output):
         raise ValueError('Output must be separate from sources and runtime')
     if output.exists():
         raise ValueError('Output must be a fresh directory')
-    shutil.copytree(ROOT / 'site', output)
+    portal = ROOT / '.portal-build/js'
+    if not all((portal / (name+'.js')).is_file() for name in ('app','platform','teacher')):
+        raise ValueError('Build portal components first: npm ci && npm run build')
+    shutil.copytree(ROOT / 'site', output, ignore=shutil.ignore_patterns('src'))
+    for name in ('app','platform','teacher'):
+        shutil.copyfile(portal / (name+'.js'), output / 'js' / (name+'.js'))
     shutil.copytree(lite, output / 'notebooks')
     for name in ('engine.js', 'bridge.js'):
         shutil.copyfile(ROOT / 'notebook' / name, output / 'notebooks' / name)

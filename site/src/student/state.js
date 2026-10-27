@@ -1,0 +1,14 @@
+export const state = {};
+state.BASE = new URL(".", location.href);
+state.problemIndex = [];
+state.activeProblemId = null;
+state.activeAssignment = null;
+state.currentTemplate = "";
+state.pollTimer = null;
+state.listViewMode = "table";
+state.acceptedRoute = location.hash || "#course";
+state.assignmentFetchSeq = 0;
+state.routeSeq = 0;
+state.submissionsFetchSeq = 0;
+state.openSeq = 0;
+state.notebookViewSeq = 0;

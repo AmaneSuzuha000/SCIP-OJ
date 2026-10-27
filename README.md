@@ -134,6 +134,7 @@ SCIP-OJ 采用**双轨制**，兼顾轻量免配置练习与可信正式成绩�
 
 ```bash
 npm ci
+npm run build
 npm run dev
 npm run test:database
 npm run test:grading
@@ -149,3 +150,5 @@ python -m unittest discover -s tests -p 'test_*.py' -v
 课程门户和 Notebook 运行环境独立构建，统一由 `scripts/assemble_site.py` 组装。运行环境位于 `notebooks/`；旧 `lab/` 和 `repl/` 链接继续重定向。文档唯一来源为 `docs/`。课程工作台的代码与 Notebook 视图同步作业代码，正式评测仍由课程服务独立完成。详见 [运行与作业契约](docs/WORKBENCH_RUNTIME_CONTRACT.md)。
 
 服务端的业务真源位于 `supabase/`，可信判题位于 `judge/`，构建与维护工具统一位于 `scripts/`；不存在第二套 `platform/` 后端。具体边界与迁移顺序见 [架构方案](docs/ARCHITECTURE.md)。
+
+前端源码按职责位于 `site/src/student/`、`site/src/platform/` 和 `site/src/teacher/`。构建生成兼容现有页面的脚本到 `.portal-build/`，发布组装器将它们复制到站点；不维护另一份手写的 app/platform/teacher 大脚本。此处采用原生 ES 模块和明确的状态/组件接口，保留原有 DOM 与视觉。
