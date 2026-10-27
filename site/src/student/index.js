@@ -9,6 +9,6 @@ main().catch((err) => {
         el.innerHTML = `<p class="fail">主应用启动异常: ${escapeHtml(err.message || String(err))}</p>`;
 });
 import {getCodeValue,setCodeValue} from './shared.js';
-import {validNotebookSource} from './workbench.js';
+import {validNotebookSource,refreshAssignmentMeta} from './workbench.js';
 import {renderSubmissionsTable} from './submissions.js';
-Object.assign(window,{getCodeValue,setCodeValue,validNotebookSource,renderSubmissionsTable});
+Object.assign(window,{getCodeValue,setCodeValue,validNotebookSource,renderSubmissionsTable,refreshAssignmentMeta});
