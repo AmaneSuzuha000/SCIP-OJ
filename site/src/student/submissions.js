@@ -166,7 +166,8 @@ function renderSubmissionsTable(container, list) {
     table.querySelectorAll(".btn-view-report").forEach((btn) => {
         btn.onclick = () => {
             const sub = list[parseInt(btn.dataset.idx, 10)];
-            showReportDialog(sub);
+            if (sub)
+                showReportDialog(sub);
         };
     });
 }
@@ -192,7 +193,7 @@ function showReportDialog(sub) {
       </div>
       <div class="modal-body">
         <div style="background:var(--bg-subtle); border:1px solid var(--border-default); border-radius:6px; padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.85rem; display:flex; flex-wrap:wrap; gap:1rem;">
-          <div>提交时间: <strong>${new Date(sub.created_at).toLocaleString("zh-CN")}</strong></div>
+          <div>提交时间: <strong>${sub.created_at ? new Date(sub.created_at).toLocaleString("zh-CN") : "-"}</strong></div>
           <div>轮次: <strong>第 ${sub.attempt_no || 1} 次</strong></div>
           <div>状态: <strong>${grading?.status || 'queued'}</strong></div>
           <div>有效成绩: <strong class="${effectiveGrade?.passed ? 'pass' : 'fail'}">${effectiveGrade?.score != null ? effectiveGrade.score + ' 分' : '未出分'}</strong></div>
