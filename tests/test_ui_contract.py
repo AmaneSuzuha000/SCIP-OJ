@@ -44,6 +44,10 @@ class UIContractTests(unittest.TestCase):
                 self.assertEqual(auditor.main_count, 1)
                 self.assertEqual(len(auditor.ids), len(set(auditor.ids)))
                 self.assertTrue(set(ids).issubset(auditor.ids))
+                if filename in ('index.html','teacher.html'):
+                    entry=SITE/'styles'/('student.css' if filename=='index.html' else 'teacher.css')
+                    import re
+                    auditor.styles += [x.split('?')[0].removeprefix('../') for x in re.findall(r'url\("([^"]+)"\)',entry.read_text())]
                 self.assertIn("style.css", auditor.styles)
                 self.assertIn("ui-refresh.css", auditor.styles)
                 if filename == "index.html":
