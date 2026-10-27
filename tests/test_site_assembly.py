@@ -14,6 +14,8 @@ class AssemblyTest(unittest.TestCase):
             (lite/'index.html').write_text('RUNTIME ROOT CONFIG')
             target=root/'dist'; module.assemble(lite,target)
             self.assertEqual((target/'notebooks/index.html').read_text(),'RUNTIME ROOT CONFIG')
+            self.assertIn('../bridge.js',(target/'notebooks/lab/index.html').read_text())
+            self.assertTrue((target/'notebooks/engine.js').is_file())
             self.assertIn('课程教学',(target/'index.html').read_text())
             self.assertNotIn('RUNTIME ROOT CONFIG',(target/'index.html').read_text())
             self.assertEqual((target/'docs/学生指南.md').read_bytes(),(ROOT/'docs/学生指南.md').read_bytes())
