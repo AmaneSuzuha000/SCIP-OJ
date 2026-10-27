@@ -5,7 +5,7 @@ async function initProblemOptions() {
         const resp = await fetch("problems/index.json");
         if (resp.ok) {
             const list = await resp.json();
-            context.assignProblemSelect.innerHTML = list.map(p => `<option value="${p.id}">${p.id} - ${p.title}</option>`).join('') + '<option value="__custom__">+ 手动输入其它题号...</option>';
+            context.assignProblemSelect.innerHTML = list.map(p => `<option value="${esc(p.id)}">${esc(p.id)} - ${esc(p.title)}</option>`).join('') + '<option value="__custom__">+ 手动输入其它题号...</option>';
         }
     }
     catch (e) {
