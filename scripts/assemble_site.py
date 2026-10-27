@@ -15,6 +15,12 @@ def assemble(lite, output):
         raise ValueError('Output must be a fresh directory')
     shutil.copytree(ROOT / 'site', output)
     shutil.copytree(lite, output / 'notebooks')
+    for name in ('engine.js', 'bridge.js'):
+        shutil.copyfile(ROOT / 'notebook' / name, output / 'notebooks' / name)
+    lab = output / 'notebooks/lab/index.html'
+    html = lab.read_text(encoding='utf-8')
+    bridge = '<script src="../engine.js"></script><script src="../bridge.js"></script>'
+    lab.write_text(html.replace('</body>', bridge+'</body>') if '</body>' in html else html+bridge, encoding='utf-8')
     shutil.copytree(ROOT / 'docs', output / 'docs')
     shutil.copytree(ROOT / 'problems', output / 'problems')
     shutil.copyfile(ROOT / 'README.md', output / 'README.md')

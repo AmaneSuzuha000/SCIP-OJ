@@ -35,7 +35,9 @@ jobs:
       - name: Inventory, flow-line, Erlang-C and official examples regressions
         run: node tests/test_ie_case_extensions.cjs
       - name: Browser Python worker isolation regressions
-        run: node tests/test_python_runtime.cjs
+        run: |
+          node tests/test_python_runtime.cjs
+          node tests/test_notebook_bridge.cjs
       - name: Independent course UI DOM and navigation regressions
         run: node tests/test_workbench_ui.cjs
       - name: Course and learning space routing regressions
