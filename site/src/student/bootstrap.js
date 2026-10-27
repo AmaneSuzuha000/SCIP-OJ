@@ -1,8 +1,8 @@
 import {state} from './state.js';
 import {loadJSON,escapeHtml,getCodeValue} from './shared.js';
-import {applyProblemFilters} from './course.js';
-import {showWorkbenchTab,showConsoleTab,confirmLeaveIfExamDraft,closeWorkspace,handleRouteHash} from './workbench.js';
-import {refreshHistory} from './submissions.js';
+import {applyProblemFilters,updateBannerCourseInfo} from './course.js';
+import {showWorkbenchTab,showConsoleTab,confirmLeaveIfExamDraft,closeWorkspace,handleRouteHash,refreshAssignmentMeta} from './workbench.js';
+import {refreshHistory,refreshSubmissionsList} from './submissions.js';
 export async function main() {
     document.querySelector(".skip-link")?.addEventListener("click", event => {
         event.preventDefault();
@@ -18,6 +18,20 @@ export async function main() {
         catch (e) {
             console.warn("[App] 平台初始化异常:", e);
         }
+        updateBannerCourseInfo();
+        window.ScipOJPlatform.onAuthChange?.(async () => {
+            updateBannerCourseInfo();
+            if (state.activeProblemId) {
+                await refreshAssignmentMeta(state.activeProblemId);
+                await refreshSubmissionsList();
+            }
+        });
+        document.addEventListener("scipoj:enrollments-changed", async () => {
+            updateBannerCourseInfo();
+            if (state.activeProblemId) {
+                await refreshAssignmentMeta(state.activeProblemId);
+            }
+        });
     }
     // 2. 加载题目索引
     try {
