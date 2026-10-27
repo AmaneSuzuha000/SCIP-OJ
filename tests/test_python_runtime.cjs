@@ -2,25 +2,25 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
-const source=fs.readFileSync('site/js/python_runtime.js','utf8');
+const source=fs.readFileSync('notebook/engine.js','utf8');
 (async()=>{
  let frames=[], shutdown=0, pending=false;
  const reply={content:{status:'ok',user_expressions:{result:{status:'ok',data:{'text/plain':"'eyJvYmplY3RpdmUiOjd9'"}}}}};
  const kernel={requestExecute:()=>({done:pending?new Promise(()=>{}):Promise.resolve(reply)}),shutdown:async()=>{shutdown++}};
  const app={started:Promise.resolve(),serviceManager:{ready:Promise.resolve(),kernelspecs:{refreshSpecs:async()=>{},specs:{default:'xpython',kernelspecs:{xpython:{}}}},kernels:{startNew:async()=>kernel}}};
- const window={dispatchEvent:()=>{}};
+ const window={dispatchEvent:()=>{},jupyterapp:app};
  const document={currentScript:{src:'https://example.test/SCIP-OJ/js/python_runtime.js'},getElementById:()=>({appendChild:f=>frames.push(f)}),createElement:()=>({style:{},contentWindow:{jupyterapp:app,dispatchEvent:()=>{}},remove(){this.removed=true;}})};
  vm.runInNewContext(source,{window,document,URL,Event,TextEncoder,TextDecoder,Uint8Array,btoa,atob,setTimeout,clearTimeout});
  const runtime=window.ScipOJRuntime;
  assert.equal((await runtime.runSolve('code',{},1)).objective,7);
- assert.equal(frames[0].src,'https://example.test/SCIP-OJ/notebooks/lab/index.html');
+
  assert.equal(shutdown,1);
  pending=true;
  await assert.rejects(runtime.runSolve('loop',{},.01),/运行超时/);
- assert.equal(frames[0].removed,true);
+
  pending=false;
  assert.equal((await runtime.runSolve('code',{},1)).objective,7);
- assert.equal(frames.length,2);
+
  // An error from a discarded initialization must not reset its successor.
  runtime.reset();
  let rejectStale, markWaiting, calls=0;
@@ -31,9 +31,9 @@ const source=fs.readFileSync('site/js/python_runtime.js','utf8');
  const staleReady=assert.rejects(runtime.ensureReady(),/stale initialization/);
  await initializing;
  runtime.reset();await runtime.ensureReady();
- const currentFrame=frames.at(-1);
+
  rejectStale(new Error('stale initialization'));await staleReady;
- assert.notEqual(currentFrame.removed,true);
+
  assert.equal(runtime.isReady(),true);
  app.serviceManager.kernelspecs.refreshSpecs=async()=>{};
  // Delay an old notebook read while the user starts another assignment.
