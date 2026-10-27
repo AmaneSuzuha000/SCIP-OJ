@@ -38,7 +38,8 @@ assert.match(html, /class="studio-case-grid"/, "Expected three runnable case car
 assert.equal((html.match(/class="course-case-row"/g)||[]).length, 2,
   "Teaching retains the two original P001/P002 modeling notebooks");
 assert.match(html, /id="teacher-link"[^>]*hidden/, "Teacher navigation must remain permission gated");
-assert.ok(html.indexOf('href="workbench-v3.css"') > html.indexOf('href="case-entry.css"'),
+const styleEntry = fs.readFileSync(path.join(root,"styles/student.css"),"utf8");
+assert.ok(styleEntry.indexOf("workbench-v3.css") > styleEntry.indexOf("case-entry.css"),
   "Course workbench overrides must load after prior styles");
 assert.ok(html.indexOf('src="js/platform.js') < html.indexOf('src="js/app.js'),
   "Existing authentication and judge script dependency order must remain");
@@ -56,7 +57,7 @@ assert.match(app, /getElementById\("nav-to-assessment"\)[\s\S]*?confirmLeaveIfEx
   "Exam draft can be lost when the sidebar navigates away");
 const faculty = fs.readFileSync(path.join(root, "teacher.html"), "utf8");
 const facultyCss = fs.readFileSync(path.join(root, "faculty-v3.css"), "utf8");
-assert.ok(faculty.includes('href="faculty-v3.css"'), "Faculty theme not loaded");
+assert.ok(fs.readFileSync(path.join(root,"styles/teacher.css"),"utf8").includes("faculty-v3.css"), "Faculty theme not loaded");
 assert.match(faculty, /id="teacher-panel" hidden/, "Teacher panel must remain behind auth checks");
 for (const id of ["auth-area", "metric-students", "metric-graded", "metric-passrate",
   "course-select", "tab-gradebook", "tab-roster", "tab-assignments", "btn-export-csv",

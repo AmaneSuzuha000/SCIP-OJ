@@ -11,9 +11,7 @@ from typing import Any, Callable
 from judge.common import average_scores, grade_assignment, grade_knapsack
 
 
-class SystemJudgeError(RuntimeError):
-    """评测环境故障（如系统缺少求解器/依赖包），不代表学生解答得分 0"""
-    pass
+from judge.errors import SystemJudgeError
 
 
 def load_solve(path: Path) -> Callable[[dict], dict]:

@@ -9,9 +9,11 @@ class SandboxContractTests(unittest.TestCase):
     def test_source_never_imports_student_into_host_process(self):
         source = (Path(__file__).resolve().parents[1] / "judge/runner_l2_isolated.py").read_text()
         self.assertNotIn("load_solve(", source)
+        self.assertNotIn("from judge.runner_l1", source)
+        self.assertNotIn("from judge.runner_l2 import", source)
         for guard in ['"--network", "none"', '"--read-only"', '"--cap-drop", "ALL"',
                       '"--memory", "768m"', '"--pids-limit", "64"']:
-            self.assertIn(guard, source)
+            self.assertIn(guard, (Path(__file__).resolve().parents[1] / "judge/sandbox.py").read_text())
         self.assertIn("secrets.randbits(64)", source)
         self.assertNotIn("meta.get(\"seed_base\"", source)
 
