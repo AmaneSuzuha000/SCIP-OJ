@@ -129,6 +129,17 @@ try {
       const deliveries=(await Promise.all(clients.map(c=>c.query('SELECT * FROM lease_grading_dispatches(25)')))).flatMap(r=>r.rows);
       assert.equal(new Set(deliveries.map(j=>j.grading_id)).size,deliveries.length);
       assert.ok(deliveries.length>=concurrent.length);
+      // Classroom-sized DB burst; this does not simulate OAuth or Actions capacity.
+      const students=Array.from({length:100},()=>randomUUID());
+      await query(`INSERT INTO auth.users(id,email) SELECT id,'load-'||id::text||'@test.invalid' FROM unnest($1::uuid[]) id`,[students]);
+      await query(`UPDATE profiles SET student_no='LOAD-'||user_id::text WHERE user_id=ANY($1::uuid[])`,[students]);
+      await query(`INSERT INTO enrollments(course_id,user_id,role) SELECT $1,id,'student' FROM unnest($2::uuid[]) id`,[course,students]);
+      const started=Date.now();
+      await Promise.all(clients.map(async(c,index)=>{
+        for(let j=index;j<students.length;j+=clients.length) await enqueue(students[j],randomUUID(),null,source,ref,c);
+      }));
+      assert.equal(await scalar('SELECT count(*)::int FROM submissions WHERE user_id=ANY($1::uuid[])',[students]),100);
+      console.log(`100-student PostgreSQL burst completed in ${Date.now()-started}ms with ${clients.length} independent connections`);
       console.log('Independent PostgreSQL sessions: idempotency and lease races passed');
     } finally {await Promise.all(clients.map(c=>c.end()));}
   }

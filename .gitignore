@@ -12,3 +12,5 @@ _grading_tmp/
 
 supabase/.temp/
 node_modules/
+
+.portal-build/

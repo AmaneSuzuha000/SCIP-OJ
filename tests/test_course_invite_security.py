@@ -1,3 +1,4 @@
+from source_files import component_source
 """Static guardrails against split client-side invite transactions."""
 from pathlib import Path
 import unittest
@@ -17,7 +18,7 @@ class CourseInviteTests(unittest.TestCase):
         self.assertIn('auth.jwt',code)
         self.assertNotIn('.from("enrollments").insert(',code)
     def test_frontend_rotation_is_atomic_rpc(self):
-        js=(ROOT/"site/js/platform.js").read_text()
+        js=component_source('platform')
         block=js.split("async function rotateCourseInviteCode(",1)[1].split("// ── UI 渲染",1)[0]
         self.assertIn('.rpc("rotate_course_invite_code"',block)
         self.assertNotIn('.from("course_invites")',block)
