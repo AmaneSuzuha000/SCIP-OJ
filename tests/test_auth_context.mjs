@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {state} from '../site/src/platform/state.js';
+import {refreshProfile,refreshEnrollments} from '../site/src/platform/auth.js';
+let release;
+state.supabase={from(){const chain={select:()=>chain,eq:()=>chain,maybeSingle:()=>new Promise(r=>release=r),then:(a,b)=>new Promise(r=>release=r).then(a,b)};return chain;}};
+state.currentUser={id:'old'};state.currentProfile={user_id:'new',role:'student'};
+const profile=refreshProfile();state.currentUser={id:'new'};
+release({data:{user_id:'old',role:'teacher'},error:null});await profile;
+assert.equal(state.currentProfile.user_id,'new');
+state.currentUser={id:'old'};state.currentEnrollments=[{course_id:'new'}];
+const courses=refreshEnrollments();await new Promise(r=>setTimeout(r,0));state.currentUser={id:'new'};
+release({data:[{course_id:'old'}],error:null});await courses;
+assert.equal(state.currentEnrollments[0].course_id,'new');
+console.log('Account-switch stale profile and enrollment protection passed');

@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - "site/**"
+      - "package.json"
+      - "package-lock.json"
       - "scripts/**"
       - "content/**"
       - "notebook/**"
@@ -17,6 +19,8 @@ on:
   pull_request:
     paths:
       - "site/**"
+      - "package.json"
+      - "package-lock.json"
       - "scripts/**"
       - "content/**"
       - "notebook/**"
@@ -40,6 +44,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Build portal components
+        run: npm ci && npm run build
       - name: Install CJK font for readable Chinese review screenshots
         run: |
           mkdir -p "$HOME/.local/share/fonts"
@@ -76,6 +86,7 @@ jobs:
       - name: Exercise responsive workbench, three labs, downloads and independent replay
         run: |
           node tests/test_ui_browser.cjs
+          node tests/test_teacher_browser.cjs
           node tests/test_unified_runtime_browser.cjs
       - name: Save review screenshots
         if: always()

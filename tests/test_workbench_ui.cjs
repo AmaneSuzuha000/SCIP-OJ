@@ -50,7 +50,7 @@ assert.match(css, /@media\s*\(max-width:650px\)/, "Missing small-screen layout")
 assert.equal((html.match(/<main\b/g)||[]).length, (html.match(/<\/main>/g)||[]).length,
   "Unbalanced main landmark");
 // Every page must keep its original interactive contracts while sharing visual identity.
-const app = fs.readFileSync(path.join(root, "js", "app.js"), "utf8");
+const app = fs.readFileSync(path.join(root, "..", ".portal-build/js/app.js"), "utf8");
 assert.match(html, /id="nav-to-assessment"/, "Sidebar assessment link needs an explicit guarded handler");
 assert.match(app, /getElementById\("nav-to-assessment"\)[\s\S]*?confirmLeaveIfExamDraft\(\)/,
   "Exam draft can be lost when the sidebar navigates away");

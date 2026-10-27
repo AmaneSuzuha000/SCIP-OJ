@@ -22,6 +22,7 @@ http.createServer(async (req, res) => {
     if (requested.startsWith("/docs/")) { base = path.join(root, "docs"); relative = requested.slice(6); }
     if (requested === "/README.md") { base = root; relative = "README.md"; }
     if (relative.split("/").some(part => part.startsWith("."))) { res.writeHead(403); res.end(); return; }
+    if (/^js\/(app|platform|teacher)\.js$/.test(relative)) base=path.join(root,'.portal-build');
     let file = path.resolve(base, relative);
     if (!file.startsWith(base + path.sep)) { res.writeHead(403); res.end(); return; }
     if ((await stat(file)).isDirectory()) file = path.join(file, "index.html");

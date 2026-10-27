@@ -1,3 +1,4 @@
+from source_files import component_source
 """Static shell integration checks that catch broken IDs/asset links."""
 from html.parser import HTMLParser
 from pathlib import Path
@@ -49,13 +50,13 @@ class UIContractTests(unittest.TestCase):
                     self.assertIn("leetcode.css", auditor.styles)
 
     def test_draft_is_local_and_server_submission_remains(self):
-        script = (SITE / "js/app.js").read_text(encoding="utf8")
+        script = component_source('student')
         self.assertIn('localStorage.setItem("scipoj:draft:"', script)
         self.assertIn('localStorage.removeItem("scipoj:draft:"', script)
         self.assertIn("submitAssignment", script)
 
     def test_immersive_workbench_hides_landing_and_guards_exam_draft(self):
-        js = (SITE / "js/app.js").read_text()
+        js = component_source('student')
         css = (SITE / "leetcode.css").read_text()
         self.assertIn('document.body.classList.add("workbench-active")', js)
         self.assertIn('document.body.classList.remove("workbench-active")', js)

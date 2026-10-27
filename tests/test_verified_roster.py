@@ -1,3 +1,4 @@
+from source_files import component_source
 """Supervised submission requires teacher-verified, not self-claimed, identity."""
 from pathlib import Path
 import unittest
@@ -19,7 +20,7 @@ class VerifiedRosterTests(unittest.TestCase):
         self.assertLess(sql.index('public.is_verified_course_student(a.course_id,p_user_id)'),
                         sql.index('INSERT INTO public.submissions'))
     def test_teacher_button_not_auto_verified(self):
-        teacher=(ROOT/"site/js/teacher.js").read_text()
+        teacher=component_source('teacher')
         self.assertIn("学号已匹配（未必已核验）",teacher)
         self.assertIn("confirmRosterIdentity",teacher)
         self.assertIn("教师已核验",teacher)
