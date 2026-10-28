@@ -7,12 +7,5 @@
 @import url("../workbench-v3.css");
 @import url("../spaces-v4.css?v=purposes2");
 @import url("../notebook-workspace.css");
-.course-services{display:flex;align-items:center;gap:14px;min-width:0}
-.runtime-indicator{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:12px;color:#63767b}
-.runtime-indicator:before{content:"";width:6px;height:6px;border-radius:50%;background:#c49638}
-.runtime-indicator[data-state="ready"]:before,.runtime-indicator[data-state="running"]:before{background:#15806a}
-.runtime-indicator[data-state="error"]:before{background:#c45252}
-.runtime-indicator .btn-secondary{padding:2px 6px;font-size:12px}
-@media(max-width:650px){.course-services{grid-column:2;grid-row:1;flex-direction:column;align-items:flex-end;gap:3px}}
 .study-mode .actions-bar,.study-mode .console-container,.study-mode #assignment-meta-bar,.study-mode #my-submissions-section,.study-mode .problem-sequence,.study-mode .workspace-contract,.study-mode .workbench-kicker,.study-mode #btn-open-notebook,.study-mode #btn-return-code{display:none!important}
 .study-mode #notebook-host iframe{height:calc(100vh - 250px)!important;min-height:500px}

@@ -1,0 +1,12 @@
+/* Shared interface tokens. Business themes retain their own unmigrated tokens. */
+:root{
+ --ui-font:Inter,"Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;
+ --ui-surface:#fff;--ui-canvas:#f5f7f6;--ui-ink:#203238;--ui-muted:#5f747b;
+ --ui-border:#dce7e4;--ui-primary:#075c60;--ui-primary-hover:#06494c;
+ --ui-selected:#e7f6f2;--ui-hover:#f0f7f4;--ui-focus:#247f8a;
+ --ui-radius-control:8px;--ui-radius-panel:12px;
+ --ui-header-height:74px;--ui-rail-width:250px;
+ --ui-control-height:36px;--ui-heading-size:32px;
+}
+@media(min-width:841px) and (max-width:1050px){:root{--ui-rail-width:213px}}
+@media(max-width:840px){:root{--ui-header-height:117px;--ui-rail-width:0px;--ui-control-height:44px;--ui-heading-size:28px}}

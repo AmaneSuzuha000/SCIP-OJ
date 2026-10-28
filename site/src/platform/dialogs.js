@@ -1,14 +1,16 @@
 import {state} from './state.js';
 import {isConfigured,isTeacher,signOut,signInWithGitHub,updateProfile} from './auth.js';
 import {joinCourse} from './courses.js';
+let accountEvents;
 export // ── UI 渲染与弹窗系统 ──
 function updateAuthUI() {
     const authArea = document.getElementById("auth-area");
     if (!authArea)
         return;
+    accountEvents?.abort();
     if (!isConfigured()) {
         authArea.innerHTML = `
-        <span class="user-info" style="color:var(--text-secondary); background:var(--bg-subtle); padding:0.35rem 0.65rem; border-radius:6px; font-size:0.82rem;" title="课程服务暂不可用，可使用本地练习。">
+        <span class="auth-status" title="课程服务暂不可用，可使用本地练习。">
           🌿 离线练习模式
         </span>
       `;
@@ -24,37 +26,59 @@ function updateAuthUI() {
         const isTeach = isTeacher();
         let roleBadge = "";
         if (isTeach) {
-            roleBadge = '<span class="user-badge" style="background:var(--color-purple-bg); color:var(--color-purple);">教师</span>';
+            roleBadge = '<span class="account-badge account-badge--teacher">教师</span>';
         }
         let studentBadge = "";
         if (!isTeach) {
             if (sNo) {
-                studentBadge = `<span class="user-badge" style="background:var(--color-pass-bg); color:var(--color-pass);" title="已对齐学号">${escapeHtml(sNo)}</span>`;
+                studentBadge = `<span class="account-badge" title="已对齐学号">${escapeHtml(sNo)}</span>`;
             }
             else {
-                studentBadge = `<button id="btn-bind-sno-quick" type="button" class="btn-warning" style="font-size:0.72rem; padding:0.15rem 0.45rem; border-radius:4px;" title="未绑定学号，点击填写">⚠️ 未填学号</button>`;
+                studentBadge = `<button id="btn-bind-sno-quick" type="button" class="ui-button" title="未绑定学号，点击填写">填写学号</button>`;
             }
         }
         authArea.innerHTML = `
-        <span class="user-info" style="font-size:0.85rem; color:var(--text-primary); display:inline-flex; align-items:center; gap:0.25rem;">
-          👤 <strong>${escapeHtml(name)}</strong> ${studentBadge} ${roleBadge}
-        </span>
-        <button id="btn-edit-profile" type="button" class="btn-secondary" style="font-size:0.78rem; padding:0.3rem 0.6rem;" title="修改学号与显示姓名">资料</button>
-        <button id="btn-join-course-nav" type="button" class="btn-secondary" style="font-size:0.78rem; padding:0.3rem 0.6rem;" title="加入新课程">选课</button>
-        <button id="btn-signout" type="button" class="btn-secondary" style="font-size:0.78rem; padding:0.3rem 0.6rem;">登出</button>
+        <details class="account-menu">
+          <summary id="account-menu-toggle" class="ui-button" aria-controls="account-panel" aria-expanded="false" aria-label="账号与课程选项">
+            <span>账号</span><span class="account-label">${escapeHtml(name)}</span><img class="account-caret" src="assets/icons/caret-down.svg" alt="" aria-hidden="true">
+          </summary>
+          <div id="account-panel" class="account-panel">
+            <p class="account-identity"><strong>${escapeHtml(name)}</strong>${roleBadge}${sNo ? studentBadge : ''}</p>
+            <div class="account-actions">
+              ${!isTeach && !sNo ? studentBadge : ''}
+              <button id="btn-edit-profile" type="button" class="ui-button" title="修改学号与显示姓名">个人资料</button>
+              <button id="btn-join-course-nav" type="button" class="ui-button" title="加入新课程">加入课程</button>
+              <button id="btn-signout" type="button" class="ui-button">退出账号</button>
+            </div>
+          </div>
+        </details>
       `;
+        const menu = authArea.querySelector('.account-menu');
+        const toggle = document.getElementById('account-menu-toggle');
+        const closeAccount = (restoreFocus = false) => {
+            menu.open = false;
+            if (restoreFocus) toggle.focus();
+        };
+        accountEvents = new AbortController();
+        const options = {signal:accountEvents.signal};
+        menu.addEventListener('toggle', () => toggle.setAttribute('aria-expanded', String(menu.open)), options);
+        document.addEventListener('click', event => {if (!menu.contains(event.target)) closeAccount();}, options);
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && menu.open) {event.preventDefault();closeAccount(true);}
+        }, options);
+        const accountAction = action => () => {closeAccount(true);return action();};
         const btnOut = document.getElementById("btn-signout");
         if (btnOut)
-            btnOut.onclick = () => signOut();
+            btnOut.onclick = accountAction(signOut);
         const btnEdit = document.getElementById("btn-edit-profile");
         if (btnEdit)
-            btnEdit.onclick = () => showStudentNoDialog();
+            btnEdit.onclick = accountAction(showStudentNoDialog);
         const btnJoin = document.getElementById("btn-join-course-nav");
         if (btnJoin)
-            btnJoin.onclick = () => showJoinCourseDialog();
+            btnJoin.onclick = accountAction(showJoinCourseDialog);
         const btnQuick = document.getElementById("btn-bind-sno-quick");
         if (btnQuick)
-            btnQuick.onclick = () => showStudentNoDialog();
+            btnQuick.onclick = accountAction(showStudentNoDialog);
         const teacherLink = document.getElementById("teacher-link");
         if (teacherLink) {
             teacherLink.hidden = !isTeach;
@@ -62,7 +86,7 @@ function updateAuthUI() {
     }
     else {
         authArea.innerHTML = `
-        <button id="btn-signin" type="button" class="btn-blue" style="font-size:0.82rem; padding:0.35rem 0.75rem;">
+        <button id="btn-signin" type="button" class="ui-button ui-button--primary">
           用 GitHub 登录
         </button>
       `;

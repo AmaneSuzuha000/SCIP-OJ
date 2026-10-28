@@ -4,82 +4,13 @@ body.student-page{
   --border-default:#e0e8e5;--border-subtle:#eaf0ee;--border-active:#157d77;
   --text-primary:#203238;--text-secondary:#667a7e;--text-muted:#829294;
   --brand-blue:#266aaf;--brand-blue-hover:#174f89;--brand-green:#117b72;--brand-green-hover:#075e57;
-  --rail-width:250px;
+
   background:#f5f7f6;
   color:var(--text-primary);
   font-family:Inter,"Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;
 }
 .student-page [hidden]{display:none!important}
-.student-page .navbar.workbench-topbar{
-  position:sticky;top:0;z-index:90;height:74px;
-  display:flex;align-items:center;box-sizing:border-box;
-  background:rgba(255,255,255,.97);padding:0 27px;
-  border-bottom:1px solid #e4ebe8;box-shadow:none;
-  backdrop-filter:saturate(150%) blur(14px);
-}
-.student-page .workbench-topbar .navbar-container{
-  max-width:none;width:100%;height:100%;
-  display:flex;flex-direction:row;align-items:center;gap:22px;justify-content:space-between;
-}
-.student-page .workbench-topbar .brand-section{display:flex;align-items:center;gap:19px;flex:none;min-width:0}
-.student-page .workbench-topbar .brand-logo{
-  display:inline-flex;align-items:center;gap:10px;
-  text-decoration:none;color:#1b353a;font-size:1.13rem;letter-spacing:-.055em;
-}
-.student-page .workbench-topbar .brand-logo-icon{
-  width:39px;height:39px;display:grid;place-items:center;
-  border-radius:11px;background:linear-gradient(150deg,#146f70,#103e56);
-  box-shadow:0 5px 13px rgba(25,87,87,.15);
-  font:26px/1 Georgia,serif;color:#fff;
-}
-.student-page .brand-name{font-weight:850;white-space:nowrap}.student-page .brand-name-accent{color:#24998a;padding:0 1px}
-.student-page .workbench-topbar .brand-tag{
-  font:600 11px/1.2 Inter,"Noto Sans SC",sans-serif;
-  border-left:1px solid #dce7e4;border-top:0;border-right:0;border-bottom:0;
-  border-radius:0;padding:4px 0 4px 17px;
-  background:transparent;color:#798a8e;letter-spacing:.02em;white-space:nowrap;
-}
-.student-page .topbar-route{display:flex;align-items:center;gap:13px;margin-right:auto;padding-left:13px;color:#91a09f;font-size:.8rem;white-space:nowrap}
-.student-page .topbar-route strong{color:#35565a;font-weight:680}
-.student-page .workbench-topbar .auth-section{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end;width:auto;min-width:0}
-.student-page .auth-section .btn-blue{background:#175e60;border-radius:10px;font-weight:700;padding:9px 14px!important}
-.student-page .auth-section .user-info{max-width:280px;overflow:hidden;text-overflow:ellipsis}
-.student-page .studio-rail{
-  position:fixed;inset:74px auto 0 0;z-index:65;
-  width:var(--rail-width);display:flex;flex-direction:column;gap:24px;
-  overflow:auto;padding:32px 15px 18px;
-  background:#fff;border-right:1px solid #e4eae8;
-  box-shadow:inset -1px 0 #fafcfb;
-}
-.student-page .rail-section{min-width:0}
-.student-page .rail-menu-toggle{display:none}
-.student-page .rail-section-label{font-size:.67rem;font-weight:750;letter-spacing:.16em;color:#9caeac;margin:0 0 8px 17px}
-.student-page .studio-rail .nav-links{width:100%;display:flex;flex-direction:column;gap:3px;overflow:visible;order:initial;flex-wrap:nowrap;padding:0}
-.student-page .studio-rail .nav-item{
-  display:flex;align-items:center;gap:11px;min-width:0;min-height:39px;
-  font-size:.85rem;font-weight:640;text-decoration:none;
-  padding:8px 10px 8px 12px;border-radius:11px;
-  color:#566b70;background:transparent;white-space:nowrap;
-  transition:background .18s ease,color .18s ease,transform .18s ease;
-}
-.student-page .studio-rail .nav-item:hover{color:#116b67;background:#edf7f3;transform:translateX(2px)}
-.student-page .studio-rail .nav-item.active{color:#0c635f;background:#e3f4ef;font-weight:800}
-.student-page .rail-icon{
-  display:inline-grid;place-items:center;flex:none;
-  width:28px;height:28px;border-radius:8px;color:#829795;
-  background:#f2f6f4;font:750 12px/1 ui-monospace,SFMono-Regular,Consolas,monospace;
-}
-.student-page .nav-item.active .rail-icon{color:#0a756c;background:#caede3}
-.student-page .rail-external{margin-left:auto;font-size:15px;color:#9aa9aa}
-.student-page .rail-bottom{
-  display:flex;align-items:flex-start;gap:10px;margin-top:auto;
-  background:#f4f7f5;padding:15px 13px;border-radius:13px;
-  border:1px solid #e5ece9;color:#314c50;
-}
-.student-page .rail-bottom strong,.student-page .rail-bottom small{display:block}
-.student-page .rail-bottom strong{font-size:.8rem;margin-bottom:5px}
-.student-page .rail-bottom small{font-size:.69rem;line-height:1.5;color:#7a918d}
-.student-page .rail-status-dot{width:8px;height:8px;flex:none;background:#2fa48e;border-radius:50%;margin-top:4px;box-shadow:0 0 0 4px #daf4e9}
+
 .student-page .main-content.studio-content{width:calc(100% - var(--rail-width));max-width:none;margin:0 0 0 var(--rail-width);padding:30px 38px 68px;min-width:0}
 .student-page .studio-intro{
   display:grid;grid-template-columns:minmax(0,1.2fr) minmax(290px,.78fr);
@@ -186,15 +117,14 @@ body.student-page{
 .student-page .studio-footer{margin-left:var(--rail-width);background:#fff;border-top:1px solid #e3ebe8;padding:19px 28px}
 .student-page .studio-footer .footer-container{max-width:none}
 @media(max-width:1300px){
-  .student-page .topbar-route{display:none}
+
   .student-page .studio-intro{gap:18px;padding:29px}
   .student-page .studio-method{padding:16px}
   .student-page .studio-case-grid{gap:11px}
 }
 @media(max-width:1050px){
-  body.student-page{--rail-width:213px}
   .student-page .main-content.studio-content{padding:24px}
-  .student-page .studio-rail{padding:25px 10px}
+
   .student-page .studio-intro{grid-template-columns:minmax(0,1fr)}
   .student-page .studio-method{display:none}
   .student-page .studio-case-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -206,30 +136,13 @@ body.student-page{
   .student-page .workspace-layout{grid-template-columns:minmax(0,1fr)}
 }
 @media(max-width:840px){
-  body.student-page{--rail-width:0px}
-  .student-page .navbar.workbench-topbar{height:auto;min-height:66px;padding:9px 16px}
-  .student-page .workbench-topbar .brand-section{width:auto}
-  .student-page .workbench-topbar .brand-tag{display:none}
-  .student-page .workbench-topbar .auth-section{max-width:60vw}
-  .student-page .studio-rail{position:relative;inset:auto;width:100%;height:auto;padding:8px 13px;overflow-x:auto;overflow-y:hidden;display:block;border-right:0;border-bottom:1px solid #e4eae8}
-  .student-page .studio-rail .rail-section:not(:first-child),.student-page .studio-rail .rail-bottom{display:none}
-  .student-page .studio-rail.rail-menu-open .rail-section{display:block}
-  .student-page .rail-menu-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:42px;margin-top:5px;padding:8px 12px;background:#f1f7f4;color:#285c57;border:1px solid #dfeae5;border-radius:9px;font-size:.8rem}
-  .student-page .rail-menu-toggle[aria-expanded=true] span{transform:rotate(45deg)}
-  .student-page .studio-rail.rail-menu-open .rail-section:not(:first-child){margin-top:14px}
-  .student-page .studio-rail.rail-menu-open .rail-section:not(:first-child) .rail-section-label{display:block;margin:0 0 6px 10px}
-  .student-page .studio-rail.rail-menu-open .rail-section:not(:first-child) .nav-links{flex-wrap:wrap}
-  .student-page .studio-rail .rail-section-label{display:none}
-  .student-page .studio-rail .nav-links{display:flex;flex-direction:row;flex-wrap:nowrap;gap:4px}
-  .student-page .studio-rail .nav-item{min-height:37px;flex:none}
+
   .student-page .main-content.studio-content{margin:0;padding:18px 20px 42px}
   .student-page .studio-footer{margin-left:0}
   .student-page .studio-assessment-section{scroll-margin-top:20px}
 }
 @media(max-width:650px){
-  .student-page .workbench-topbar .brand-name{font-size:1.05rem}
-  .student-page .workbench-topbar .brand-logo-icon{height:34px;width:34px;font-size:23px}
-  .student-page .workbench-topbar .auth-section .user-info{max-width:150px}
+
   .student-page .main-content.studio-content{padding:14px 12px 33px}
   .student-page .studio-intro{border-radius:17px;padding:25px 20px;min-height:0}
   .student-page .studio-intro h1{font-size:2.15rem}
@@ -247,7 +160,7 @@ body.student-page{
   .student-page .studio-intro-actions a{width:100%}
 }
 @media(prefers-reduced-motion:reduce){
- .student-page .studio-case-card,.student-page .studio-rail .nav-item{transition:none}
+ .student-page .studio-case-card{transition:none}
 }
 /* Transparent, learnable scoring stages without coupling to a future policy version. */
 .student-page .studio-grade-guide{

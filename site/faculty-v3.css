@@ -7,29 +7,10 @@ body.teacher-page{
   --brand-blue:#226f85;--brand-blue-hover:#17546b;--brand-green:#117b72;
   background:#f5f7f6;color:#203238;
 }
-.teacher-page .faculty-topbar{
-  position:sticky;top:0;z-index:80;background:rgba(255,255,255,.97);
-  border-bottom:1px solid #dde8e4;box-shadow:none;backdrop-filter:blur(16px);
-}
-.teacher-page .faculty-topbar .navbar-container{max-width:1550px;min-height:62px;gap:14px}
-.teacher-page .faculty-topbar .brand-logo{gap:10px;color:#1a3e43;font-weight:800}
-.teacher-page .faculty-topbar .brand-logo-icon{
-  display:flex;align-items:center;justify-content:center;
-  width:37px;height:37px;border-radius:10px;color:#c4f4e4;
-  background:linear-gradient(145deg,#167d76,#163b4e);font-size:25px;
-  box-shadow:0 4px 12px #13484220;
-}
+
 .teacher-page .faculty-brand-text{font-size:1.28rem;letter-spacing:-.055em}
 .teacher-page .faculty-brand-divider{color:#23ad96;padding:0 2px}
-.teacher-page .faculty-topbar .brand-tag{
-  border-left:1px solid #dee8e4;padding-left:16px;color:#718784;
-  font-size:.75rem;letter-spacing:0;
-}
-.teacher-page .faculty-topbar .nav-links{gap:6px}
-.teacher-page .faculty-topbar .nav-item{
-  color:#5c7473;font-size:.8rem;padding:10px 12px;border-radius:10px;
-}
-.teacher-page .faculty-topbar .nav-item:hover{background:#eaf4f0;color:#116c63}
+
 .teacher-page .faculty-content{
   max-width:1470px;margin:0 auto 50px;padding:27px 32px 30px;
 }
@@ -124,16 +105,10 @@ body.teacher-page{
 .teacher-page footer strong{color:#28615d}
 @media(max-width:1100px){
   .teacher-page .faculty-content{padding:23px 20px 32px}
-  .teacher-page .faculty-topbar .brand-tag{display:none}
+
 }
 @media(max-width:780px){
-  .teacher-page .faculty-topbar .navbar-container{
-    flex-wrap:wrap;align-items:center;gap:6px;
-  }
-  .teacher-page .faculty-topbar .nav-links{
-    order:3;width:100%;overflow-x:auto;flex-wrap:nowrap;
-  }
-  .teacher-page .faculty-topbar .auth-section{margin-left:auto;width:auto}
+
   .teacher-page .faculty-content{padding:15px 12px 27px}
   .teacher-page .faculty-hero{padding:23px 22px;border-radius:16px}
   .teacher-page .faculty-hero-art{display:none}

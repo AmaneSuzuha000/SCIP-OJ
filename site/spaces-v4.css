@@ -1,31 +1,10 @@
 /* Selected SCIP/LAB task-first design: course information and learning actions. */
 html{scroll-behavior:auto}
-body.student-page{--rail-width:236px;background:#fff;color:#152a32;font-size:15px}
+body.student-page{background:#fff;color:#152a32;font-size:15px}
 .student-page .ui-icon{display:inline-block;width:21px;height:21px;object-fit:contain;flex:none;vertical-align:middle}
-.student-page .workbench-topbar{background:#fff!important;backdrop-filter:none!important}
-.student-page .workbench-topbar .navbar-container{gap:22px}
-.student-page .brand-logo-icon{background:#075c60!important;box-shadow:none!important;border-radius:10px!important}
-.student-page .brand-logo-icon .ui-icon{width:30px;height:30px;filter:brightness(0) invert(1)}
-.student-page .brand-logo .brand-name{font-size:23px;font-weight:800}
-.student-page .workbench-topbar .brand-tag{font-size:12px}
-.student-page .space-switcher{display:flex;align-self:stretch;align-items:stretch;gap:28px;margin-right:auto;white-space:nowrap}
-.student-page .space-switcher a{display:flex;align-items:center;color:#5d7279;font-weight:650;font-size:14px;position:relative;text-decoration:none;padding:0 2px}
-.student-page .space-switcher a.active{color:#122d34;font-weight:800}
-.student-page .space-switcher a.active:after{content:"";position:absolute;bottom:13px;left:0;right:0;height:2px;background:#087a76}
-.student-page .studio-rail{padding:34px 18px 20px;gap:23px;background:#fff}
-.student-page .rail-section-label{font-size:12px;letter-spacing:.02em;color:#6f858a;margin:0 0 12px 8px}
-.student-page .studio-rail .nav-links{gap:7px}
-.student-page .studio-rail .nav-item{min-height:44px;gap:14px;font-size:14px;font-weight:600;padding:11px 13px;color:#34515b;border-radius:9px;white-space:normal;line-height:1.45}
-.student-page .studio-rail .nav-item:hover{transform:none;background:#f1f8f6}
-.student-page .studio-rail .nav-item.active{background:#e7f6f2;color:#075e60;font-weight:750}
-.student-page .studio-rail .nav-item.active .ui-icon{filter:invert(28%) sepia(24%) saturate(1674%) hue-rotate(133deg) brightness(89%)}
-.student-page .rail-section:not(:first-child){border-top:1px solid #e6ecea;padding-top:21px}
-.student-page .rail-teacher{margin-top:auto;padding-top:18px;border-top:1px solid #e3eae7}
+
 .student-page .main-content.studio-content{padding:32px 42px 40px;background:#fff}
-.student-page .space-heading{margin:0 0 20px}
-.student-page .space-heading h1{font-size:44px;line-height:1.3;letter-spacing:-.055em;color:#132931;margin:0 0 8px;font-weight:800}
-.student-page .space-heading>p{font-size:18px;line-height:1.65;color:#4e6771;margin:0}
-.student-page .space-heading .space-eyebrow{font-size:12px;letter-spacing:.1em;color:#14756f;font-weight:700;margin-bottom:9px}
+
 .student-page .learning-overview .studio-case-grid{display:block}
 .student-page .learning-feature{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);align-items:center;gap:12px;min-height:0;padding:0 0 26px;margin:0;background:#fff;color:#132931;border-radius:0;overflow:visible;border:0;box-shadow:none}
 .student-page .learning-feature:before{display:none}
@@ -96,8 +75,7 @@ body.student-page{--rail-width:236px;background:#fff;color:#152a32;font-size:15p
 .student-page .assessment-columns h3{font-size:17px;margin:0 0 8px}
 .student-page .assessment-columns p{font-size:14px;color:#526e76;line-height:1.85;margin:0 0 9px}
 .student-page .studio-assessment-section{margin-top:0}
-.student-page .studio-assessment-section .space-heading{margin-bottom:30px}
-.student-page #submission-overview .space-heading{margin-bottom:27px}
+
 .student-page #submissions-host #my-submissions-section{padding:0!important;margin:0!important;border:0!important}
 .student-page #submissions-host .section-header{flex-wrap:wrap;gap:14px}
 .student-page #submissions-host h3{font-size:21px}
@@ -110,15 +88,14 @@ body.student-page{--rail-width:236px;background:#fff;color:#152a32;font-size:15p
 .student-page .studio-footer .footer-container{gap:8px}
 .student-page.workbench-active .main-content.studio-content{padding-top:16px}
 @media(max-width:1200px){
- .student-page .brand-tag{display:none!important}
+
  .student-page .learning-feature{grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr)}
  .student-page .learning-feature h2{font-size:32px}
  .student-page .learning-feature-art{margin:-25px -14px 0 -50px}
  .student-page .main-content.studio-content{padding-left:30px;padding-right:30px}
 }
 @media(max-width:1050px){
- body.student-page{--rail-width:210px}
- .student-page .studio-rail{padding:25px 12px}
+
  .student-page .learning-feature{grid-template-columns:1fr}
  .student-page .learning-feature-art{display:none}
  .student-page .learning-steps{max-width:620px}
@@ -127,30 +104,15 @@ body.student-page{--rail-width:236px;background:#fff;color:#152a32;font-size:15p
  .student-page .course-path li:nth-child(2){border-right:0}
 }
 @media(max-width:840px){
- body.student-page{--rail-width:0px}
- .student-page .workbench-topbar .navbar-container{display:grid;grid-template-columns:1fr auto;gap:8px 15px}
- .student-page .navbar.workbench-topbar{padding:9px 16px 0;min-height:109px}
- .student-page .workbench-topbar .auth-section{max-width:none;grid-column:2;grid-row:1}
+
  .student-page .open-learning-label{grid-column:2;grid-row:1}
- .student-page .space-switcher{grid-column:1/-1;grid-row:2;justify-content:center;gap:40px;min-height:42px;margin:0}
- .student-page .space-switcher a.active:after{bottom:0}
- .student-page .studio-rail{padding:7px 12px;gap:0}
- .student-page #rail-primary .nav-links{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px}
- .student-page #rail-primary [data-space-nav="learn"]{grid-template-columns:repeat(3,minmax(0,1fr))}
- .student-page #rail-primary .nav-item{flex-direction:column;justify-content:center;gap:4px;min-height:58px;padding:7px 3px;font-size:12px}
- .student-page .rail-section:not(:first-child){padding-top:14px}
- .student-page .studio-rail .nav-item{white-space:nowrap;min-height:40px;gap:6px;padding:8px 10px;font-size:13px}
- .student-page .studio-rail .nav-item .ui-icon{width:18px;height:18px}
- .student-page .rail-teacher{border:0;padding:0;margin:0}
- .student-page .rail-menu-toggle{margin-top:7px}
+
  .student-page .main-content.studio-content{padding:24px 20px 35px}
  .student-page .studio-footer{padding:16px 20px}
  .student-page .course-cases,.student-page .assessment-guide{scroll-margin-top:130px}
 }
 @media(max-width:650px){
- .student-page .space-heading{margin-bottom:26px}
- .student-page .space-heading h1{font-size:30px}
- .student-page .space-heading>p{font-size:15px}
+
  .student-page .main-content.studio-content{padding:24px 17px 32px}
  .student-page .learning-feature{padding-bottom:27px}
  .student-page .learning-feature h2{font-size:29px}

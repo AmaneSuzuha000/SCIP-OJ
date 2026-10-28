@@ -69,7 +69,7 @@
       color: var(--text-secondary);
     }
   </style>
-  <link rel="stylesheet" href="styles/shell.css?v=nav2">
+  <link rel="stylesheet" href="styles/shell.css?v=ui-foundation1">
 </head>
 <body class="document-page">
   <!-- PLATFORM_HEADER -->
@@ -96,17 +96,11 @@
       const params = new URLSearchParams(location.search);
       const path = params.get("path") || ("docs/" + (params.get("f") || "学生指南.md"));
       const name = path.split("/").pop().replace(/\.md$/, "");
-      const learning = params.get("space") === "learn";
-      for (const [id, selected] of [['nav-course-space', !learning], ['nav-learning-space', learning]]) {
-        const link = document.getElementById(id);
-        link.classList.toggle('active', selected);
-        if (selected) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
-      }
-      document.querySelector('.section-navigation').hidden = learning;
+      const context = window.ScipOJNavigation.resolveContext(location.href);
+      const learning = context.space === "learn";
       const backLink = document.getElementById("doc-back-link");
-      backLink.href = learning ? "index.html#learn" : "index.html#course";
+      backLink.href = context.returnTo;
       backLink.textContent = learning ? "← 返回拓展学习" : "← 返回课程教学";
-      document.querySelector(".brand-logo").href = backLink.href;
       if (learning) document.getElementById("doc-platform-label").textContent = "SCIP/LAB · 拓展学习资源";
       document.title = "SCIP/LAB · " + name;
       const mdEl = document.getElementById("md");

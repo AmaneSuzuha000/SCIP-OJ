@@ -15,6 +15,8 @@ on:
       - "tests/test_unified_runtime_browser.cjs"
       - "tests/test_environment_browser.cjs"
       - "tests/test_math_browser.cjs"
+      - "tests/test_navigation_browser.cjs"
+      - "tests/test_teacher_browser.cjs"
       - "judge/ie_des01_reference.py"
       - "tests/test_ui_browser.cjs"
       - ".github/workflows/ui-visual-smoke.yml"
@@ -31,6 +33,8 @@ on:
       - "tests/test_unified_runtime_browser.cjs"
       - "tests/test_environment_browser.cjs"
       - "tests/test_math_browser.cjs"
+      - "tests/test_navigation_browser.cjs"
+      - "tests/test_teacher_browser.cjs"
       - "judge/ie_des01_reference.py"
       - "tests/test_ui_browser.cjs"
       - ".github/workflows/ui-visual-smoke.yml"
@@ -90,6 +94,7 @@ jobs:
         run: |
           node tests/test_ui_browser.cjs
           node tests/test_teacher_browser.cjs
+          node tests/test_navigation_browser.cjs
           node tests/test_environment_browser.cjs
           node tests/test_math_browser.cjs
           node tests/test_practice_browser.cjs

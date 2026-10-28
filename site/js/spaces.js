@@ -1,34 +1,8 @@
 /* View state only. Authentication, submissions and grades remain in the platform layer. */
 (function (root) {
   "use strict";
-  const notebooks = [
-    ['01_P001_knapsack_PySCIPOpt.ipynb','0-1 背包问题','course'],
-    ['02_P002_assignment_PySCIPOpt.ipynb','指派问题','course'],
-    ['03_IE_Facility_Location_PySCIPOpt.ipynb','容量约束设施选址','learn'],
-    ['04_IE_Bin_Packing_PySCIPOpt.ipynb','仓储装箱','learn'],
-    ['05_IE_Flow_Shop_PySCIPOpt.ipynb','排列流水车间','learn'],
-    ['06_IE_Stochastic_Inventory_PySCIPOpt.ipynb','单周期随机库存优化','learn'],
-  ].map(([path,title,space])=>({path,title,space}));
-  function parseRoute(hash) {
-    const key = String(hash || "").replace(/^#/, "");
-    if (key.startsWith('notebook/')) {
-      let path;try {path=decodeURIComponent(key.slice(9));} catch {path='';}
-      const notebook=notebooks.find(item=>item.path===path);
-      if (notebook) return {space:notebook.space,view:'notebook',key,notebook,anchor:null};
-    }
-    if (["course", "course-labs", "course-assessments"].includes(key)) {
-      return { space: "course", view: "overview", key,
-        anchor: key === "course-labs" ? "course-lab-list" : key === "course-assessments" ? "course-assessments" : null };
-    }
-    if (["problem-list-section", "list"].includes(key)) return { space: "course", view: "problems", key: "problem-list-section", anchor: null };
-    if (key === "submissions") return { space: "course", view: "records", key, anchor: null };
-    if (/^[A-Z][A-Z0-9_-]{0,31}$/.test(key)) return { space: "course", view: "problem", key, problemId: key, anchor: null };
-    if (["learn", "case-library", "learn-notebooks", "course-cases"].includes(key)) {
-      const canonical = key === "course-cases" ? "case-library" : key;
-      return { space: "learn", view: "overview", key: canonical, anchor: canonical === "learn" ? null : canonical };
-    }
-    return { space: "course", view: "overview", key: "course", anchor: null };
-  }
+  const navigation = typeof module !== 'undefined' && module.exports ? require('./navigation.js') : root.ScipOJNavigation;
+  const {notebooks, parseRoute} = navigation;
 
   function activate(route, doc = root.document) {
     if (!doc) return;
@@ -44,7 +18,7 @@
       link.classList.toggle("active", selected);
       if (selected) link.setAttribute("aria-current", "page"); else link.removeAttribute("aria-current");
     }
-    const selectedKey = route.view === 'notebook' ? (route.space==='course'?'course-labs':'learn-notebooks') : route.view === "problem" ? "problem-list-section" : route.key;
+    const selectedKey = navigation.sectionForRoute(route);
     for (const link of doc.querySelectorAll("[data-route]")) {
       const selected = link.dataset.route === selectedKey;
       link.classList.toggle("active", selected);
