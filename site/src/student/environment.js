@@ -1,4 +1,6 @@
 import {syncExecutionButtons} from './execution.js';
+import {state} from './state.js';
+import {showStudyNotebook} from './study.js';
 
 export function initEnvironment() {
     const indicator = document.getElementById('runtime-indicator');
@@ -13,7 +15,11 @@ export function initEnvironment() {
         syncExecutionButtons();
     }
     function prepare() {
-        window.ScipOJRuntime?.prewarm().catch(() => {});
+        if (state.studyNotebook) {
+            showStudyNotebook(state.studyNotebook, state.routeSeq);
+        } else {
+            window.ScipOJRuntime?.prewarm().catch(() => {});
+        }
         refresh();
     }
     retry.onclick = prepare;

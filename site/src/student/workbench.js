@@ -160,6 +160,12 @@ export function closeWorkspace(updateHash = true) {
 }
 export /** 打开指定题目工作区 */
 async function openProblem(path, id) {
+    state.studyNotebook = null;
+    document.getElementById('workspace').classList.remove('study-mode');
+    const back = document.getElementById('btn-back-to-list');
+    back.href = '#list';
+    back.textContent = '← 返回课程作业';
+    leaveNotebookView();
     state.problemLoaded = false;
     stopPracticeRun(true);
     for (const button of ['btn-grade','btn-run-testcase']) document.getElementById(button).disabled = true;
