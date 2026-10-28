@@ -14,5 +14,5 @@
 .runtime-indicator[data-state="error"]:before{background:#c45252}
 .runtime-indicator .btn-secondary{padding:2px 6px;font-size:12px}
 @media(max-width:650px){.course-services{grid-column:2;grid-row:1;flex-direction:column;align-items:flex-end;gap:3px}}
-.study-mode .actions-bar,.study-mode .console-container,.study-mode #assignment-meta-bar,.study-mode #my-submissions-section,.study-mode .problem-sequence,.study-mode .workspace-contract,.study-mode .workbench-kicker,.study-mode .editor-toolbar-actions button{display:none!important}
+.study-mode .actions-bar,.study-mode .console-container,.study-mode #assignment-meta-bar,.study-mode #my-submissions-section,.study-mode .problem-sequence,.study-mode .workspace-contract,.study-mode .workbench-kicker,.study-mode #btn-open-notebook,.study-mode #btn-return-code{display:none!important}
 .study-mode #notebook-host iframe{height:calc(100vh - 250px)!important;min-height:500px}
