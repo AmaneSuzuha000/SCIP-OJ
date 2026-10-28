@@ -1,6 +1,8 @@
 import {state} from './state.js';
 import {getCodeValue,loadJSON,loadText,escapeHtml,setCodeValue,publicSampleInstance} from './shared.js';
 import {refreshSubmissionsList,startSubmissionsPolling} from './submissions.js';
+import {beginPracticeRun,stopPracticeRun,setRunStatus} from './execution.js';
+import {runPractice} from './practice.js';
 export async function confirmLeaveIfExamDraft() {
     if (window.ScipOJExam?.getPolicy() === "standard" ||
         getCodeValue().trim() === state.currentTemplate.trim())
@@ -116,6 +118,7 @@ export function placeSubmissionPanel(globalHistory) {
         leaderboard.hidden = globalHistory;
 }
 export function closeWorkspace(updateHash = true) {
+    stopPracticeRun(true);
     leaveNotebookView();
     state.openSeq++;
     state.assignmentFetchSeq++;
@@ -146,6 +149,8 @@ export function closeWorkspace(updateHash = true) {
 }
 export /** 打开指定题目工作区 */
 async function openProblem(path, id) {
+    stopPracticeRun(true);
+    for (const button of ['btn-grade','btn-run-testcase']) document.getElementById(button).disabled = true;
     const seq = ++state.openSeq;
     state.activeProblemId = id;
     state.activeAssignment = null;
@@ -471,21 +476,26 @@ function setupActionButtons(meta, id) {
                 return;
             }
             showConsoleTab("result");
-            btnRunCustom.disabled = true;
-            reportEl.textContent = "执行自定义测试…";
+            const userCode = getCodeValue();
+            const run = beginPracticeRun();
+            if (!run) return;
             try {
                 if (!window.ScipOJRuntime?.ensureReady)
                     throw new Error("Python WASM 运行环境不可用");
-                await window.ScipOJRuntime.ensureReady();
-                const result = await window.ScipOJRuntime.runSolve(getCodeValue(), instance, Math.min(Number(meta.time_limit_sec) || 15, 30));
+                const result = await window.ScipOJRuntime.runSolve(userCode, instance,
+                    Math.min(Number(meta.time_limit_sec) || 15, 30), run.update);
+                if (!run.current()) return;
+                setRunStatus('done', '✓ 测试运行完成');
                 reportEl.textContent = JSON.stringify({ kind: "custom_test", result,
                     note: "仅运行用户自定义输入；不验证最优性、不影响正式成绩。" }, null, 2);
             }
             catch (error) {
+                if (!run.current()) return;
+                setRunStatus('system_error', '运行失败');
                 reportEl.textContent = "运行错误（不计正式分）：\n" + String(error?.message || error);
             }
             finally {
-                btnRunCustom.disabled = false;
+                run.finish();
             }
         };
     // ── 练习评分（浏览器 WASM 本地真跑，不写入正式数据库） ──
@@ -494,43 +504,23 @@ function setupActionButtons(meta, id) {
             return;
         showConsoleTab("result");
         const userCode = getCodeValue();
-        const grader = meta.grader || "knapsack";
         const timeLimitSec = meta.time_limit_sec || 10;
-        btnGradeL1.disabled = true;
-        reportEl.textContent = "";
-        statusEl.className = "status-badge";
-        statusEl.innerHTML = `<span class="badge badge-running">⏳ 正在准备运行环境…</span>`;
-        let runtimeAvailable = false;
-        if (window.ScipOJRuntime && typeof window.ScipOJRuntime.ensureReady === "function") {
-            try {
-                await window.ScipOJRuntime.ensureReady((msg) => {
-                    statusEl.innerHTML = `<span class="badge badge-running">⏳ ${escapeHtml(msg)}</span>`;
-                });
-                runtimeAvailable = true;
-            }
-            catch (err) {
-                console.warn("Python WASM 初始化降级:", err);
-            }
-        }
+        const run = beginPracticeRun();
+        if (!run) return;
         try {
-            let report;
-            if (runtimeAvailable) {
-                statusEl.innerHTML = `<span class="badge badge-running">⚙️ 正在运行练习（超时限制 ${timeLimitSec}s）...</span>`;
-                const studentSolve = async (instance) => {
-                    return await window.ScipOJRuntime.runSolve(userCode, instance, timeLimitSec);
-                };
-                if (grader === "assignment") {
-                    report = await window.ScipOJAssignment.runL1Assignment(studentSolve, meta);
-                }
-                else {
-                    report = await window.ScipOJJudge.runL1(studentSolve, meta);
-                }
-                report.execution_mode = "python-wasm-student-code";
-                report.execution_note = "浏览器 Python WASM 真实执行（练习自测，不写正式数据库）";
-            }
-            else {
-                throw new Error("运行环境未能启动，未执行代码。请重试或从课程实验打开 Notebook。");
-            }
+            if (!window.ScipOJRuntime?.ensureReady)
+                throw new Error("Python WASM 运行环境不可用");
+            let caseNumber = 0;
+            const studentSolve = async (instance) => {
+                if (!run.current()) throw new Error('运行已取消');
+                const number = ++caseNumber;
+                return await window.ScipOJRuntime.runSolve(userCode, instance, timeLimitSec,
+                    message => run.update(`测试 ${number}/${meta.n_instances_l1 ?? 3} · ${message}`));
+            };
+            const report = await runPractice(studentSolve, meta);
+            report.execution_mode = "python-wasm-student-code";
+            report.execution_note = "浏览器 Python WASM 真实执行（练习自测，不写正式数据库）";
+            if (!run.current()) return;
             reportEl.textContent = JSON.stringify({ ...report, layer: "练习" }, null, 2);
             const isPass = report.passed;
             statusEl.innerHTML = isPass
@@ -544,12 +534,13 @@ function setupActionButtons(meta, id) {
             window.ScipOJPlatform?.showToast(isPass ? `练习通过：${report.score} 分` : `练习未及格：${report.score} 分`, isPass ? "success" : "warning");
         }
         catch (e) {
+            if (!run.current()) return;
             statusEl.innerHTML = `<span class="badge badge-system_error">评测异常</span>`;
             reportEl.textContent = "执行异常:\n" + String(e?.stack || e?.message || e);
             window.ScipOJPlatform?.showToast("练习执行异常: " + (e?.message || e), "error");
         }
         finally {
-            btnGradeL1.disabled = false;
+            run.finish();
         }
     };
     // ── 提交正式作业（服务端权威评测 + Actions） ──
@@ -649,4 +640,6 @@ function setupActionButtons(meta, id) {
             window.ScipOJPlatform?.showToast("提交记录已刷新", "info");
         };
     }
+    btnGradeL1.disabled = false;
+    btnRunCustom.disabled = false;
 }

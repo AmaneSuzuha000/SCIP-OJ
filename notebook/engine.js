@@ -19,13 +19,15 @@
     if (notebook && changed) notebook.content.model.contentChanged.disconnect(changed);
     notebook = changed = null;
   }
-  function reset() {
+  function reset(reason) {
     generation++;
     notebookQueue = Promise.resolve();
     managedWidgets.clear();
     detachNotebook();
     frame?.remove(); frame = null; appPromise = null; readyApp = null;
-    window.dispatchEvent(new Event('scip-runtime-reset'));
+    const event = new Event('scip-runtime-reset');
+    event.message = reason?.message;
+    window.dispatchEvent(event);
   }
   function ensureReady(onProgress) {
     if (appPromise) return appPromise;
@@ -68,7 +70,7 @@
   function encode(value) {
     return btoa(Array.from(new TextEncoder().encode(JSON.stringify(value)), c => String.fromCharCode(c)).join(''));
   }
-  async function runSolve(code, instance, seconds = 15) {
+  async function runSolve(code, instance, seconds = 15, onProgress) {
     if (busy) throw new Error('请等待当前运行结束');
     busy = true;
     let kernel, timer;
@@ -76,10 +78,22 @@
       const app = await ensureReady();
       const specs = app.serviceManager.kernelspecs.specs;
       const name = Object.keys(specs.kernelspecs).find(n => /xpython|xeus/i.test(n)) || specs.default;
-      const execution = (async () => {
-        const epoch = generation;
+      const epoch = generation;
+      function bounded(task, milliseconds, message) {
+        const timeout = new Promise((_, reject) => {
+          timer = setTimeout(() => { const error = new Error(message); reset(error); reject(error); }, milliseconds);
+        });
+        return Promise.race([task, timeout]).finally(() => clearTimeout(timer));
+      }
+      onProgress?.('正在启动 Python 内核，首次使用需要下载运行文件…');
+      await bounded((async () => {
         kernel = await app.serviceManager.kernels.startNew({name});
         if (epoch !== generation) { await kernel.shutdown(); throw new Error('运行已取消'); }
+        await kernel.info;
+        if (epoch !== generation) throw new Error('运行已取消');
+      })(), 120000, 'Python 内核启动超时，请检查网络后重试；作业代码已保留。');
+      onProgress?.('正在执行代码…');
+      const execution = (async () => {
         const payload = encode({code, instance});
         const source = `import json as __j, base64 as __b\n__p=__j.loads(__b.b64decode('${payload}'))\n__scope={'__name__':'__student__'}\nexec(compile(__p['code'], 'solution.py', 'exec'), __scope)\n__scip_result=__scope['solve'](__p['instance'])`;
         const future = kernel.requestExecute({code:source,stop_on_error:true,store_history:false,user_expressions:{result:"__import__('base64').b64encode(__import__('json').dumps(__scip_result,allow_nan=False).encode()).decode()"}});
@@ -91,10 +105,8 @@
         if (!/^['"][A-Za-z0-9+/=]*['"]$/.test(encoded)) throw new Error('返回值格式错误');
         return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(encoded.slice(1,-1)), c=>c.charCodeAt(0))));
       })();
-      const timeout = new Promise((_, reject) => {
-        timer = setTimeout(() => { reset(); reject(new Error('运行超时，环境已重置；作业代码已保留。')); }, Math.max(.01, Math.min(Number(seconds) || 15, 60))*1000);
-      });
-      return await Promise.race([execution, timeout]);
+      return await bounded(execution, Math.max(.01, Math.min(Number(seconds) || 15, 60))*1000,
+        '运行超时，环境已重置；作业代码已保留。');
     } finally {
       clearTimeout(timer);
       // A timed-out iframe is destroyed, which terminates its kernel workers.

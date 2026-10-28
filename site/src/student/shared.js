@@ -1,4 +1,5 @@
 import {state} from './state.js';
+import {sampleInstance} from './practice.js';
 export async function loadJSON(path) {
     const r = await fetch(new URL(path, state.BASE));
     if (!r.ok)
@@ -38,12 +39,7 @@ export function normalizeDifficulty(value) {
     return "medium";
 }
 export function publicSampleInstance(meta) {
-    const seed = Number(meta.seed_base || 20261021);
-    const instance = (meta.grader === "assignment"
-        ? window.ScipOJAssignment?.genAssignment(seed)
-        : window.ScipOJJudge?.genKnapsack(seed)) || {};
-    const { optimal_value: unusedOracle, ...publicInstance } = instance;
-    return publicInstance;
+    return sampleInstance(meta);
 }
 export function escapeHtml(s) {
     if (s == null)
