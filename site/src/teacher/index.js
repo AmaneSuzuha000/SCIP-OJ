@@ -3,6 +3,7 @@ import {create as gradebook} from './gradebook.js';
 import {create as evidence} from './evidence.js';
 import {create as roster} from './roster.js';
 import {create as assignments} from './assignments.js';
+import {create as similarity} from './similarity.js';
 /**
  * SCIP-OJ 教师控制台 — 成绩中心、评测证据台、花名册对齐与作业发布
  * 依赖: ScipOJPlatform (platform.js)
@@ -86,6 +87,7 @@ Object.assign(context.handlers,gradebook(context,{esc,formatTime}));
 Object.assign(context.handlers,evidence(context,{esc,formatTime}));
 Object.assign(context.handlers,roster(context,{esc,formatTime}));
 Object.assign(context.handlers,assignments(context,{esc,formatTime}));
+Object.assign(context.handlers,similarity(context,{esc,formatTime}));
 initializedForUser = ScipOJPlatform.getUser()?.id || null;
 context.courseSelect = document.getElementById("course-select");
 context.inviteCodeEl = document.getElementById("course-invite-code");
@@ -199,6 +201,7 @@ context.rosterArea = document.getElementById("roster-area");
 context.filterProblem = document.getElementById("filter-problem");
 context.filterKeyword = document.getElementById("filter-keyword");
 context.btnRefresh = document.getElementById("btn-refresh");
+context.btnSimilarityAudit = document.getElementById("btn-similarity-audit");
 context.btnExportCsv = document.getElementById("btn-export-csv");
 context.btnBatchRegrade = document.getElementById("btn-batch-regrade");
 context.btnRegradeProblem = document.getElementById("btn-regrade-problem");
@@ -210,9 +213,15 @@ if (context.currentCourseId) {
     void context.handlers.loadGradebook(context.currentCourseId);
 }
 if (context.filterProblem)
-    context.filterProblem.onchange = () => context.handlers.renderGradebookTable();
+    context.filterProblem.onchange = () => {
+        context.handlers.resetGradebookPage?.();
+        context.handlers.renderGradebookTable();
+    };
 if (context.filterKeyword)
-    context.filterKeyword.oninput = () => context.handlers.renderGradebookTable();
+    context.filterKeyword.oninput = () => {
+        context.handlers.resetGradebookPage?.();
+        context.handlers.renderGradebookTable();
+    };
 if (context.btnRefresh) {
     context.btnRefresh.onclick = async () => {
         if (!context.currentCourseId)
@@ -326,6 +335,12 @@ if (context.btnRegradeProblem) {
             context.btnRegradeProblem.disabled = false;
             context.batchProgressBar.hidden = true;
         }
+    };
+}
+// ── 相似度初筛导出 ──
+if (context.btnSimilarityAudit) {
+    context.btnSimilarityAudit.onclick = () => {
+        context.handlers.runSimilarityAuditForCurrentProblem();
     };
 }
 // ── 导出成绩 CSV ──

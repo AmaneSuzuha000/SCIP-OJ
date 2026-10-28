@@ -133,6 +133,7 @@
 
           <div style="margin-left:auto; display:flex; gap:0.5rem; flex-wrap:wrap;">
             <button id="btn-refresh" type="button" class="btn-secondary">刷新</button>
+            <button id="btn-similarity-audit" type="button" class="btn-secondary" title="导出当前题目代码相似度初筛候选（仅作人工核验线索）">相似度初筛导出</button>
             <button id="btn-batch-regrade" type="button" class="btn-warning">批量复判选中项</button>
             <button id="btn-regrade-problem" type="button" class="btn-secondary" title="重判当前筛选题目的全班提交">整题一键重判</button>
             <button id="btn-export-csv" type="button" class="btn-blue">导出成绩 CSV</button>
@@ -159,6 +160,11 @@
           <div style="margin-bottom:1.25rem;">
             <label style="font-size:0.85rem; color:var(--text-secondary); font-weight:600;">⏱️ 自动化评测时间线</label>
             <ul id="detail-timeline" class="timeline"></ul>
+          </div>
+
+          <div id="detail-environment-meta" style="margin-bottom:1rem; padding:0.5rem 0.75rem; background:var(--bg-surface); border:1px solid var(--border-default); border-radius:6px; font-size:0.82rem;" hidden>
+            <span style="color:var(--text-secondary);">评测镜像指纹 (Digest):</span>
+            <code id="detail-image-digest-val" style="margin-left:0.5rem; font-family:var(--font-mono); color:var(--text-primary); word-break:break-all;"></code>
           </div>
 
           <div class="form-grid" style="margin-top:1rem;">

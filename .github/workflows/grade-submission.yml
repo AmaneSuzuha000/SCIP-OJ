@@ -54,6 +54,9 @@ jobs:
           docker build --pull --file judge/Dockerfile.sandbox --tag scip-oj-student:ci .
           docker run --rm --network none --entrypoint python scip-oj-student:ci \
             -c 'from pyscipopt import Model; print("SCIP image ready")'
+          IMAGE_DIGEST=$(docker image inspect scip-oj-student:ci --format '{{if .RepoDigests}}{{index .RepoDigests 0}}{{else}}{{.Id}}{{end}}')
+          echo "IMAGE_DIGEST=$IMAGE_DIGEST" >> $GITHUB_ENV
+          echo "Built sandbox image with digest: $IMAGE_DIGEST"
       - name: Run frozen judge
         if: steps.claim.outputs.claimed == 'true'
         run: python -m scripts.run_formal_grade

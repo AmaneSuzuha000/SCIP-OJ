@@ -7,6 +7,7 @@ and compute the exact optimum on the trusted judge host only.
 from __future__ import annotations
 
 import random
+from judge.ie_des01_reference import reference_simulate, workload
 
 
 def private_knapsack(seed: int) -> dict:
@@ -48,3 +49,36 @@ def private_assignment(seed: int) -> dict:
         dp = nxt
     return {"n": n, "costs": costs,
             "optimal_value": float(dp[(1 << n) - 1])}
+
+
+def private_ie_des01(seed: int) -> dict:
+    rng = random.Random(seed)
+    arrival_mean = round(rng.uniform(6.0, 15.0), 2)
+    service_mean = round(rng.uniform(10.0, 24.0), 2)
+    servers = rng.randint(2, 5)
+    horizon = rng.randint(480, 960)
+    warmup = rng.randint(60, 120)
+    instance_seed = rng.randint(1, 0x7FFFFFFF)
+
+    params = {
+        "arrivalMean": arrival_mean,
+        "serviceMean": service_mean,
+        "serversA": servers,
+        "serversB": servers,
+        "horizon": horizon,
+        "warmup": warmup,
+        "replications": 1,
+        "seed": instance_seed,
+    }
+    jobs = workload(params, instance_seed)
+    oracle_res = reference_simulate(jobs, servers, warmup, horizon)
+
+    return {
+        "arrivalMean": arrival_mean,
+        "serviceMean": service_mean,
+        "servers": servers,
+        "horizon": horizon,
+        "warmup": warmup,
+        "seed": instance_seed,
+        "optimal_value": oracle_res,
+    }

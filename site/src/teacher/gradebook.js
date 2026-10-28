@@ -1,4 +1,11 @@
 export function create(context,{esc,formatTime}) {
+let currentPage = 1;
+let pageSize = 50;
+
+function resetGradebookPage() {
+    currentPage = 1;
+}
+
 async function loadGradebook(courseId) {
     if (!context.rosterArea) {
         console.error("[Teacher] #roster-area missing");
@@ -11,6 +18,7 @@ async function loadGradebook(courseId) {
         context.handlers.updateFacultyMetrics(context.currentRosterData);
         await context.handlers.loadCourseAssignments(courseId);
         context.handlers.updateProblemFilterOptions();
+        resetGradebookPage();
         context.handlers.renderGradebookTable();
     }
     catch (err) {
@@ -66,12 +74,25 @@ function renderGradebookTable() {
         context.rosterArea.innerHTML = '<p style="color:var(--text-secondary); padding:1.25rem;">当前筛选条件下暂无成绩记录。</p>';
         return;
     }
+    const totalCount = filtered.length;
+    const effectivePageSize = pageSize > 0 ? pageSize : totalCount;
+    const totalPages = Math.max(1, Math.ceil(totalCount / effectivePageSize));
+    if (currentPage > totalPages) {
+        currentPage = totalPages;
+    }
+    if (currentPage < 1) {
+        currentPage = 1;
+    }
+    const startIndex = (currentPage - 1) * effectivePageSize;
+    const endIndex = Math.min(startIndex + effectivePageSize, totalCount);
+    const pageRows = filtered.slice(startIndex, endIndex);
+
     const table = document.createElement("table");
     table.className = "roster-table";
     table.innerHTML = `
         <thead>
           <tr>
-            <th style="width:36px; text-align:center;"><input type="checkbox" id="check-all-rows" title="全选 / 反选" /></th>
+            <th style="width:36px; text-align:center;"><input type="checkbox" id="check-all-rows" title="全选 / 反选本页" /></th>
             <th>学号</th>
             <th>姓名</th>
             <th>题目</th>
@@ -84,7 +105,8 @@ function renderGradebookTable() {
           </tr>
         </thead>
         <tbody>
-          ${filtered.map((row, idx) => {
+          ${pageRows.map((row, idx) => {
+        const globalIdx = startIndex + idx;
         const passScore = row.pass_score ?? 90;
         const isPass = row.best_score != null && row.best_score >= passScore;
         const curAssign = context.currentAssignmentsList.find(a => a.id === row.assignment_id || a.problem_id === row.problem_id);
@@ -109,7 +131,7 @@ function renderGradebookTable() {
                 <td>${row.attempt_count != null ? `第 ${row.attempt_count} 次` : '-'}</td>
                 <td style="color:var(--text-secondary); font-size:0.8rem;">${row.last_submitted_at ? formatTime(row.last_submitted_at) : '-'}</td>
                 <td>
-                  <button type="button" class="btn-view-evidence btn-secondary" data-idx="${idx}" style="font-size:0.75rem; padding:0.25rem 0.55rem;">
+                  <button type="button" class="btn-view-evidence btn-secondary" data-idx="${globalIdx}" style="font-size:0.75rem; padding:0.25rem 0.55rem;">
                     查看证据
                   </button>
                 </td>
@@ -118,8 +140,63 @@ function renderGradebookTable() {
     }).join('')}
         </tbody>
       `;
+
+    // 分页控件
+    const paginationEl = document.createElement("div");
+    paginationEl.className = "gradebook-pagination";
+    paginationEl.style.cssText = "display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; padding:0.85rem 0.5rem 0.25rem; font-size:0.85rem; color:var(--text-secondary);";
+    paginationEl.innerHTML = `
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <span>显示第 <strong>${startIndex + 1}</strong> - <strong>${endIndex}</strong> 条，共 <strong>${totalCount}</strong> 条记录</span>
+        <label style="display:inline-flex; align-items:center; gap:0.35rem;">
+          每页：
+          <select id="gradebook-page-size" style="padding:0.2rem 0.4rem; font-size:0.82rem; border:1px solid var(--border-default); border-radius:4px; background:var(--bg-surface); color:var(--text-primary);">
+            <option value="25" ${pageSize === 25 ? 'selected' : ''}>25 行</option>
+            <option value="50" ${pageSize === 50 ? 'selected' : ''}>50 行</option>
+            <option value="100" ${pageSize === 100 ? 'selected' : ''}>100 行</option>
+            <option value="0" ${pageSize === 0 ? 'selected' : ''}>全部 (${totalCount})</option>
+          </select>
+        </label>
+      </div>
+      <div style="display:flex; align-items:center; gap:0.4rem;">
+        <button type="button" class="btn-secondary" id="btn-page-prev" ${currentPage <= 1 ? 'disabled' : ''} style="padding:0.25rem 0.6rem; font-size:0.82rem;">上一页</button>
+        <span style="padding:0 0.35rem;">第 <strong>${currentPage}</strong> / ${totalPages} 页</span>
+        <button type="button" class="btn-secondary" id="btn-page-next" ${currentPage >= totalPages ? 'disabled' : ''} style="padding:0.25rem 0.6rem; font-size:0.82rem;">下一页</button>
+      </div>
+    `;
+
     context.rosterArea.innerHTML = "";
     context.rosterArea.appendChild(table);
+    context.rosterArea.appendChild(paginationEl);
+
+    // 绑定分页事件
+    const pageSizeSelect = paginationEl.querySelector("#gradebook-page-size");
+    if (pageSizeSelect) {
+        pageSizeSelect.onchange = (e) => {
+            pageSize = parseInt(e.target.value, 10) || 0;
+            currentPage = 1;
+            renderGradebookTable();
+        };
+    }
+    const prevBtn = paginationEl.querySelector("#btn-page-prev");
+    if (prevBtn) {
+        prevBtn.onclick = () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderGradebookTable();
+            }
+        };
+    }
+    const nextBtn = paginationEl.querySelector("#btn-page-next");
+    if (nextBtn) {
+        nextBtn.onclick = () => {
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderGradebookTable();
+            }
+        };
+    }
+
     // 全选 / 反选
     const checkAll = document.getElementById("check-all-rows");
     if (checkAll) {
@@ -137,5 +214,5 @@ function renderGradebookTable() {
         };
     });
 }
-return {loadGradebook,updateFacultyMetrics,updateProblemFilterOptions,getFilteredRoster,renderGradebookTable};
+return {loadGradebook,updateFacultyMetrics,updateProblemFilterOptions,getFilteredRoster,renderGradebookTable,resetGradebookPage};
 }

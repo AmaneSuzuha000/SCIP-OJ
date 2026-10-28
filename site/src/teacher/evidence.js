@@ -10,6 +10,9 @@ async function showSubmissionEvidence(row) {
     const btnCloseDetail = document.getElementById("btn-close-detail");
     const btnCopyCode = document.getElementById("btn-copy-student-code");
     const btnCopyReport = document.getElementById("btn-copy-student-report");
+    const envMetaEl = document.getElementById("detail-environment-meta");
+    const digestValEl = document.getElementById("detail-image-digest-val");
+    if (envMetaEl) envMetaEl.hidden = true;
     detailSection.hidden = false;
     detailSection.scrollIntoView({ behavior: "smooth", block: "start" });
     detailTitle.textContent = `评测证据：${row.student_no || '-'} ${row.display_name || ''} · 题目 ${row.problem_id || ''}`;
@@ -17,7 +20,10 @@ async function showSubmissionEvidence(row) {
     detailReport.textContent = "正在获取评测报告...";
     detailTimeline.innerHTML = '<li style="color:var(--text-secondary);">加载评测时间线中...</li>';
     if (btnCloseDetail) {
-        btnCloseDetail.onclick = () => { detailSection.hidden = true; };
+        btnCloseDetail.onclick = () => {
+            detailSection.hidden = true;
+            if (envMetaEl) envMetaEl.hidden = true;
+        };
     }
     if (btnCopyCode) {
         btnCopyCode.onclick = () => {
@@ -99,9 +105,19 @@ async function showSubmissionEvidence(row) {
             detailReport.textContent = reportObj
                 ? JSON.stringify(reportObj, null, 2)
                 : (latestGrading.error_message ? `系统错误说明: ${latestGrading.error_message}` : "评测记录尚在队列中。");
+            const imageDigest = reportObj?.image_digest || reportObj?.execution?.image_digest || latestGrading?.config_snapshot?.image_digest || null;
+            if (envMetaEl && digestValEl) {
+                if (imageDigest) {
+                    digestValEl.textContent = imageDigest;
+                    envMetaEl.hidden = false;
+                } else {
+                    envMetaEl.hidden = true;
+                }
+            }
         }
         else {
             detailReport.textContent = "暂无评分记录";
+            if (envMetaEl) envMetaEl.hidden = true;
         }
         if (effectiveGrade && effectiveGrade.id !== latestGrading?.id) {
             detailReport.textContent += `\n\n当前有效成绩：${effectiveGrade.score} 分（最近一次成功评测）`;
@@ -169,11 +185,13 @@ function renderTimeline(container, submission, grading) {
             });
         }
         else if (grading.status === "done") {
+            const digest = grading.report_json?.image_digest || grading.report_json?.execution?.image_digest || grading.config_snapshot?.image_digest || null;
+            const digestNote = digest ? ` · 镜像: ${digest.length > 20 ? digest.slice(0, 19) + '…' : digest}` : '';
             items.push({
                 title: `评测完成：得分 ${grading.score} 分 (${grading.passed ? '✓ 通过及格线' : '✗ 未通过'})`,
                 time: formatTime(grading.finished_at || grading.created_at),
                 state: "done",
-                desc: `HMAC 验签入库 · Runner: ${grading.runner_ref || 'Actions Runner'}`,
+                desc: `HMAC 验签入库 · Runner: ${grading.runner_ref || 'Actions Runner'}${digestNote}`,
             });
         }
         else if (grading.status === "system_error") {

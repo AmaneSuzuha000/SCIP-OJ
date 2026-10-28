@@ -6,6 +6,7 @@
     "dev": "node scripts/build_portal.mjs && node scripts/preview.mjs",
     "test:database": "node tests/test_grading_database.mjs",
     "test:grading": "node tests/test_grading_state.cjs && node tests/test_grading_api.cjs",
+    "test:similarity": "node tests/test_similarity_js.mjs",
     "build": "node scripts/build_portal.mjs"
   },
   "devDependencies": {

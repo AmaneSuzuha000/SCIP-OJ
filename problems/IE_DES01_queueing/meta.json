@@ -1,0 +1,12 @@
+{
+  "id": "IE-DES-01",
+  "sense": "minimize",
+  "eps_feas": 1e-4,
+  "eps_obj": 1e-3,
+  "time_limit_sec": 30,
+  "pass_score": 90,
+  "n_instances_l1": 3,
+  "seed_base": 20261028,
+  "weights": { "F": 15, "C": 25, "I": 20, "O": 40, "R": 0 },
+  "grader": "ie_des01"
+}

@@ -12,5 +12,12 @@
     "difficulty": "easy",
     "tags": ["MIP", "assignment"],
     "path": "problems/P002_assignment"
+  },
+  {
+    "id": "IE-DES-01",
+    "title": "检修工位排队仿真（DES 入门）",
+    "difficulty": "medium",
+    "tags": ["Simulation", "DES", "Queueing", "IE"],
+    "path": "problems/IE_DES01_queueing"
   }
 ]

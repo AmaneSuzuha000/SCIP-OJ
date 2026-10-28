@@ -128,6 +128,114 @@ def grade_knapsack(result: Mapping[str, Any], instance: Mapping[str, Any], meta:
     return _pack(score, passed, breakdown, messages, meta)
 
 
+def grade_ie_des01(
+    result: Mapping[str, Any],
+    instance: Mapping[str, Any],
+    meta: Mapping[str, Any],
+) -> dict[str, Any]:
+    weights = {"F": 15, "C": 25, "I": 20, "O": 40, "R": 0}
+    weights.update(meta.get("weights") or {})
+    breakdown = {k: 0 for k in weights}
+    messages: list[str] = []
+
+    # 1. Format check (F)
+    if not isinstance(result, Mapping):
+        messages.append("返回值必须是 dict")
+        return _pack(0, False, breakdown, messages, meta)
+
+    required_keys = ("avgWait", "throughput", "utilization", "meanQueue", "meanWip", "completions")
+    missing = [k for k in required_keys if k not in result]
+    if missing:
+        messages.append(f"缺少必要返回字段: {', '.join(missing)}")
+        return _pack(0, False, breakdown, messages, meta)
+
+    try:
+        metrics = {k: float(result[k]) for k in required_keys}
+    except (TypeError, ValueError, OverflowError):
+        messages.append("返回指标必须是可转换为浮点数的有限数值")
+        return _pack(0, False, breakdown, messages, meta)
+
+    if any(not math.isfinite(v) for v in metrics.values()):
+        messages.append("返回指标包含 NaN 或 Infinity")
+        return _pack(0, False, breakdown, messages, meta)
+
+    breakdown["F"] = weights["F"]
+    messages.append("格式验证通过")
+
+    # 2. Feasibility & Physical bounds check (C)
+    eps = float(meta.get("eps_feas", 1e-4))
+    if metrics["utilization"] < -eps or metrics["utilization"] > 1.0 + eps:
+        messages.append(f"利用率 utilization={metrics['utilization']:.4f} 超出 [0, 1] 物理区间")
+        return _pack(sum(breakdown.values()), False, breakdown, messages, meta)
+
+    if metrics["avgWait"] < -eps:
+        messages.append(f"平均等待时间 avgWait={metrics['avgWait']:.4f} 不能为负数")
+        return _pack(sum(breakdown.values()), False, breakdown, messages, meta)
+
+    if metrics["meanQueue"] < -eps:
+        messages.append(f"平均队列长度 meanQueue={metrics['meanQueue']:.4f} 不能为负数")
+        return _pack(sum(breakdown.values()), False, breakdown, messages, meta)
+
+    if metrics["meanWip"] < metrics["meanQueue"] - eps:
+        messages.append(f"系统在制品 meanWip={metrics['meanWip']:.4f} 不能小于队列长度 meanQueue={metrics['meanQueue']:.4f}")
+        return _pack(sum(breakdown.values()), False, breakdown, messages, meta)
+
+    if metrics["completions"] < 0:
+        messages.append(f"完工服务数 completions={metrics['completions']} 不能为负数")
+        return _pack(sum(breakdown.values()), False, breakdown, messages, meta)
+
+    breakdown["C"] = weights["C"]
+    messages.append("物理边界与约束验证通过")
+
+    # 3. Consistency check (I)
+    window = float(instance["horizon"] - instance["warmup"])
+    if window <= 0:
+        window = 1.0
+    expected_throughput = 60.0 * metrics["completions"] / window
+    diff = abs(metrics["throughput"] - expected_throughput)
+    if diff > 0.2 and (diff / max(1.0, expected_throughput)) > 0.05:
+        messages.append(f"吞吐量 throughput={metrics['throughput']:.2f} 与完工数 completions={metrics['completions']} 不一致")
+        return _pack(sum(breakdown.values()), False, breakdown, messages, meta)
+
+    breakdown["I"] = weights["I"]
+    messages.append("吞吐与在制品守恒一致性 OK")
+
+    # 4. Objective / Accuracy vs Oracle (O)
+    oracle = instance.get("optimal_value")
+    if isinstance(oracle, Mapping):
+        opt_wait = float(oracle.get("avgWait", 0.0))
+        opt_util = float(oracle.get("utilization", 0.0))
+        wait_gap = abs(metrics["avgWait"] - opt_wait) / max(1.0, opt_wait)
+        util_gap = abs(metrics["utilization"] - opt_util) / max(0.1, opt_util)
+        gap = (wait_gap + util_gap) / 2.0
+        eps_obj = float(meta.get("eps_obj", 1e-3))
+        if gap <= eps_obj:
+            pts = 40
+            msg = f"仿真结果与基准高度吻合 (偏差={gap:.2e})"
+        elif gap <= 0.02:
+            pts = 32
+            msg = f"仿真结果接近基准 (偏差={gap:.2%})"
+        elif gap <= 0.05:
+            pts = 24
+            msg = f"仿真结果可接受 (偏差={gap:.2%})"
+        elif gap <= 0.10:
+            pts = 16
+            msg = f"仿真结果偏差较大 (偏差={gap:.2%})"
+        else:
+            pts = 0
+            msg = f"仿真结果与真值偏差过大 (偏差={gap:.2%})"
+        o_w = weights["O"]
+        breakdown["O"] = int(round(pts * o_w / 40)) if o_w != 40 else pts
+        messages.append(msg)
+    else:
+        breakdown["O"] = weights["O"]
+        messages.append("无私有参考对比，通过合理性评分")
+
+    score = int(sum(breakdown.values()))
+    passed = score >= int(meta.get("pass_score", 90))
+    return _pack(score, passed, breakdown, messages, meta)
+
+
 def average_scores(reports: Sequence[Mapping[str, Any]], pass_score: int = 90) -> dict[str, Any]:
     if not reports:
         return {"score": 0, "passed": False, "breakdown": {}, "instances": [], "messages": ["无实例"]}
