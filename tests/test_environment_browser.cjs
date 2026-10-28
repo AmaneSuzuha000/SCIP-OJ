@@ -46,6 +46,17 @@ const {chromium}=require('playwright'), assert=require('node:assert/strict');
   assert.equal(await page.locator('#workspace.study-mode .workspace-layout').evaluate(el=>el.classList.contains('notebook-mode')),true);
   assert.equal(await page.locator('.editor-container').isVisible(),false);
   assert.equal(await page.locator('#btn-back-to-list').getAttribute('href'),'#learn-notebooks');
+  // Browser history can move directly from a teaching Notebook to a problem.
+  await page.evaluate(()=>location.hash='#P001');
+  await page.locator('#workspace[aria-busy="false"]').waitFor();
+  await page.locator('#title').filter({hasText:'P001'}).waitFor();
+  assert.equal(await page.locator('#workspace').evaluate(el=>el.classList.contains('study-mode')),false);
+  assert.equal(await page.locator('.editor-container').isVisible(),true);
+  assert.equal(await page.locator('.actions-bar').isVisible(),true);
+  assert.equal(await page.locator('#btn-back-to-list').getAttribute('href'),'#list');
+  await page.evaluate(()=>location.hash='#notebook/03_IE_Facility_Location_PySCIPOpt.ipynb');
+  await page.locator('#workspace.study-mode').waitFor();
+  await page.waitForFunction(()=>document.getElementById('notebook-state').textContent==='');
   // A document error can be retried even while Python remains ready.
   await page.evaluate(()=>{window.__studyFailure=true;location.hash='#notebook/04_IE_Bin_Packing_PySCIPOpt.ipynb';});
   await page.locator('#notebook-state button').waitFor();
