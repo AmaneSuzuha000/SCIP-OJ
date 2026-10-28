@@ -116,12 +116,13 @@
 
       <!-- 执行与提交操作栏 -->
       <div class="actions-bar">
-        <button id="btn-grade" type="button" class="btn-green" title="在浏览器本地通过 WebAssembly 快速自测，不写正式数据库">
+        <button id="btn-grade" type="button" class="btn-green" disabled title="在浏览器本地通过 WebAssembly 快速自测，不写正式数据库">
           练习评分
         </button>
         <button id="btn-submit-formal" type="button" class="btn-blue" title="提交作业并记录成绩">
           正式提交
         </button>
+        <button id="btn-stop-run" type="button" class="btn-secondary" hidden>停止运行</button>
         <div id="status" class="status-badge" role="status" aria-live="polite"></div>
       </div>
 
@@ -140,7 +141,7 @@
           <textarea id="testcase-input" spellcheck="false" placeholder='{"n": 2, "weights": [2, 3], "values": [3, 4], "capacity": 3}'></textarea>
           <div class="testcase-actions">
             <button id="btn-reset-testcase" type="button" class="btn-secondary">恢复示例输入</button>
-            <button id="btn-run-testcase" type="button" class="btn-blue">▶ 运行此测试</button>
+            <button id="btn-run-testcase" type="button" class="btn-blue" disabled>▶ 运行此测试</button>
           </div>
         </div>
         <div id="result-panel" role="tabpanel" aria-labelledby="tab-result" hidden>
@@ -195,12 +196,12 @@
   <script src="js/purify.min.js"></script>
   <script src="js/knapsack_judge.js"></script>
   <script src="js/assignment_judge.js"></script>
-  <script src="js/python_runtime.js?v=bridge1"></script>
+  <script src="js/python_runtime.js?v=progress2"></script>
   <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.20/lib/codemirror.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.20/mode/python/python.min.js"></script>
   <script src="js/editor.js?v=leetcode1"></script>
   <script src="js/exam-integrity.js?v=leetcode1"></script>
-  <script src="js/spaces.js?v=purposes2"></script>
-  <script src="js/app.js?v=components1"></script>
+  <script src="js/spaces.js?v=progress2"></script>
+  <script src="js/app.js?v=progress2"></script>
 </body>
 </html>

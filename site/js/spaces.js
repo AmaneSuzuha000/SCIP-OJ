@@ -9,7 +9,7 @@
     }
     if (["problem-list-section", "list"].includes(key)) return { space: "course", view: "problems", key: "problem-list-section", anchor: null };
     if (key === "submissions") return { space: "course", view: "records", key, anchor: null };
-    if (/^P\d+$/.test(key)) return { space: "course", view: "problem", key, problemId: key, anchor: null };
+    if (/^[A-Z][A-Z0-9_-]{0,31}$/.test(key)) return { space: "course", view: "problem", key, problemId: key, anchor: null };
     if (["learn", "case-library", "learn-notebooks", "course-cases"].includes(key)) {
       const canonical = key === "course-cases" ? "case-library" : key;
       return { space: "learn", view: "overview", key: canonical, anchor: canonical === "learn" ? null : canonical };

@@ -40,3 +40,7 @@ PR #32 与 #33 已合并。真实 Chromium 构建验证：PySCIPOpt 背包最优
 ## 门户与运行环境通信
 
 门户适配器只持有 iframe、版本化 MessageChannel、请求编号和已同步的源码缓存。Jupyter 模型与服务访问集中在 `notebook/engine.js`，由 `notebook/bridge.js` 提供 ready/run/open/detach 白名单接口。握手检查父窗口和同源，源码事件绑定打开请求，重置关闭端口并拒绝待处理请求。构建组装器只在生成的 Lab 页面载入这两个文件，不修改 JupyterLab 发行包，也没有实现预编译 Jupyter 扩展。运行环境依然独立构建，真实浏览器测试继续验证实际 SCIP 求解与 Notebook 单元同步。
+
+运行进度通过同一请求编号的 `progress` 消息回传。环境加载、Python 内核启动和代码执行分别显示；内核等待 `kernel.info`，启动上限为 120 秒，不占题目执行时限。门户的外层保护涵盖启动及执行两个阶段。停止运行销毁 iframe 并保留门户草稿；切题、返回题单使旧运行及进度失效。练习评分与自定义测试共享执行锁，题目加载完成、事件绑定后才启用按钮。
+
+浏览器评分器按题目类型显式注册；IE-DES-01 使用公开仿真参数与独立参考仿真，不再回落为背包题。`test_ie_des_practice.mjs` 将正常和异常输出与服务端 Python 评分器逐项核对。`test_practice_browser.cjs` 验证按钮进度、停止重试和旧结果隔离，完整运行环境测试通过实际点击「运行此测试」执行 PySCIPOpt。
