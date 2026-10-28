@@ -35,6 +35,7 @@ const {chromium}=require('playwright'), assert=require('node:assert/strict');
   await page.locator('#btn-signin').waitFor();
   // Retry must restore the selected document as well as its Python environment.
   const origin=process.env.SCIP_UI_TEST_ORIGIN||'http://127.0.0.1:8765';
+  await page.evaluate(()=>__finishEnvironment('fixture reset before opening'));
   await page.goto(origin+'/index.html#notebook/03_IE_Facility_Location_PySCIPOpt.ipynb');
   await page.waitForFunction(()=>window.__studies?.length===1);
   await page.evaluate(()=>__finishEnvironment('fixture notebook preparation failure'));
