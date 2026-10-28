@@ -6,6 +6,8 @@ for (const name of readdirSync('.portal-build/html')) {
     for(const id of ['nav-course-space','nav-learning-space']) assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,name+' '+id);
     assert.ok(!html.includes('PLATFORM_HEADER'),name+' was not assembled');
     assert.ok(!html.includes('data-header-services'),name+' still contains a header template');
+    assert.equal((html.match(/<aside class="studio-rail"/g)||[]).length,1,name+' must retain the portal sidebar');
+    if(name!=='index.html') assert.ok(html.includes('data-page-frame="shared"'),name+' must retain the portal layout');
     for(const href of html.matchAll(/href="([^"]+)"/g)) assert.ok(!/^(lab|repl)\//.test(href[1]),name+' exposes a legacy standalone entry');
 }
 const portal=readFileSync('.portal-build/html/index.html','utf8');
