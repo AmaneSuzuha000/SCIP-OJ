@@ -19,7 +19,7 @@ class AssemblyTest(unittest.TestCase):
             self.assertIn('课程教学',(target/'index.html').read_text())
             self.assertNotIn('RUNTIME ROOT CONFIG',(target/'index.html').read_text())
             self.assertEqual((target/'docs/学生指南.md').read_bytes(),(ROOT/'docs/学生指南.md').read_bytes())
-            self.assertIn('location.search+location.hash',(target/'lab/index.html').read_text())
+            self.assertIn("target.hash=path?'notebook/'",(target/'lab/index.html').read_text())
             with self.assertRaises(ValueError):module.assemble(lite,target)
     def test_invalid_runtime_does_not_write_output(self):
         with tempfile.TemporaryDirectory() as d:

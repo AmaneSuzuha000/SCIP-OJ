@@ -1,8 +1,9 @@
 import {state} from './state.js';
 import {getCodeValue,loadJSON,loadText,escapeHtml,setCodeValue,publicSampleInstance} from './shared.js';
 import {refreshSubmissionsList,startSubmissionsPolling} from './submissions.js';
-import {beginPracticeRun,stopPracticeRun,setRunStatus} from './execution.js';
+import {beginPracticeRun,stopPracticeRun,setRunStatus,syncExecutionButtons} from './execution.js';
 import {runPractice} from './practice.js';
+import {showStudyNotebook} from './study.js';
 export async function confirmLeaveIfExamDraft() {
     if (window.ScipOJExam?.getPolicy() === "standard" ||
         getCodeValue().trim() === state.currentTemplate.trim())
@@ -93,6 +94,10 @@ async function handleRouteHash() {
         }
         window.ScipOJSpaces.activate(route);
         placeSubmissionPanel(route.view === "records");
+        if (route.view === 'notebook') {
+            document.getElementById('learning-space').hidden = true;
+            await showStudyNotebook(route.notebook, seq);
+        }
         if (route.view === "records")
             await refreshSubmissionsList();
         if (seq !== state.routeSeq)
@@ -118,7 +123,13 @@ export function placeSubmissionPanel(globalHistory) {
         leaderboard.hidden = globalHistory;
 }
 export function closeWorkspace(updateHash = true) {
+    state.studyNotebook = null;
+    document.getElementById('workspace').classList.remove('study-mode');
+    const back = document.getElementById('btn-back-to-list');
+    back.href = '#list';back.textContent = '← 返回课程作业';
+    state.problemLoaded = false;
     stopPracticeRun(true);
+    syncExecutionButtons();
     leaveNotebookView();
     state.openSeq++;
     state.assignmentFetchSeq++;
@@ -149,6 +160,7 @@ export function closeWorkspace(updateHash = true) {
 }
 export /** 打开指定题目工作区 */
 async function openProblem(path, id) {
+    state.problemLoaded = false;
     stopPracticeRun(true);
     for (const button of ['btn-grade','btn-run-testcase']) document.getElementById(button).disabled = true;
     const seq = ++state.openSeq;
@@ -184,11 +196,9 @@ async function openProblem(path, id) {
         window.ScipOJExam?.activate("standard", id);
         showWorkbenchTab("description");
         document.getElementById("title").textContent = `${meta.id} · ${meta.title || state.problemIndex.find(p => p.id === id)?.title || ""}`;
-        const readmeHtml = window.marked ? marked.parse(readme) : `<pre>${escapeHtml(readme)}</pre>`;
-        // 题面来自仓库 Markdown（可能经 PR 提交），渲染前做白名单清洗
-        document.getElementById("readme").innerHTML = window.DOMPurify
-            ? window.DOMPurify.sanitize(readmeHtml, { USE_PROFILES: { html: true } })
-            : `<pre>${escapeHtml(readme)}</pre>`;
+        const readmeElement = document.getElementById('readme');
+        if (window.ScipOJMarkdown) window.ScipOJMarkdown.render(readmeElement, readme);
+        else readmeElement.textContent = readme;
         let savedDraft = null;
         try {
             savedDraft = localStorage.getItem("scipoj:draft:" + id);
@@ -280,6 +290,11 @@ async function refreshAssignmentMeta(problemId) {
     if (!metaBar)
         return;
     state.activeAssignment = null;
+    if (!state.platformReady) {
+        metaBar.textContent = '正在恢复课程信息…';
+        if (btnSubmitFormal) btnSubmitFormal.disabled = true;
+        return;
+    }
     let assignment = null;
     if (window.ScipOJPlatform && window.ScipOJPlatform.isConfigured()) {
         try {
@@ -640,6 +655,6 @@ function setupActionButtons(meta, id) {
             window.ScipOJPlatform?.showToast("提交记录已刷新", "info");
         };
     }
-    btnGradeL1.disabled = false;
-    btnRunCustom.disabled = false;
+    state.problemLoaded = true;
+    syncExecutionButtons();
 }

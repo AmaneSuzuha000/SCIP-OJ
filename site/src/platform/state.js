@@ -5,6 +5,7 @@ state.currentProfile = null;
 state.currentEnrollments = [];
 state.enrollmentsLoadFailed = false;
 state.authListeners = [];
+state.authVersion = 0;
 state.gradingClient = undefined;
 state.MIGRATION_006 = "supabase/migrations/006_security_hardening_and_leaderboard.sql";
 state.modalStack = [];

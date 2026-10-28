@@ -4,22 +4,26 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const source=fs.readFileSync('notebook/engine.js','utf8');
 (async()=>{
- let frames=[], shutdown=0, pending=false;
+ let frames=[], shutdown=0, pending=false, started=0, probes=0;
  const reply={content:{status:'ok',user_expressions:{result:{status:'ok',data:{'text/plain':"'eyJvYmplY3RpdmUiOjd9'"}}}}};
- const kernel={requestExecute:()=>({done:pending?new Promise(()=>{}):Promise.resolve(reply)}),shutdown:async()=>{shutdown++}};
- const app={started:Promise.resolve(),serviceManager:{ready:Promise.resolve(),kernelspecs:{refreshSpecs:async()=>{},specs:{default:'xpython',kernelspecs:{xpython:{}}}},kernels:{startNew:async()=>kernel}}};
+ const kernel={requestExecute:args=>{const probe=args.code.includes('__SCIP_Check');if(probe)probes++;return {done:pending&&!probe?new Promise(()=>{}):Promise.resolve(reply)};},shutdown:async()=>{shutdown++}};
+ const app={started:Promise.resolve(),serviceManager:{ready:Promise.resolve(),kernelspecs:{refreshSpecs:async()=>{},specs:{default:'xpython',kernelspecs:{xpython:{}}}},kernels:{startNew:async()=>{started++;return {...kernel};}}}};
  const window={dispatchEvent:()=>{},jupyterapp:app};
  const document={currentScript:{src:'https://example.test/SCIP-OJ/js/python_runtime.js'},getElementById:()=>({appendChild:f=>frames.push(f)}),createElement:()=>({style:{},contentWindow:{jupyterapp:app,dispatchEvent:()=>{}},remove(){this.removed=true;}})};
  vm.runInNewContext(source,{window,document,URL,Event,TextEncoder,TextDecoder,Uint8Array,btoa,atob,setTimeout,clearTimeout});
  const runtime=window.ScipOJRuntime;
+ await Promise.all([runtime.prepare(),runtime.prepare()]);
+ assert.equal(started,1);assert.equal(probes,1,'Prewarm performs a real solver preflight once');
  assert.equal((await runtime.runSolve('code',{},1)).objective,7);
+ assert.equal(started,1,'The first run consumes the prewarmed kernel');
 
  assert.equal(shutdown,1);
  // A slow kernel download/start must not consume the student's execution limit.
  const progress=[];
  kernel.info=new Promise(resolve=>setTimeout(resolve,35));
  assert.equal((await runtime.runSolve('code',{},.01,message=>progress.push(message))).objective,7);
- assert.ok(progress[0].includes('启动 Python'));
+ assert.equal(started,2,'Each later run receives a separate prepared kernel');
+ assert.ok(progress.every(message=>!message.includes('下载')));
  assert.ok(progress.at(-1).includes('执行代码'));
  kernel.info=Promise.resolve();
  pending=true;

@@ -1,3 +1,5 @@
+import {readPages} from '../platform/pagination.js';
+import {requestScope} from './scope.js';
 /**
  * SCIP-OJ 教师端相似度初筛模块
  * 基于 scripts/audit_similarity.py 算法：
@@ -111,6 +113,8 @@ export function create(context, { esc, formatTime }) {
       window.ScipOJPlatform?.showToast('未选择有效教学班级', 'warning');
       return;
     }
+    const current = requestScope(context, 'similarityRequest');
+    const courseId = context.currentCourseId;
 
     const sb = window.ScipOJPlatform?.getSupabase();
     if (!sb) {
@@ -123,20 +127,21 @@ export function create(context, { esc, formatTime }) {
       // 1. 查询对应 assignment
       const { data: assignment, error: aErr } = await sb.from('assignments')
         .select('id, problem_id')
-        .eq('course_id', context.currentCourseId)
+        .eq('course_id', courseId)
         .eq('problem_id', problemId.toUpperCase())
         .maybeSingle();
+      if (!current()) return;
 
       if (aErr) throw new Error('查询作业配置失败: ' + aErr.message);
       if (!assignment) throw new Error(`未找到题目 ${problemId} 对应的作业记录`);
 
       // 2. 查询该作业的所有提交代码
-      const { data: subs, error: sErr } = await sb.from('submissions')
+      const subs = await readPages(() => sb.from('submissions')
         .select('id, user_id, assignment_id, code_text, code_hash, created_at, attempt_no')
         .eq('assignment_id', assignment.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }).order('id'));
 
-      if (sErr) throw new Error('读取提交代码失败: ' + sErr.message);
+      if (!current()) return;
       if (!subs || subs.length === 0) {
         window.ScipOJPlatform?.showToast(`题目 ${problemId} 暂无任何学生提交记录`, 'info');
         return;

@@ -1,0 +1,3 @@
+.katex-display{max-width:100%;overflow-x:auto;overflow-y:hidden;padding:.25em 0}
+#readme .katex,.doc-article .katex{color:inherit}
+.doc-article .katex .mord,.doc-article .katex .mop{border:0;background:transparent}

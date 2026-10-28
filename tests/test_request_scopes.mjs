@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {requestScope} from '../site/src/teacher/scope.js';
+import {readPages} from '../site/src/platform/pagination.js';
+let user='teacher';globalThis.window={ScipOJPlatform:{getUser:()=>({id:user})}};
+const context={currentCourseId:'first',active:true};
+const first=requestScope(context,'gradebook');
+context.currentCourseId='second';assert.equal(first(),false);
+const second=requestScope(context,'gradebook');
+const newer=requestScope(context,'gradebook');assert.equal(second(),false);assert.equal(newer(),true);
+user='student';assert.equal(newer(),false);
+user='teacher';context.active=false;assert.equal(newer(),false);
+const data=Array.from({length:1251},(_,id)=>({id})),ranges=[];
+const rows=await readPages(()=>({range:async(low,high)=>{ranges.push([low,high]);return {data:data.slice(low,high+1)};}}));
+assert.equal(rows.length,1251);assert.deepEqual(ranges,[[0,499],[500,999],[1000,1499]]);
+await assert.rejects(readPages(()=>({range:async()=>({error:Error('unavailable')})})),/unavailable/);
+console.log('Course/account request ownership and complete multi-page exports: PASS');

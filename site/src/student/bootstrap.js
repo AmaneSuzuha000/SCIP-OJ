@@ -11,14 +11,14 @@ export async function main() {
         mainContent?.scrollIntoView({ block: "start" });
     });
     // 1. 初始化平台层
-    if (window.ScipOJPlatform) {
+    const platformReady = (async () => {
+      if (window.ScipOJPlatform) {
         try {
             await window.ScipOJPlatform.init();
         }
         catch (e) {
             console.warn("[App] 平台初始化异常:", e);
         }
-        updateBannerCourseInfo();
         window.ScipOJPlatform.onAuthChange?.(async () => {
             updateBannerCourseInfo();
             if (state.activeProblemId) {
@@ -32,7 +32,14 @@ export async function main() {
                 await refreshAssignmentMeta(state.activeProblemId);
             }
         });
-    }
+      }
+      state.platformReady = true;
+      updateBannerCourseInfo();
+      if (state.activeProblemId) {
+          await refreshAssignmentMeta(state.activeProblemId);
+          await refreshSubmissionsList();
+      }
+    })().catch(error => console.warn('[App] 课程信息恢复失败:', error));
     // 2. 加载题目索引
     try {
         state.problemIndex = await loadJSON("problems/index.json");
@@ -136,6 +143,10 @@ export async function main() {
     if (btnBack) {
         btnBack.onclick = async (e) => {
             e.preventDefault();
+            if (state.studyNotebook) {
+                location.hash = state.studyNotebook.space === 'course' ? '#course-labs' : '#learn-notebooks';
+                return;
+            }
             if (await confirmLeaveIfExamDraft()) {
                 closeWorkspace();
                 document.getElementById("problem-list-section")?.scrollIntoView({ behavior: "smooth", block: "start" });

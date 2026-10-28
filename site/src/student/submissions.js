@@ -8,6 +8,10 @@ async function refreshSubmissionsList() {
     const container = document.getElementById("my-submissions-container");
     if (!container)
         return;
+    if (!state.platformReady) {
+        container.textContent = '正在恢复课程信息…';
+        return;
+    }
     if (!window.ScipOJPlatform || !window.ScipOJPlatform.isConfigured()) {
         container.innerHTML = `
       <p style="color:var(--text-secondary); padding:1rem;">

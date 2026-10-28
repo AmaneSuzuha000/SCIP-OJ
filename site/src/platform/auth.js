@@ -1,4 +1,5 @@
 import {state} from './state.js';
+import {withDeadline} from './deadline.js';
 import {updateAuthUI,showConfigWarning,showToast,checkStudentGates} from './dialogs.js';
 export function isConfigured() {
     const cfg = window.SCIP_OJ_CONFIG;
@@ -7,6 +8,16 @@ export function isConfigured() {
 export function isMockMode() {
     const cfg = window.SCIP_OJ_CONFIG;
     return !!(cfg && cfg.MOCK_MODE);
+}
+export function acceptSession(session) {
+    const version = ++state.authVersion;
+    if (state.currentUser?.id !== session?.user?.id) {
+        state.currentProfile = null;
+        state.currentEnrollments = [];
+        state.enrollmentsLoadFailed = false;
+    }
+    state.currentUser = session?.user || null;
+    return version;
 }
 export // ── 初始化平台服务 ──
 async function init() {
@@ -25,40 +36,39 @@ async function init() {
     const cfg = window.SCIP_OJ_CONFIG;
     state.supabase = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
     try {
-        // 恢复会话；失效 refresh_token 时清本地会话。加超时，避免 refresh 挂起导致教师台只剩横幅
-        const sessionOutcome = await Promise.race([
-            state.supabase.auth.getSession().then((r) => ({ ok: true, r })).catch((e) => ({ ok: false, e })),
-            new Promise((resolve) => setTimeout(() => resolve({ ok: false, e: new Error("getSession timeout") }), 6000)),
-        ]);
         let session = null;
         let sessionError = null;
-        if (!sessionOutcome.ok) {
-            sessionError = sessionOutcome.e || new Error("getSession failed");
-        } else {
-            session = sessionOutcome.r?.data?.session || null;
-            sessionError = sessionOutcome.r?.error || null;
-        }
+        try {
+            const result=await withDeadline(state.supabase.auth.getSession(),6000,'会话恢复超时');
+            session=result.data?.session || null;sessionError=result.error;
+        } catch(error) { sessionError=error; }
         if (sessionError) {
-            console.warn("[Platform] 会话恢复失败，清理本地登录态:", sessionError.message || sessionError);
-            try { await state.supabase.auth.signOut({ scope: "local" }); } catch (_) {}
-            state.currentUser = null;
-            state.currentProfile = null;
-            state.currentEnrollments = [];
-            showToast("登录会话已失效，请重新使用 GitHub 登录", "warn");
+            const invalidToken=/refresh_token_(not_found|already_used)|invalid.*refresh.?token|refresh.?token.*(invalid|not found)/i.test(String(sessionError.code||'')+' '+sessionError.message);
+            if (invalidToken) {
+                try {await withDeadline(state.supabase.auth.signOut({scope:'local'}),2000);} catch {}
+            }
+            acceptSession(null);
+            showToast(invalidToken?'登录会话已失效，请重新使用 GitHub 登录':'课程服务响应较慢，可以继续本地练习。',invalidToken?'warning':'info');
         } else if (session) {
-            state.currentUser = session.user;
-            await refreshProfile();
-            await refreshEnrollments();
+            acceptSession(session);
+            const actor=state.currentUser;
+            const metadata=Promise.all([refreshProfile(),refreshEnrollments()]);
+            metadata.then(()=>{if(state.currentUser===actor){updateAuthUI();notifyAuthListeners();}}).catch(()=>{});
+            await withDeadline(metadata,6000,'课程信息恢复超时').catch(()=>{});
         }
         // 监听认证状态变更
         // 注意：Supabase 官方要求不要在 onAuthStateChange 回调内直接 await 其他
         // Supabase 查询（会持有 auth 锁导致死锁），这里用 setTimeout 跳出回调再刷新。
         state.supabase.auth.onAuthStateChange((event, session) => {
-            state.currentUser = session?.user || null;
+            const version = acceptSession(session);
+            updateAuthUI();
             setTimeout(async () => {
+                if (version !== state.authVersion) return;
                 if (state.currentUser) {
                     await refreshProfile();
+                    if (version !== state.authVersion) return;
                     await refreshEnrollments();
+                    if (version !== state.authVersion) return;
                     if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
                         checkStudentGates();
                     }
@@ -88,6 +98,8 @@ async function refreshProfile() {
         return null;
     }
     const actor=state.currentUser;
+    const fallback = () => ({user_id:actor.id, role:'student', student_no:null,
+        display_name:actor.user_metadata?.display_name || actor.user_metadata?.user_name || 'GitHub 用户'});
     try {
         const { data, error } = await state.supabase.from("profiles")
             .select("user_id, student_no, display_name, role")
@@ -110,6 +122,7 @@ async function refreshProfile() {
     }
     catch (e) {
         if(state.currentUser!==actor) return;
+        state.currentProfile = fallback();
         console.warn("[Platform] 加载个人资料异常:", e);
     }
     return state.currentProfile;
@@ -148,7 +161,7 @@ export function getProfile() { return state.currentProfile; }
 export function getSupabase() { return state.supabase; }
 export function getEnrollments() { return state.currentEnrollments; }
 export function isTeacher() {
-    if (!state.currentUser)
+    if (!state.currentUser || state.currentProfile?.user_id !== state.currentUser.id)
         return false;
     if (state.currentProfile?.role === "teacher" || state.currentProfile?.role === "admin")
         return true;
@@ -162,7 +175,7 @@ export function onAuthChange(fn) {
 export function notifyAuthListeners() {
     state.authListeners.forEach((fn) => {
         try {
-            fn(state.currentUser, state.currentProfile);
+            Promise.resolve(fn(state.currentUser, state.currentProfile)).catch(error => console.warn('[Platform] 身份状态更新失败:', error));
         }
         catch (e) {
             console.error(e);
@@ -193,8 +206,10 @@ export async function signUp() {
 }
 export async function signOut() {
     if (state.supabase) {
-        await state.supabase.auth.signOut();
+        const {error} = await state.supabase.auth.signOut();
+        if (error) throw error;
     }
+    state.authVersion++;
     state.currentUser = null;
     state.currentProfile = null;
     state.currentEnrollments = [];
