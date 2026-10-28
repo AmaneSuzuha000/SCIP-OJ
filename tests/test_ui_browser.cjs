@@ -242,8 +242,9 @@ async function run() {
     const teacher = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     await teacher.goto(origin + "/doc.html?f=拓展学习指南.md&space=learn", { waitUntil: "domcontentloaded" });
     await teacher.locator("#md h1").waitFor({ state: "visible" });
-    assert.equal(await teacher.locator("#doc-teaching-nav").isVisible(), false);
-    assert.equal(await teacher.locator("#doc-learning-nav").isVisible(), true);
+    assert.equal(await teacher.locator('#nav-course-space').getAttribute('aria-current'),null);
+    assert.equal(await teacher.locator('#nav-learning-space').getAttribute('aria-current'),'page');
+    assert.equal(await teacher.locator('.shared-topbar').count(),1);
     assert.equal(await teacher.locator("#doc-back-link").getAttribute("href"), "index.html#learn");
     await teacher.goto(origin + "/teacher.html", { waitUntil: "domcontentloaded" });
     assert.equal(await teacher.locator("#teacher-panel").isVisible(), false,
@@ -262,7 +263,7 @@ async function run() {
     await screenshot(mobile, "05-teaching-mobile.png");
     await mobile.locator("#btn-course-menu").click();
     assert.equal(await mobile.locator("#btn-course-menu").getAttribute("aria-expanded"), "true");
-    assert.equal(await mobile.locator('#rail-resources a[href*="01_P001"]').isVisible(), true);
+    assert.equal(await mobile.locator('#rail-resources').count(), 0, 'Duplicate standalone runtime entries were removed');
     assert.equal(await mobile.locator('#rail-services a[href="doc.html?f=学生指南.md"]').isVisible(), true);
     assert.equal(await mobile.locator("#teacher-link").isVisible(), false);
     assert.equal(await mobile.locator("#rail-learning-resources").isVisible(), false);

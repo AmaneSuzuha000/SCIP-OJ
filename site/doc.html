@@ -3,9 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SCIP-OJ · 平台文档</title>
+  <title>SCIP/LAB · 文档</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="ui-refresh.css" />
+  <link rel="stylesheet" href="js/markdown.css?v=math1" />
   <style>
     .doc-container {
       max-width: 900px;
@@ -68,31 +69,10 @@
       color: var(--text-secondary);
     }
   </style>
+  <link rel="stylesheet" href="styles/shell.css?v=nav1">
 </head>
-<body>
-  <header class="navbar">
-    <div class="navbar-container">
-      <div class="brand-section">
-        <a href="index.html" class="brand-logo">
-          <div class="brand-logo-icon">S</div>
-          <span>SCIP-OJ</span>
-        </a>
-        <span class="brand-tag">文档中心</span>
-      </div>
-
-      <nav class="nav-links" id="doc-teaching-nav" aria-label="教学文档导航">
-        <a href="index.html#course" class="nav-item">← 课程教学</a>
-        <a href="doc.html?f=学生指南.md" class="nav-item">学生指南</a>
-        <a href="doc.html?f=教师指南.md" class="nav-item">教师指南</a>
-        <a href="doc.html?f=出题指南.md" class="nav-item">出题指南</a>
-      </nav>
-      <nav class="nav-links" id="doc-learning-nav" aria-label="拓展文档导航" hidden>
-        <a href="index.html#learn" class="nav-item">← 拓展学习</a>
-        <a href="official-examples.html" class="nav-item">官方案例</a>
-        <a href="doc.html?f=拓展学习指南.md&amp;space=learn" class="nav-item">拓展学习指南</a>
-      </nav>
-    </div>
-  </header>
+<body class="document-page">
+  <!-- PLATFORM_HEADER -->
 
   <main class="doc-container">
     <div style="margin-bottom:1rem;">
@@ -104,26 +84,31 @@
   <footer>
     <div class="footer-container">
       <div id="doc-platform-label"><strong>SCIP-OJ</strong> · 课程教学与作业评测</div>
-      <div>支持 Markdown 格式与代码高亮</div>
+      <div>Markdown · 数学公式</div>
     </div>
   </footer>
 
   <script src="js/marked.min.js"></script>
   <script src="js/purify.min.js"></script>
+  <script src="js/markdown.js?v=math1"></script>
   <script>
     (async () => {
       const params = new URLSearchParams(location.search);
       const path = params.get("path") || ("docs/" + (params.get("f") || "学生指南.md"));
       const name = path.split("/").pop().replace(/\.md$/, "");
       const learning = params.get("space") === "learn";
-      document.getElementById("doc-teaching-nav").hidden = learning;
-      document.getElementById("doc-learning-nav").hidden = !learning;
+      for (const [id, selected] of [['nav-course-space', !learning], ['nav-learning-space', learning]]) {
+        const link = document.getElementById(id);
+        link.classList.toggle('active', selected);
+        if (selected) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
+      }
+      document.querySelector('.section-navigation').hidden = learning;
       const backLink = document.getElementById("doc-back-link");
       backLink.href = learning ? "index.html#learn" : "index.html#course";
       backLink.textContent = learning ? "← 返回拓展学习" : "← 返回课程教学";
       document.querySelector(".brand-logo").href = backLink.href;
       if (learning) document.getElementById("doc-platform-label").textContent = "SCIP/LAB · 拓展学习资源";
-      document.title = "SCIP-OJ · " + name;
+      document.title = "SCIP/LAB · " + name;
       const mdEl = document.getElementById("md");
       try {
         const r = await fetch(path);
@@ -133,19 +118,8 @@
           return;
         }
         const raw = await r.text();
-        const html = marked.parse(raw);
-        // 文档内容来自仓库 Markdown（教师可提交 PR），按 HTML 解析前做一次白名单清洗，
-        // 避免 <img onerror> / <script> 之类的内容在站点同源执行。
-        if (window.DOMPurify) {
-          mdEl.innerHTML = window.DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
-        } else {
-          // 无清洗库时退化为纯文本展示，宁可少渲染也不执行不可信 HTML
-          mdEl.textContent = raw;
-          const note = document.createElement("p");
-          note.className = "fail";
-          note.textContent = "（安全组件未加载，已降级为纯文本显示）";
-          mdEl.prepend(note);
-        }
+        if (window.ScipOJMarkdown) window.ScipOJMarkdown.render(mdEl, raw);
+        else mdEl.textContent = raw;
       } catch (e) {
         mdEl.textContent = "网络请求异常: " + e.message;
         mdEl.className = "fail";

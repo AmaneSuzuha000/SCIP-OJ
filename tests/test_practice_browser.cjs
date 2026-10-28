@@ -11,9 +11,9 @@ const assert=require('node:assert/strict');
   // Explicit deferred runtime fixture: exercise UI lifecycle without downloading WASM.
   await page.route('**/js/python_runtime.js*',route=>route.fulfill({contentType:'text/javascript',body:`
    window.__runs=[];window.__resets=0;
-   window.ScipOJRuntime={ensureReady:async()=>{},hideNotebook(){},detachNotebook(){},
+   window.ScipOJRuntime={ensureReady:async()=>{},prewarm:async()=>{},isReady:()=>true,getStatus:()=>({phase:'ready'}),hideNotebook(){},detachNotebook(){},
     reset(){window.__resets++;window.dispatchEvent(new Event('scip-runtime-reset'));},
-    runSolve(code,instance,seconds,progress){progress('正在启动 Python 内核…');
+    runSolve(code,instance,seconds,progress){progress('正在执行代码…');
      return new Promise((resolve,reject)=>window.__runs.push({code,instance,progress,resolve,reject}));}
    };`}));
   const origin=process.env.SCIP_UI_TEST_ORIGIN||'http://127.0.0.1:8765';
@@ -21,7 +21,7 @@ const assert=require('node:assert/strict');
   await page.locator('#workspace[aria-busy="false"]').waitFor();
   const clickRun=()=>page.locator('#btn-run-testcase').click();
   await clickRun();
-  assert.match(await page.locator('#report').innerText(),/启动 Python/);
+  assert.match(await page.locator('#report').innerText(),/正在执行/);
   assert.equal(await page.locator('#btn-grade').isDisabled(),true);
   assert.equal(await page.locator('#btn-clear-console').isDisabled(),true);
   await page.locator('#btn-stop-run').click();

@@ -1,3 +1,4 @@
+import {requestScope} from './scope.js';
 export function create(context,{esc,formatTime}) {
 // 扫描题目列表填充下拉框
 async function initProblemOptions() {
@@ -15,6 +16,7 @@ async function initProblemOptions() {
 async function loadCourseAssignments(courseId) {
     if (!context.courseAssignmentsArea)
         return;
+    const current = requestScope(context, 'assignmentsRequest', courseId);
     try {
         const sb = ScipOJPlatform.getSupabase();
         const { data, error } = await sb
@@ -22,6 +24,7 @@ async function loadCourseAssignments(courseId) {
             .select("*")
             .eq("course_id", courseId)
             .order("problem_id", { ascending: true });
+        if (!current()) return;
         if (error)
             throw error;
         context.currentAssignmentsList = data || [];
@@ -88,7 +91,7 @@ async function loadCourseAssignments(courseId) {
                 else {
                     context.assignDueAt.value = "";
                 }
-                context.assignPassScore.value = a.pass_score || 90;
+                context.assignPassScore.value = a.pass_score ?? 90;
                 context.assignInstances.value = a.n_instances || 3;
                 context.assignPolicy.value = a.score_policy || "highest_before_due";
                 if (context.assignIntegrityPolicy)
@@ -98,6 +101,7 @@ async function loadCourseAssignments(courseId) {
         });
     }
     catch (err) {
+        if (!current()) return;
         context.courseAssignmentsArea.innerHTML = `<p class="fail" style="padding:1rem;">加载作业列表失败: ${esc(err.message)}</p>`;
     }
 }

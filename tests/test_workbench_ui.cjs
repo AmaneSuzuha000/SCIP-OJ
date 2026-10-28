@@ -6,7 +6,8 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const root = path.join(__dirname, "..", "site");
-const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
+const pageHTML = file => fs.readFileSync(path.join(root, '..', '.portal-build/html', file), 'utf8');
+const html = pageHTML('index.html');
 const css = fs.readFileSync(path.join(root, "workbench-v3.css"), "utf8");
 
 for (const id of [
@@ -55,7 +56,7 @@ const app = fs.readFileSync(path.join(root, "..", ".portal-build/js/app.js"), "u
 assert.match(html, /id="nav-to-assessment"/, "Sidebar assessment link needs an explicit guarded handler");
 assert.match(app, /getElementById\("nav-to-assessment"\)[\s\S]*?confirmLeaveIfExamDraft\(\)/,
   "Exam draft can be lost when the sidebar navigates away");
-const faculty = fs.readFileSync(path.join(root, "teacher.html"), "utf8");
+const faculty = pageHTML('teacher.html');
 const facultyCss = fs.readFileSync(path.join(root, "faculty-v3.css"), "utf8");
 assert.ok(fs.readFileSync(path.join(root,"styles/teacher.css"),"utf8").includes("faculty-v3.css"), "Faculty theme not loaded");
 assert.match(faculty, /id="teacher-panel" hidden/, "Teacher panel must remain behind auth checks");
@@ -66,7 +67,7 @@ for (const id of ["auth-area", "metric-students", "metric-graded", "metric-passr
 }
 assert.match(facultyCss, /\.teacher-page \.faculty-content/, "Faculty desk should share the course system");
 for (const filename of ["case-studio.html", "inventory-lab.html", "flow-lab.html", "official-examples.html"]) {
-  const page = fs.readFileSync(path.join(root, filename), "utf8");
+  const page = pageHTML(filename);
   assert.ok(page.includes('href="course-case-v3.css"'), "Case theme missing: " + filename);
   assert.ok(page.includes('SCIP/LAB'), "Course brand missing: " + filename);
   assert.ok(page.includes('href="index.html#learn"'), "Extension pages must return to extension learning: " + filename);

@@ -12,3 +12,6 @@ state.routeSeq = 0;
 state.submissionsFetchSeq = 0;
 state.openSeq = 0;
 state.notebookViewSeq = 0;
+state.problemLoaded = false;
+state.platformReady = false;
+state.studyNotebook = null;

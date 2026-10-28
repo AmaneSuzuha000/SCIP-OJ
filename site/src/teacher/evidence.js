@@ -1,6 +1,8 @@
+import {requestScope} from './scope.js';
 export function create(context,{esc,formatTime}) {
 // ── 证据台展示 ──
 async function showSubmissionEvidence(row) {
+    const current = requestScope(context, 'evidenceRequest');
     const detailSection = document.getElementById("submission-detail");
     const detailTitle = document.getElementById("detail-title");
     const detailCode = document.getElementById("detail-code");
@@ -12,6 +14,8 @@ async function showSubmissionEvidence(row) {
     const btnCopyReport = document.getElementById("btn-copy-student-report");
     const envMetaEl = document.getElementById("detail-environment-meta");
     const digestValEl = document.getElementById("detail-image-digest-val");
+    btnRegrade.disabled = true;
+    btnRegrade.onclick = null;
     if (envMetaEl) envMetaEl.hidden = true;
     detailSection.hidden = false;
     detailSection.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -21,6 +25,7 @@ async function showSubmissionEvidence(row) {
     detailTimeline.innerHTML = '<li style="color:var(--text-secondary);">加载评测时间线中...</li>';
     if (btnCloseDetail) {
         btnCloseDetail.onclick = () => {
+            context.evidenceRequest++;
             detailSection.hidden = true;
             if (envMetaEl) envMetaEl.hidden = true;
         };
@@ -56,6 +61,7 @@ async function showSubmissionEvidence(row) {
             .order("created_at", { ascending: false })
             .limit(1)
             .maybeSingle();
+        if (!current()) return;
         if (latest)
             subId = latest.id;
     }
@@ -66,7 +72,6 @@ async function showSubmissionEvidence(row) {
         btnRegrade.disabled = true;
         return;
     }
-    btnRegrade.disabled = false;
     try {
         const { data: subData, error } = await sb
             .from("submissions")
@@ -96,8 +101,10 @@ async function showSubmissionEvidence(row) {
             // 复判会追加 grading，必须按时间倒序取最新一条
             .order("created_at", { ascending: false, referencedTable: "gradings" })
             .single();
+        if (!current()) return;
         if (error || !subData)
             throw error || new Error("未找到指定提交记录");
+        btnRegrade.disabled = false;
         detailCode.textContent = subData.code_text || "（空代码内容）";
         const { latestAttempt: latestGrading, effectiveGrade } = window.ScipOJGradingState.normalizeSubmission(subData);
         if (latestGrading) {
@@ -105,7 +112,7 @@ async function showSubmissionEvidence(row) {
             detailReport.textContent = reportObj
                 ? JSON.stringify(reportObj, null, 2)
                 : (latestGrading.error_message ? `系统错误说明: ${latestGrading.error_message}` : "评测记录尚在队列中。");
-            const imageDigest = reportObj?.image_digest || reportObj?.execution?.image_digest || latestGrading?.config_snapshot?.image_digest || null;
+            const imageDigest = reportObj?.image_digest || reportObj?.execution?.image_digest || reportObj?.execution?.image_id || latestGrading?.config_snapshot?.image_digest || null;
             if (envMetaEl && digestValEl) {
                 if (imageDigest) {
                     digestValEl.textContent = imageDigest;
@@ -131,12 +138,12 @@ async function showSubmissionEvidence(row) {
         btnRegrade.onclick = async () => {
             const reason = await ScipOJPlatform.showPromptDialog({
                 title: "发起单条复判",
-                message: "请输入复判原因（将写入系统审计日志 grade_audits）。",
+                message: "请输入复判原因，将保存在课程评测记录中。",
                 defaultValue: "教师抽查复判",
                 confirmText: "确认复判",
                 required: true,
             });
-            if (reason === null)
+            if (reason === null || !current())
                 return;
             btnRegrade.disabled = true;
             btnRegrade.textContent = "调度复判中…";
@@ -157,6 +164,7 @@ async function showSubmissionEvidence(row) {
         };
     }
     catch (err) {
+        if (!current()) return;
         detailCode.textContent = "加载失败: " + err.message;
         detailReport.textContent = "";
     }
