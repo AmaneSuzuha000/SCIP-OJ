@@ -134,14 +134,15 @@ SCIP-OJ 采用**双轨制**，兼顾轻量免配置练习与可信正式成绩�
 
 ```bash
 npm ci
-npm run build
+npm test
 npm run dev
 npm run test:database
 npm run test:grading
-python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-数据库测试执行仓库的真实迁移、事务失败注入、权限与恢复场景。本地使用嵌入式 PostgreSQL；CI 使用 PostgreSQL 17 多个独立连接检查并发。隔离 Docker 和完整 JupyterLite / PySCIPOpt 浏览器测试在 CI 单独运行；这些检查不能替代隔离测试课程中的真实师生验收。
+如需本地运行 Python/Notebook，先按构建环境运行 `jupyter lite build --contents content --output-dir lite-build`，再用 `npm run dev -- --lite lite-build`；未构建时预览会明确显示环境不可用。
+
+`npm test` 自动发现全部单元回归；浏览器测试依赖和公式渲染器版本由 lockfile 固定。数据库测试执行仓库的真实迁移、事务失败注入、权限与恢复场景。本地使用嵌入式 PostgreSQL；CI 使用 PostgreSQL 17 多个独立连接检查并发。隔离 Docker 和完整 JupyterLite / PySCIPOpt 浏览器测试在 CI 单独运行；这些检查不能替代隔离测试课程中的真实师生验收。
 
 历史阶段报告和安全审计保留在 `docs/` 供追溯；早期 SQLite 替身脚本已移除。相似度人工审查工具位于 `scripts/audit_similarity.py`。
 
@@ -151,4 +152,4 @@ python -m unittest discover -s tests -p 'test_*.py' -v
 
 服务端的业务真源位于 `supabase/`，可信判题位于 `judge/`，构建与维护工具统一位于 `scripts/`；不存在第二套 `platform/` 后端。具体边界与迁移顺序见 [架构方案](docs/ARCHITECTURE.md)。
 
-前端源码按职责位于 `site/src/student/`、`site/src/platform/` 和 `site/src/teacher/`。构建生成兼容现有页面的脚本到 `.portal-build/`，发布组装器将它们复制到站点；不维护另一份手写的 app/platform/teacher 大脚本。此处采用原生 ES 模块和明确的状态/组件接口，保留原有 DOM 与视觉。
+前端源码按职责位于 `site/src/student/`、`site/src/platform/` 、`site/src/teacher/` 和 `site/src/markdown/`。构建生成兼容现有页面的脚本到 `.portal-build/`，发布组装器将它们复制到站点；不维护另一份手写的 app/platform/teacher 大脚本。此处采用原生 ES 模块和明确的状态/组件接口，保留原有 DOM 与视觉。

@@ -1,13 +1,16 @@
+import {requestScope} from './scope.js';
 export function create(context,{esc,formatTime}) {
 async function loadPendingRoster(courseId) {
     if (!context.pendingRosterArea)
         return;
+    const current = requestScope(context, 'rosterRequest', courseId);
     context.pendingRosterArea.innerHTML = '<p style="color:var(--text-secondary); padding:1rem;">正在获取花名册状态...</p>';
     try {
         const [rosterPending, verifiedRows] = await Promise.all([
             ScipOJPlatform.getPendingRoster(courseId),
             ScipOJPlatform.getVerifiedRoster(courseId),
         ]);
+        if (!current()) return;
         const verifiedSet = new Set(verifiedRows.map(v => v.roster_id));
         if (rosterPending.length === 0) {
             context.pendingRosterArea.innerHTML = '<p style="color:var(--text-secondary); padding:1rem;">当前班级暂无导入的花名册。可在上方粘贴或载入 CSV 进行预置。</p>';
@@ -72,7 +75,7 @@ async function loadPendingRoster(courseId) {
 指定 GitHub 登录名：${row.github_login || "未指定"}`,
                     confirmText: "已核对本人，确认",
                 });
-                if (!okay)
+                if (!okay || !current())
                     return;
                 button.disabled = true;
                 try {
@@ -88,6 +91,7 @@ async function loadPendingRoster(courseId) {
         });
     }
     catch (err) {
+        if (!current()) return;
         context.pendingRosterArea.innerHTML = `<p class="fail" style="padding:1rem;">获取花名册状态失败: ${esc(err.message)}</p>`;
     }
 }

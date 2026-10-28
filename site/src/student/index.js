@@ -2,7 +2,9 @@ import {state} from './state.js';
 import {leaveNotebookView} from './workbench.js';
 import {main} from './bootstrap.js';
 import {escapeHtml} from './shared.js';
+import {initEnvironment} from './environment.js';
 window.addEventListener('scip-runtime-reset', leaveNotebookView);
+initEnvironment();
 main().catch((err) => {
     const el = document.getElementById("problem-list");
     if (el)

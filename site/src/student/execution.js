@@ -2,6 +2,12 @@ import {state} from './state.js';
 
 let activeRun = null;
 
+export function syncExecutionButtons() {
+    const available = state.problemLoaded && window.ScipOJRuntime?.isReady() && !activeRun;
+    for (const id of ['btn-grade','btn-run-testcase']) document.getElementById(id).disabled = !available;
+    document.getElementById('btn-clear-console').disabled = !!activeRun;
+}
+
 export function setRunStatus(kind, message) {
     const badge = document.createElement('span');
     badge.className = 'badge badge-' + kind;
@@ -22,12 +28,11 @@ export function stopPracticeRun(silent = false) {
 }
 
 export function beginPracticeRun() {
-    if (activeRun) return null;
+    if (activeRun || !window.ScipOJRuntime?.isReady()) return null;
     const problem = state.activeProblemId, sequence = state.openSeq;
-    const buttons = ['btn-grade', 'btn-run-testcase', 'btn-clear-console'].map(id => document.getElementById(id));
     const stop = document.getElementById('btn-stop-run');
     const started = Date.now();
-    let message = '正在准备运行环境…';
+    let message = '正在执行代码…';
     const run = {
         current: () => activeRun === run && state.activeProblemId === problem && state.openSeq === sequence,
         update(value) {
@@ -39,7 +44,7 @@ export function beginPracticeRun() {
             if (activeRun !== run) return;
             clearInterval(timer);
             activeRun = null;
-            buttons.forEach(button => { button.disabled = false; });
+            syncExecutionButtons();
             stop.hidden = true;
         }
     };
@@ -54,7 +59,7 @@ export function beginPracticeRun() {
     }
     const timer = setInterval(paint, 1000);
     activeRun = run;
-    buttons.forEach(button => { button.disabled = true; });
+    syncExecutionButtons();
     stop.hidden = false;
     stop.onclick = () => stopPracticeRun();
     paint();

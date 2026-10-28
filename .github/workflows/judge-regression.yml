@@ -20,36 +20,9 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      - run: npm ci && npm run build
-      - name: Python scoring and oracle isolation regressions
-        run: python -m unittest discover -s tests -p 'test_*.py' -v
-      - name: Browser scoring regressions
-        run: node tests/test_browser_judge.cjs
-      - name: Shared submission state and retry identity
-        run: |
-          node tests/test_grading_state.cjs
-          node tests/test_grading_api.cjs
-          node tests/test_auth_context.mjs
-      - name: Exam-mode browser regression tests
-        run: node tests/test_exam_integrity.cjs
-      - name: Industrial engineering simulation reproducibility tests
-        run: node tests/test_simulation_core.cjs
-      - name: IE-DES-01 browser evidence export and stale-state regression
-        run: node tests/test_ie_des01_export.cjs
-      - name: Inventory and flow CSV units and stale-evidence regressions
-        run: node tests/test_teaching_lab_exports.cjs
-      - name: Inventory, flow-line, Erlang-C and official examples regressions
-        run: node tests/test_ie_case_extensions.cjs
-      - name: Browser Python worker isolation regressions
-        run: |
-          node tests/test_python_runtime.cjs
-          node tests/test_notebook_bridge.cjs
-          node tests/test_runtime_adapter.cjs
-          node tests/test_ie_des_practice.mjs
-      - name: Independent course UI DOM and navigation regressions
-        run: node tests/test_workbench_ui.cjs
-      - name: Course and learning space routing regressions
-        run: node tests/test_spaces.cjs
+      - run: npm ci
+      - name: Complete Python and JavaScript unit regressions
+        run: npm test
       - name: Check frontend JavaScript syntax
         run: |
           node --check .portal-build/js/app.js

@@ -1,4 +1,5 @@
 import {state} from './state.js';
+import {readPages} from './pagination.js';
 import {refreshEnrollments} from './auth.js';
 import {showToast} from './dialogs.js';
 export // ── 课程选课与邀请码 ──
@@ -143,9 +144,11 @@ export async function getTeacherRoster(courseId) {
         return [];
     // 通过受控 RPC 读取：006 起 course_gradebook 已撤销 authenticated 直接 SELECT，
     // 由数据库函数校验 is_teacher_of(course_id) 后返回本课程数据。
-    const { data, error } = await state.supabase.rpc("get_teacher_gradebook", { p_course_id: courseId });
-    if (!error)
-        return data || [];
+    let error;
+    try {
+        return await readPages(() => state.supabase.rpc('get_teacher_gradebook', {p_course_id:courseId})
+            .order('user_id').order('assignment_id'));
+    } catch (failure) { error = failure; }
     // 迁移 006 尚未执行时的兼容回退：旧版视图对 authenticated 仍可读。
     // 006 执行后 RPC 存在，不会再走这里。
     if (isMissingRpcError(error)) {

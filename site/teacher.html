@@ -4,36 +4,19 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>SCIP/LAB · 教师控制台</title>
-  <link rel="stylesheet" href="styles/teacher.css?v=bannerfix1" />
+  <link rel="stylesheet" href="styles/teacher.css?v=audit2" />
+  <link rel="stylesheet" href="styles/shell.css?v=nav1">
 </head>
 <body class="teacher-page">
   <a class="skip-link" href="#main-content">跳转到主要内容</a>
   <!-- 顶部主导航栏 -->
-  <header class="navbar faculty-topbar">
-    <div class="navbar-container">
-      <div class="brand-section">
-        <a href="index.html#course" class="brand-logo">
-          <div class="brand-logo-icon" aria-hidden="true">∑</div>
-          <span class="faculty-brand-text">SCIP<span class="faculty-brand-divider">/</span>LAB</span>
-        </a>
-        <span class="brand-tag">工业工程 · 教师管理空间</span>
-      </div>
-
-      <nav class="nav-links">
-        <a href="index.html#course" class="nav-item">← 返回课程教学</a>
-        <a href="doc.html?f=教师指南.md" class="nav-item">教师指南</a>
-        <a href="doc.html?f=出题指南.md" class="nav-item">出题指南</a>
-      </nav>
-
-      <div class="auth-section" id="auth-area">
-        <span class="user-info" style="color:var(--text-secondary);">加载教师认证中...</span>
-      </div>
-    </div>
-  </header>
+  <!-- PLATFORM_HEADER -->
+<template data-header-services><div class="auth-section" id="auth-area"><span class="user-info">加载教师认证中…</span></div></template>
 
   <div id="toast-container"></div>
 
   <main class="main-content faculty-content" id="main-content">
+    <p id="teacher-access-status" role="status" aria-live="polite" hidden></p>
     <section class="faculty-hero" aria-labelledby="faculty-title">
       <div><span class="section-kicker">TEACHING OPERATIONS / FACULTY DESK</span>
       <h1 id="faculty-title">把教学过程，<span>管理得清清楚楚。</span></h1>
@@ -43,9 +26,9 @@
     <!-- 未配置后端服务提示 -->
     <section id="teacher-no-config" hidden>
       <div class="card" style="border-left:4px solid var(--color-warn);">
-        <h3 style="margin-top:0; color:var(--color-warn);">⚠️ 未配置服务端数据库（Supabase）</h3>
+        <h3 style="margin-top:0; color:var(--color-warn);">课程服务暂不可用</h3>
         <p style="color:var(--text-secondary); margin-bottom:0;">
-          当前前端环境未检测到有效的 <code>config.js</code> 或 Supabase 凭据。教师成绩管理与复判需要云端数据库支持，请在 Pages Actions 或部署环境注入凭据。
+          请稍后重试；如问题持续，请联系平台管理员。
         </p>
       </div>
     </section>
@@ -70,9 +53,9 @@
         <p style="color:var(--text-primary); margin:0.5rem 0 1rem; line-height:1.7;">
           系统检测到您已登录为：<strong id="forbidden-user-name" style="color:#58a6ff;"></strong>。<br/>
           但当前账号尚未被分配为任课教师、助教或教学管理员角色。<br/>
-          如果您是本课程学生，请返回题单大厅完成作业自测与提交；如果您是教师，请联系系统管理员在 <code>enrollments</code> 表中分配 <code>teacher</code> 权限。
+          如果您是本课程学生，请返回课程作业完成练习与提交；如果您是教师，请联系平台管理员开通课程管理权限。
         </p>
-        <a href="index.html#course" class="btn btn-secondary">返回学生题单大厅</a>
+        <a href="index.html#course" class="btn btn-secondary">返回课程作业</a>
       </div>
     </section>
 
@@ -163,7 +146,7 @@
           </div>
 
           <div id="detail-environment-meta" style="margin-bottom:1rem; padding:0.5rem 0.75rem; background:var(--bg-surface); border:1px solid var(--border-default); border-radius:6px; font-size:0.82rem;" hidden>
-            <span style="color:var(--text-secondary);">评测镜像指纹 (Digest):</span>
+            <span style="color:var(--text-secondary);">评测镜像标识:</span>
             <code id="detail-image-digest-val" style="margin-left:0.5rem; font-family:var(--font-mono); color:var(--text-primary); word-break:break-all;"></code>
           </div>
 
@@ -310,7 +293,7 @@
   <script src="js/grading-state.js?v=1"></script>
   <script src="js/request-keys.js?v=1"></script>
   <script src="js/grading-api.js?v=1"></script>
-  <script src="js/platform.js?v=bannerfix1"></script>
-  <script src="js/teacher.js?v=bannerfix1"></script>
+  <script src="js/platform.js?v=audit2"></script>
+  <script src="js/teacher.js?v=audit2"></script>
 </body>
 </html>
