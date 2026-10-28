@@ -25,9 +25,16 @@ async function init() {
     const cfg = window.SCIP_OJ_CONFIG;
     state.supabase = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
     try {
-        // 恢复会话
-        const { data: { session } } = await state.supabase.auth.getSession();
-        if (session) {
+        // 恢复会话；失效 refresh_token（常见于站点短暂下线/缓存错乱）时清本地会话，避免卡在半登录态
+        const { data: { session }, error: sessionError } = await state.supabase.auth.getSession();
+        if (sessionError) {
+            console.warn("[Platform] 会话恢复失败，清理本地登录态:", sessionError.message || sessionError);
+            try { await state.supabase.auth.signOut({ scope: "local" }); } catch (_) {}
+            state.currentUser = null;
+            state.currentProfile = null;
+            state.currentEnrollments = [];
+            showToast("登录会话已失效，请重新使用 GitHub 登录", "warn");
+        } else if (session) {
             state.currentUser = session.user;
             await refreshProfile();
             await refreshEnrollments();
