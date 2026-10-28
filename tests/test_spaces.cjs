@@ -13,8 +13,9 @@ assert.equal(parseRoute("#course-cases").anchor, "case-library");
 assert.equal(parseRoute("#course-assessments").anchor, "course-assessments");
 assert.equal(parseRoute("#list").view, "problems", "Preserve old question-list bookmarks");
 assert.equal(parseRoute("#P001").problemId, "P001", "Preserve old problem bookmarks");
+assert.equal(parseRoute("#IE-DES-01").problemId, "IE-DES-01", "Course problem IDs may include hyphens");
 assert.equal(parseRoute("#submissions").view, "records");
-for (const hash of ["#list", "#problem-list-section", "#submissions", "#P001", "#P002"]) {
+for (const hash of ["#list", "#problem-list-section", "#submissions", "#P001", "#P002", "#IE-DES-01"]) {
   assert.equal(parseRoute(hash).space, "course", "Every assignment/grade route belongs to teaching");
 }
 for (const hash of ["#learn", "#case-library", "#learn-notebooks"]) {

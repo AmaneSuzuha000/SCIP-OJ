@@ -44,6 +44,8 @@ jobs:
         run: |
           node tests/test_python_runtime.cjs
           node tests/test_notebook_bridge.cjs
+          node tests/test_runtime_adapter.cjs
+          node tests/test_ie_des_practice.mjs
       - name: Independent course UI DOM and navigation regressions
         run: node tests/test_workbench_ui.cjs
       - name: Course and learning space routing regressions

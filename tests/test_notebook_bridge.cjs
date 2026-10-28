@@ -2,7 +2,8 @@ const vm=require('node:vm'),fs=require('node:fs'),assert=require('node:assert/st
 (async()=>{
  const parent={},events={},messages=[],listeners=[];let ready=0;
  const window={parent,addEventListener:(name,fn)=>events[name]=fn,ScipOJRuntime:{
-  ensureReady:async()=>ready++,runSolve:async()=>({objective:7}),
+  ensureReady:async progress=>{ready++;progress('loading');},
+  runSolve:async(code,instance,seconds,progress)=>{progress('executing');return {objective:7};},
   openNotebook:async(id,code,instance,changed)=>{listeners.push(changed);changed(code,null);},detachNotebook:()=>{},
  }};
  vm.runInNewContext(fs.readFileSync('notebook/bridge.js','utf8'),{window,location:{origin:'https://course.test'}});
@@ -13,7 +14,9 @@ const vm=require('node:vm'),fs=require('node:fs'),assert=require('node:assert/st
  events.message(handshake);
  const call=(id,method,args=[])=>port.onmessage({data:{version:1,id,method,args}});
  await call('1','ready');assert.equal(ready,1);
+ assert.ok(messages.some(message=>message.type==='progress'&&message.id==='1'&&message.message==='loading'));
  await call('2','run',['source',{},1]);assert.equal(messages.at(-1).result.objective,7);
+ assert.ok(messages.some(message=>message.type==='progress'&&message.id==='2'&&message.message==='executing'));
  await call('3','open',['P001','code',{}]);assert.equal(messages.at(-2).context,'3');
  await call('4','detach');const before=messages.length;listeners[0]('stale',null);assert.equal(messages.length,before);
  await call('5','application:arbitrary-command');assert.ok(messages.at(-1).error);
