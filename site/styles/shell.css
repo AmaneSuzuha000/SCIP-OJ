@@ -29,11 +29,11 @@
 }
 
 /* Every destination retains the same navigation frame as the portal. */
-[data-page-frame="shared"]{margin:0;padding:74px 0 0 220px;background:#f5f7f6;color:#203238;font-family:Inter,"Noto Sans SC",system-ui,sans-serif}
+[data-page-frame="shared"]{--page-rail-width:250px;margin:0;padding:74px 0 0 var(--page-rail-width);background:#f5f7f6;color:#203238;font-family:Inter,"Noto Sans SC",system-ui,sans-serif}
 [data-page-frame="shared"] .shared-topbar{position:fixed;inset:0 0 auto;height:74px}
-[data-page-frame="shared"] .studio-rail{position:fixed;top:74px;bottom:0;left:0;width:220px;box-sizing:border-box;padding:28px 16px;background:#fff;border-right:1px solid #e4ece9;overflow:auto;z-index:90}
+[data-page-frame="shared"] .studio-rail{position:fixed;top:74px;bottom:0;left:0;width:var(--page-rail-width);box-sizing:border-box;padding:32px 15px 18px;background:#fff;border-right:1px solid #e4ece9;overflow:auto;z-index:90}
 [data-page-frame="shared"] .nav-links{display:flex;flex-direction:column;gap:4px}
-[data-page-frame="shared"] .nav-item{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;color:#61747b;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;box-sizing:border-box}
+[data-page-frame="shared"] .nav-item{display:flex;align-items:center;gap:10px;min-height:39px;padding:8px 10px 8px 12px;color:#61747b;text-decoration:none;border-radius:11px;font-size:.85rem;font-weight:640;box-sizing:border-box}
 [data-page-frame="shared"] .nav-item:hover{background:#edf7f3;color:#116b67}
 [data-page-frame="shared"] .nav-item .ui-icon{width:19px;height:19px}
 [data-page-frame="shared"] .rail-section{margin-bottom:25px}
@@ -52,3 +52,5 @@
  [data-page-frame="shared"] .rail-menu-toggle{display:flex;align-items:center;gap:8px;background:none;border:0;color:#61747b;padding:10px;font:inherit;font-size:13px}
  [data-page-frame="shared"] .rail-menu-toggle img{width:16px;height:16px}
 }
+
+@media(min-width:841px) and (max-width:1050px){[data-page-frame="shared"]{--page-rail-width:213px}[data-page-frame="shared"] .studio-rail{padding:25px 10px}}
