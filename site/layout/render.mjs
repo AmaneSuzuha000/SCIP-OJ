@@ -13,5 +13,19 @@ export async function renderPage(name, source) {
     const links=learning?labs:name==='doc.html'?guides:name==='teacher.html'?[['teacher.html','教师管理'],...guides.slice(1)]:[];
     if (links.length) header+='<nav class="section-navigation" aria-label="当前空间导航">'+links.map(([url,label])=>
         `<a href="${url}"${url===name?' class="active" aria-current="page"':''}>${label}</a>`).join('')+'</nav>';
+    if (!isIndex) {
+        // Reuse the portal's navigation rather than maintaining a second menu.
+        const portal=await readFile(new URL('../index.html',import.meta.url),'utf8');
+        let rail=portal.match(/<aside class="studio-rail"[\s\S]*?<\/aside>/)[0];
+        rail=rail.replace(/href="#/g,'href="index.html#')
+            .replace(/id="teacher-link" hidden/,'id="teacher-link"'+(name==='teacher.html'?'':' hidden'));
+        const space=learning?'learn':'course';
+        rail=rail.replace(/(data-space-(?:nav|content)="(course|learn)")( hidden)?/g,(_,attr,owner)=>attr+(owner===space?'':' hidden'));
+        if (learning) rail=rail.replace(/<nav[^>]*data-space-nav="course"[\s\S]*?<\/nav>/,'')
+            .replace(/<div class="rail-section" id="rail-services"[\s\S]*?<\/div>/,'')
+            .replace(/<div class="rail-teacher"[\s\S]*?<\/div>/,'');
+        source=source.replace('<body','<body data-page-frame="shared"');
+        header+=rail+'<script src="js/page-frame.js?v=1" defer></script>';
+    }
     return source.replace(/<template data-header-services>[\s\S]*?<\/template>/,'').replace('<!-- PLATFORM_HEADER -->',header);
 }
