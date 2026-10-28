@@ -29,4 +29,4 @@
 
 ## 提示
 
-MVP 可用动态规划或枚举；后续课程改为 PySCIPOpt / `scipy.optimize.milp`。
+可用动态规划或枚举验证小规模结果，课程建模使用 PySCIPOpt。
