@@ -1,6 +1,11 @@
 import {state} from './state.js';
 
+let openAttempt = 0;
+
 export async function showStudyNotebook(notebook, sequence) {
+    if (sequence !== state.routeSeq) return;
+    const attempt = ++openAttempt;
+    const current = () => sequence === state.routeSeq && state.studyNotebook === notebook && attempt === openAttempt;
     state.studyNotebook = notebook;
     const workspace = document.getElementById('workspace');
     workspace.hidden = false;
@@ -16,8 +21,14 @@ export async function showStudyNotebook(notebook, sequence) {
     message.textContent = '正在打开 Notebook…';
     try {
         await window.ScipOJRuntime.openStudyNotebook(notebook.path);
-        if (sequence === state.routeSeq) message.textContent = '';
+        if (current()) message.textContent = '';
     } catch (error) {
-        if (sequence === state.routeSeq && error.code !== 'NOTEBOOK_CANCELLED') message.textContent = error.message;
+        if (!current() || error.code === 'NOTEBOOK_CANCELLED') return;
+        message.textContent = error.message + ' ';
+        const retry = document.createElement('button');
+        retry.type = 'button';
+        retry.textContent = '重试打开';
+        retry.onclick = () => { if (current()) showStudyNotebook(notebook, sequence); };
+        message.appendChild(retry);
     }
 }
