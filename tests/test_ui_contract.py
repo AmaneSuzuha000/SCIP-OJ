@@ -91,7 +91,7 @@ class UIContractTests(unittest.TestCase):
         grade_script = (SITE.parent / "scripts/run_formal_grade.py").read_text()
         self.assertIn("image_digest", grade_script)
         workflow = (SITE.parent / ".github/workflows/grade-submission.yml").read_text()
-        self.assertIn("IMAGE_DIGEST", workflow)
+        self.assertIn("Sandbox image ID", workflow)
 
     def test_similarity_audit_ui_contract(self):
         js = component_source('teacher')

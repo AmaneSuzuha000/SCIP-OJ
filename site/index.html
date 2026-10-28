@@ -4,21 +4,20 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>课程教学 · SCIP/LAB</title>
-  <link rel="stylesheet" href="styles/student.css?v=components2" />
+  <link rel="stylesheet" href="styles/student.css?v=prewarm3" />
+  <link rel="stylesheet" href="js/markdown.css?v=math1" />
+  <link rel="stylesheet" href="styles/shell.css?v=nav1">
 </head>
 <body class="student-page" data-space="course" data-teaching-view="overview">
 <a class="skip-link" href="#main-content">跳转到主要内容</a>
-<header class="navbar workbench-topbar"><div class="navbar-container">
-<div class="brand-section"><a href="#course" class="brand-logo" aria-label="SCIP-OJ 课程教学首页"><span class="brand-logo-icon"><img class="ui-icon " src="assets/icons/sigma.svg" alt="" aria-hidden="true"></span><span class="brand-name">SCIP<span class="brand-name-accent">/</span>LAB</span></a><span class="brand-tag">工业工程 · 系统建模与仿真</span></div>
-<nav class="space-switcher" aria-label="课程教学与拓展学习"><a href="#course" id="nav-course-space" class="active" aria-current="page">课程教学</a><a href="#learn" id="nav-learning-space">拓展学习</a></nav>
-<div class="auth-section" id="auth-area" data-space-content="course"><span class="user-info">正在加载课程服务…</span></div>
-<span class="open-learning-label" data-space-content="learn" hidden>开放学习</span></div></header>
+<!-- PLATFORM_HEADER -->
+<template data-header-services><div class="course-services" data-space-content="course"><div id="runtime-indicator" class="runtime-indicator" data-state="preparing"><span id="runtime-label" role="status" aria-live="polite">环境准备中</span><button id="btn-retry-runtime" class="btn-secondary" type="button" hidden>重试</button></div><div class="auth-section" id="auth-area"><span class="user-info">正在加载课程服务…</span></div></div></template>
 <aside class="studio-rail" aria-label="平台导航">
 <div class="rail-section" id="rail-primary">
 <nav class="nav-links" aria-label="课程教学导航" data-space-nav="course"><a class="nav-item" href="#course" data-route="course" ><img class="ui-icon" src="assets/icons/house.svg" alt="" aria-hidden="true"><span>教学概览</span></a><a class="nav-item" href="#problem-list-section" data-route="problem-list-section" id="nav-to-assessment"><img class="ui-icon" src="assets/icons/code.svg" alt="" aria-hidden="true"><span>课程作业</span></a><a class="nav-item" href="#submissions" data-route="submissions" ><img class="ui-icon" src="assets/icons/clipboard-text.svg" alt="" aria-hidden="true"><span>提交记录</span></a><a class="nav-item" href="#course-labs" data-route="course-labs" ><img class="ui-icon" src="assets/icons/book-open.svg" alt="" aria-hidden="true"><span>课程实验</span></a></nav>
 <nav class="nav-links" aria-label="拓展学习导航" data-space-nav="learn" hidden><a class="nav-item" href="#learn" data-route="learn" ><img class="ui-icon" src="assets/icons/house.svg" alt="" aria-hidden="true"><span>学习概览</span></a><a class="nav-item" href="#case-library" data-route="case-library" ><img class="ui-icon" src="assets/icons/flask.svg" alt="" aria-hidden="true"><span>仿真案例</span></a><a class="nav-item" href="#learn-notebooks" data-route="learn-notebooks" ><img class="ui-icon" src="assets/icons/code.svg" alt="" aria-hidden="true"><span>优化建模</span></a></nav></div>
-<button type="button" id="btn-course-menu" class="rail-menu-toggle" aria-expanded="false" aria-controls="rail-resources rail-services rail-learning-resources">更多资源 <img class="ui-icon" src="assets/icons/caret-down.svg" alt="" aria-hidden="true"></button>
-<div class="rail-section" id="rail-resources" data-space-content="course"><p class="rail-section-label">课程工具</p><nav class="nav-links" aria-label="课程工具"><a class="nav-item" href="lab/index.html?path=01_P001_knapsack_PySCIPOpt.ipynb&amp;mode=single-document" target="_blank" rel="noopener noreferrer"><img class="ui-icon" src="assets/icons/code.svg" alt="" aria-hidden="true"><span>PySCIPOpt 课程实验</span></a><a class="nav-item" href="repl/index.html" target="_blank" rel="noopener noreferrer"><img class="ui-icon" src="assets/icons/terminal-window.svg" alt="" aria-hidden="true"><span>Python 调试</span></a></nav></div>
+<button type="button" id="btn-course-menu" class="rail-menu-toggle" aria-expanded="false" aria-controls="rail-services rail-learning-resources">更多资源 <img class="ui-icon" src="assets/icons/caret-down.svg" alt="" aria-hidden="true"></button>
+
 <div class="rail-section" id="rail-services" data-space-content="course"><p class="rail-section-label">教学服务</p><nav class="nav-links" aria-label="教学服务"><a class="nav-item" href="doc.html?f=学生指南.md"><img class="ui-icon" src="assets/icons/book-open.svg" alt="" aria-hidden="true"><span>学生指南</span></a><a class="nav-item" href="doc.html?f=教师指南.md"><img class="ui-icon" src="assets/icons/file-text.svg" alt="" aria-hidden="true"><span>教师指南</span></a><a class="nav-item" href="#course-assessments" data-route="course-assessments"><img class="ui-icon" src="assets/icons/list-checks.svg" alt="" aria-hidden="true"><span>作业说明</span></a></nav></div>
 <div class="rail-section" id="rail-learning-resources" data-space-content="learn" hidden><p class="rail-section-label">拓展资源</p><nav class="nav-links" aria-label="拓展资源"><a class="nav-item" href="official-examples.html"><img class="ui-icon" src="assets/icons/file-text.svg" alt="" aria-hidden="true"><span>官方建模示例</span></a><a class="nav-item" href="doc.html?f=拓展学习指南.md&amp;space=learn"><img class="ui-icon" src="assets/icons/book-open.svg" alt="" aria-hidden="true"><span>拓展学习指南</span></a></nav></div>
 <div class="rail-teacher" data-space-content="course"><a class="nav-item" href="teacher.html" id="teacher-link" hidden><img class="ui-icon" src="assets/icons/user.svg" alt="" aria-hidden="true"><span>教师控制台</span></a></div>
@@ -32,8 +31,8 @@
 <div class="teaching-actions"><a class="primary-action" href="#problem-list-section">进入课程作业 <img class="ui-icon" src="assets/icons/arrow-right.svg" alt="" aria-hidden="true"></a><a class="text-action" href="#submissions">查看提交记录 <img class="ui-icon" src="assets/icons/arrow-up-right.svg" alt="" aria-hidden="true"></a></div>
 <section id="course-outline" class="course-outline" aria-labelledby="outline-heading"><div class="section-title"><span>教学流程</span><h2 id="outline-heading">从建模练习到正式作业。</h2></div><ol class="course-path"><li><strong>阅读题目</strong><span>输入输出、约束与作业要求</span></li><li><strong>建模调试</strong><span>课程 Notebook 与本地练习</span></li><li><strong>提交作业</strong><span>按当前班级要求正式提交</span></li><li><strong>查看反馈</strong><span>成绩、报告与历史记录</span></li></ol></section>
 <section id="course-lab-list" class="course-cases" aria-labelledby="course-labs-heading"><div class="section-title"><span>PySCIPOpt 课程实验</span><h2 id="course-labs-heading">与课程题目配套的建模实验。</h2><p>先在 Notebook 验证模型，再回到课程作业提交代码。</p></div>
-<div class="course-case-row"><span class="lesson-index">01</span><div><small>P001 · 入门建模</small><h3>0-1 背包问题</h3><p>二元变量、容量约束与价值最大化。</p></div><a class="text-action" href="lab/index.html?path=01_P001_knapsack_PySCIPOpt.ipynb&amp;mode=single-document" target="_blank" rel="noopener noreferrer">打开课程实验 <img class="ui-icon" src="assets/icons/arrow-up-right.svg" alt="" aria-hidden="true"></a></div>
-<div class="course-case-row"><span class="lesson-index">02</span><div><small>P002 · 分配建模</small><h3>指派问题</h3><p>人员与任务的一对一分配、成本最小化。</p></div><a class="text-action" href="lab/index.html?path=02_P002_assignment_PySCIPOpt.ipynb&amp;mode=single-document" target="_blank" rel="noopener noreferrer">打开课程实验 <img class="ui-icon" src="assets/icons/arrow-up-right.svg" alt="" aria-hidden="true"></a></div></section>
+<div class="course-case-row"><span class="lesson-index">01</span><div><small>P001 · 入门建模</small><h3>0-1 背包问题</h3><p>二元变量、容量约束与价值最大化。</p></div><a class="text-action" href="#notebook/01_P001_knapsack_PySCIPOpt.ipynb">打开课程实验 <img class="ui-icon" src="assets/icons/arrow-right.svg" alt="" aria-hidden="true"></a></div>
+<div class="course-case-row"><span class="lesson-index">02</span><div><small>P002 · 分配建模</small><h3>指派问题</h3><p>人员与任务的一对一分配、成本最小化。</p></div><a class="text-action" href="#notebook/02_P002_assignment_PySCIPOpt.ipynb">打开课程实验 <img class="ui-icon" src="assets/icons/arrow-right.svg" alt="" aria-hidden="true"></a></div></section>
 <section id="course-assessments" class="assessment-guide" aria-labelledby="assessment-heading"><div class="section-title"><span>作业说明</span><h2 id="assessment-heading">练习用于调试，正式提交记录成绩。</h2></div><div class="assessment-columns"><div><h3>课前练习与建模实验</h3><p>使用课程 Notebook 与浏览器练习检查模型和代码。练习反馈不计入正式成绩。</p><a class="text-action" href="doc.html?f=学生指南.md">阅读学生指南 <img class="ui-icon" src="assets/icons/arrow-up-right.svg" alt="" aria-hidden="true"></a></div><div><h3>正式作业与评测</h3><p>登录、绑定学号并加入班级，按题目中的截止时间与计分规则提交。教师可查阅成绩、源码和判卷详情。</p><a class="text-action" href="#problem-list-section">查看课程作业 <img class="ui-icon" src="assets/icons/arrow-right.svg" alt="" aria-hidden="true"></a></div></div></section>
 </div>
 <section id="submission-overview" data-teaching-view-panel="records" hidden><header class="space-heading"><h1>提交记录</h1><p>查看自己的正式提交与评测反馈；本地练习不会写入正式成绩。</p></header><div id="submissions-host"></div></section>
@@ -43,7 +42,18 @@
 <div class="catalog-toolbar" aria-label="筛选与布局"><div class="catalog-filters"><label for="filter-difficulty">难度</label><select id="filter-difficulty"><option value="all">全部难度</option><option value="easy">简单</option><option value="medium">中等</option><option value="hard">困难</option></select><label for="filter-progress">状态</label><select id="filter-progress"><option value="all">全部题目</option><option value="solved">练习已通过</option><option value="todo">尚未通过</option></select></div><div class="catalog-view" aria-label="题库显示方式"><button type="button" id="view-list" class="view-toggle active" aria-pressed="true">列表</button><button type="button" id="view-grid" class="view-toggle" aria-pressed="false">卡片</button></div></div><div id="problem-list" class="problem-grid problem-list-mode"><p>正在加载题目索引…</p></div>
 </section>
     <!-- 2. 题目工作台（选中题目后展开） -->
-    <section id="workspace" hidden>
+
+</section>
+<section id="learning-space" aria-label="拓展学习" hidden>
+<div class="learning-overview">
+<header class="space-heading"><h1 id="hero-heading">拓展学习</h1><p>从开放案例出发，探索仿真与优化建模。</p></header>
+<div class="studio-case-grid">
+<section class="studio-intro learning-feature" aria-labelledby="task-heading"><div class="learning-feature-copy"><p class="task-label">IE-DES-01 · 合成教学数据</p><h2 id="task-heading">从检修排队开始，<br>完成一次完整实验</h2><p class="task-description">比较 2 个与 3 个工位的等待差，保留每次重复的实验记录。</p><ol class="learning-steps"><li><span>1</span><strong>定义系统</strong><small>明确对象、参数与假设</small></li><li><span>2</span><strong>运行实验</strong><small>设置方案并进行仿真</small></li><li><span>3</span><strong>核验结果</strong><small>查看并对比实验记录</small></li><li><span>4</span><strong>解释决策</strong><small>分析现象并给出结论</small></li></ol><a class="studio-case-card primary-action" href="case-studio.html#experiment"><img class="ui-icon " src="assets/icons/flask.svg" alt="" aria-hidden="true"><span>开始本次实验</span><img class="ui-icon " src="assets/icons/arrow-right.svg" alt="" aria-hidden="true"></a></div><div class="learning-feature-art"><img src="assets/workshop-learning.webp" width="1536" height="1024" alt="" decoding="async" fetchpriority="high"></div></section>
+<section id="case-library" class="studio-case-section explore-section" aria-labelledby="case-library-title"><div class="section-title"><h2 id="case-library-title">接下来可以探索</h2><p>在不同的系统场景中，体验建模、仿真与决策分析的全过程。</p></div><a class="studio-case-card explore-row" href="inventory-lab.html"><span class="explore-icon"><img class="ui-icon " src="assets/icons/package.svg" alt="" aria-hidden="true"></span><span><h3>随机库存与服务水平</h3><p>定期检查补货 · 成本与服务率</p></span><img class="ui-icon " src="assets/icons/arrow-right.svg" alt="" aria-hidden="true"></a><a class="studio-case-card explore-row" href="flow-lab.html"><span class="explore-icon amber"><img class="ui-icon " src="assets/icons/factory.svg" alt="" aria-hidden="true"></span><span><h3>双工序生产线与缓冲</h3><p>阻塞 · 在制品 · 吞吐量</p></span><img class="ui-icon " src="assets/icons/arrow-right.svg" alt="" aria-hidden="true"></a></section></div>
+<section id="learn-notebooks" class="extension-notebooks" aria-labelledby="extension-notebooks-heading"><div class="section-title"><h2 id="extension-notebooks-heading">优化建模 Notebook</h2><p>四个进阶模型，配有独立小规模真值校验。</p></div><div class="extension-notebook-list"><a class="extension-notebook" href="#notebook/03_IE_Facility_Location_PySCIPOpt.ipynb"><span><strong>容量约束设施选址</strong><small>设施启用、客户分配与容量约束</small></span><img class="ui-icon" src="assets/icons/arrow-right.svg" alt="" aria-hidden="true"></a><a class="extension-notebook" href="#notebook/04_IE_Bin_Packing_PySCIPOpt.ipynb"><span><strong>仓储装箱</strong><small>物品分配、容量与对称性</small></span><img class="ui-icon" src="assets/icons/arrow-right.svg" alt="" aria-hidden="true"></a><a class="extension-notebook" href="#notebook/05_IE_Flow_Shop_PySCIPOpt.ipynb"><span><strong>排列流水车间</strong><small>作业顺序、工序约束与完工时间</small></span><img class="ui-icon" src="assets/icons/arrow-right.svg" alt="" aria-hidden="true"></a><a class="extension-notebook" href="#notebook/06_IE_Stochastic_Inventory_PySCIPOpt.ipynb"><span><strong>单周期随机库存优化</strong><small>场景概率、订货决策与期望成本</small></span><img class="ui-icon" src="assets/icons/arrow-right.svg" alt="" aria-hidden="true"></a></div><a class="text-action" href="official-examples.html">浏览 SCIP / Gurobi 官方案例 <img class="ui-icon" src="assets/icons/arrow-right.svg" alt="" aria-hidden="true"></a><p class="local-study-note">开放学习资源不自动计入课程成绩。</p></section>
+</div>
+</section>
+      <section id="workspace" hidden>
       <div class="workspace-header">
         <a href="#list" id="btn-back-to-list" class="btn-back">
           ← 返回在线题库
@@ -170,17 +180,7 @@
         </div>
       </section>
     </section>
-</section>
-<section id="learning-space" aria-label="拓展学习" hidden>
-<div class="learning-overview">
-<header class="space-heading"><h1 id="hero-heading">拓展学习</h1><p>从开放案例出发，探索仿真与优化建模。</p></header>
-<div class="studio-case-grid">
-<section class="studio-intro learning-feature" aria-labelledby="task-heading"><div class="learning-feature-copy"><p class="task-label">IE-DES-01 · 合成教学数据</p><h2 id="task-heading">从检修排队开始，<br>完成一次完整实验</h2><p class="task-description">比较 2 个与 3 个工位的等待差，保留每次重复的实验记录。</p><ol class="learning-steps"><li><span>1</span><strong>定义系统</strong><small>明确对象、参数与假设</small></li><li><span>2</span><strong>运行实验</strong><small>设置方案并进行仿真</small></li><li><span>3</span><strong>核验结果</strong><small>查看并对比实验记录</small></li><li><span>4</span><strong>解释决策</strong><small>分析现象并给出结论</small></li></ol><a class="studio-case-card primary-action" href="case-studio.html#experiment"><img class="ui-icon " src="assets/icons/flask.svg" alt="" aria-hidden="true"><span>开始本次实验</span><img class="ui-icon " src="assets/icons/arrow-right.svg" alt="" aria-hidden="true"></a></div><div class="learning-feature-art"><img src="assets/workshop-learning.webp" width="1536" height="1024" alt="" decoding="async" fetchpriority="high"></div></section>
-<section id="case-library" class="studio-case-section explore-section" aria-labelledby="case-library-title"><div class="section-title"><h2 id="case-library-title">接下来可以探索</h2><p>在不同的系统场景中，体验建模、仿真与决策分析的全过程。</p></div><a class="studio-case-card explore-row" href="inventory-lab.html"><span class="explore-icon"><img class="ui-icon " src="assets/icons/package.svg" alt="" aria-hidden="true"></span><span><h3>随机库存与服务水平</h3><p>定期检查补货 · 成本与服务率</p></span><img class="ui-icon " src="assets/icons/arrow-right.svg" alt="" aria-hidden="true"></a><a class="studio-case-card explore-row" href="flow-lab.html"><span class="explore-icon amber"><img class="ui-icon " src="assets/icons/factory.svg" alt="" aria-hidden="true"></span><span><h3>双工序生产线与缓冲</h3><p>阻塞 · 在制品 · 吞吐量</p></span><img class="ui-icon " src="assets/icons/arrow-right.svg" alt="" aria-hidden="true"></a></section></div>
-<section id="learn-notebooks" class="extension-notebooks" aria-labelledby="extension-notebooks-heading"><div class="section-title"><h2 id="extension-notebooks-heading">优化建模 Notebook</h2><p>四个进阶模型，配有独立小规模真值校验。</p></div><div class="extension-notebook-list"><a class="extension-notebook" href="lab/index.html?path=03_IE_Facility_Location_PySCIPOpt.ipynb&amp;mode=single-document" target="_blank" rel="noopener noreferrer"><span><strong>容量约束设施选址</strong><small>设施启用、客户分配与容量约束</small></span><img class="ui-icon" src="assets/icons/arrow-up-right.svg" alt="" aria-hidden="true"></a><a class="extension-notebook" href="lab/index.html?path=04_IE_Bin_Packing_PySCIPOpt.ipynb&amp;mode=single-document" target="_blank" rel="noopener noreferrer"><span><strong>仓储装箱</strong><small>物品分配、容量与对称性</small></span><img class="ui-icon" src="assets/icons/arrow-up-right.svg" alt="" aria-hidden="true"></a><a class="extension-notebook" href="lab/index.html?path=05_IE_Flow_Shop_PySCIPOpt.ipynb&amp;mode=single-document" target="_blank" rel="noopener noreferrer"><span><strong>排列流水车间</strong><small>作业顺序、工序约束与完工时间</small></span><img class="ui-icon" src="assets/icons/arrow-up-right.svg" alt="" aria-hidden="true"></a><a class="extension-notebook" href="lab/index.html?path=06_IE_Stochastic_Inventory_PySCIPOpt.ipynb&amp;mode=single-document" target="_blank" rel="noopener noreferrer"><span><strong>单周期随机库存优化</strong><small>场景概率、订货决策与期望成本</small></span><img class="ui-icon" src="assets/icons/arrow-up-right.svg" alt="" aria-hidden="true"></a></div><a class="text-action" href="official-examples.html">浏览 SCIP / Gurobi 官方案例 <img class="ui-icon" src="assets/icons/arrow-right.svg" alt="" aria-hidden="true"></a><p class="local-study-note">开放学习资源不自动计入课程成绩。</p></section>
-</div>
-</section>
-  </main>
+</main>
 
   <!-- 底部信息 -->
   <footer class="studio-footer"><div class="footer-container"><div data-space-content="course"><strong>SCIP-OJ</strong> · 课程教学与作业评测</div><div data-space-content="course">正式成绩以服务端评测记录为准</div><div data-space-content="learn" hidden><strong>SCIP/LAB</strong> · 拓展案例与建模资源</div><div data-space-content="learn" hidden>开放学习 · 本地实验记录</div></div></footer>
@@ -191,17 +191,18 @@
   <script src="js/grading-state.js?v=1"></script>
   <script src="js/request-keys.js?v=1"></script>
   <script src="js/grading-api.js?v=1"></script>
-  <script src="js/platform.js?v=components2"></script>
+  <script src="js/platform.js?v=audit2"></script>
   <script src="js/marked.min.js"></script>
   <script src="js/purify.min.js"></script>
+  <script src="js/markdown.js?v=math1"></script>
   <script src="js/knapsack_judge.js"></script>
   <script src="js/assignment_judge.js"></script>
-  <script src="js/python_runtime.js?v=progress3"></script>
+  <script src="js/python_runtime.js?v=prewarm3"></script>
   <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.20/lib/codemirror.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.20/mode/python/python.min.js"></script>
   <script src="js/editor.js?v=leetcode1"></script>
   <script src="js/exam-integrity.js?v=leetcode1"></script>
-  <script src="js/spaces.js?v=progress3"></script>
-  <script src="js/app.js?v=progress3"></script>
+  <script src="js/spaces.js?v=nav2"></script>
+  <script src="js/app.js?v=prewarm3"></script>
 </body>
 </html>

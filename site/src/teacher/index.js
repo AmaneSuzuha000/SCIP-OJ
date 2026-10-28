@@ -4,6 +4,7 @@ import {create as evidence} from './evidence.js';
 import {create as roster} from './roster.js';
 import {create as assignments} from './assignments.js';
 import {create as similarity} from './similarity.js';
+import {withDeadline} from '../platform/deadline.js';
 /**
  * SCIP-OJ 教师控制台 — 成绩中心、评测证据台、花名册对齐与作业发布
  * 依赖: ScipOJPlatform (platform.js)
@@ -28,10 +29,7 @@ import {create as similarity} from './similarity.js';
 
   let configured = false;
   try {
-    configured = await Promise.race([
-      ScipOJPlatform.init(),
-      new Promise((resolve) => setTimeout(() => resolve(false), 8000)),
-    ]);
+    configured = await withDeadline(ScipOJPlatform.init(),8000,'课程服务恢复超时');
   } catch (err) {
     console.warn("[Teacher] 平台初始化异常:", err);
     configured = false;
@@ -40,9 +38,10 @@ import {create as similarity} from './similarity.js';
 
   if (!configured) {
     // init 超时或失败时仍保留登录入口；若确实无配置再切提示
-    if (!ScipOJPlatform.isConfigured?.() && noConfigEl) {
+    if ((!ScipOJPlatform.isConfigured?.() || !ScipOJPlatform.getSupabase?.()) && noConfigEl) {
       noConfigEl.hidden = false;
       if (noAuthEl) noAuthEl.hidden = true;
+      return;
     }
     // 即使超时也继续绑定登录按钮，用户可手动重试登录
   }
@@ -52,8 +51,17 @@ import {create as similarity} from './similarity.js';
   }
 
   // ── 认证与角色权限检查 ──
+  let activeContext = null, accessSequence = 0;
   async function checkTeacherAccess() {
+    const sequence = ++accessSequence;
+    const accessStatus=document.getElementById('teacher-access-status');
+    accessStatus.hidden=true;
     const user = ScipOJPlatform.getUser();
+    if (activeContext && activeContext.userId !== user?.id) {
+      activeContext.active = false;
+      panelEl.hidden = true;
+      document.getElementById('submission-detail').hidden = true;
+    }
     if (!user) {
       if (noAuthEl) noAuthEl.hidden = false;
       if (forbiddenEl) forbiddenEl.hidden = true;
@@ -64,11 +72,21 @@ import {create as similarity} from './similarity.js';
     if (noAuthEl) noAuthEl.hidden = true;
 
     // 检查是否具备教师/助教/管理员权限
-    const enrollments = await ScipOJPlatform.getMyCourses();
+    accessStatus.hidden=false;accessStatus.textContent='正在确认课程管理权限…';
+    let enrollments;
+    try {enrollments=await withDeadline(ScipOJPlatform.getMyCourses(),6000,'课程权限加载超时');}
+    catch (error) {
+      if (sequence===accessSequence) {accessStatus.textContent='课程权限暂时无法确认，请刷新重试。';panelEl.hidden=true;}
+      return false;
+    }
+    if (sequence !== accessSequence || ScipOJPlatform.getUser()?.id !== user.id) return false;
+    if (!Array.isArray(enrollments)) {accessStatus.textContent='课程权限状态已更新，请重试。';return false;}
+    accessStatus.hidden=true;
     const isTeacherRole = ScipOJPlatform.isTeacher();
     const teacherCourses = enrollments.filter(e => e.role === "teacher" || e.role === "ta" || e.role === "admin");
 
     if (!isTeacherRole && teacherCourses.length === 0) {
+      if (activeContext) activeContext.active = false;
       if (forbiddenEl) {
         forbiddenEl.hidden = false;
         const nameEl = document.getElementById("forbidden-user-name");
@@ -89,8 +107,9 @@ import {create as similarity} from './similarity.js';
   ScipOJPlatform.onAuthChange(async () => {
     const ok = await checkTeacherAccess();
     const uid = ScipOJPlatform.getUser()?.id || null;
+    if (!ok) { initializedForUser = null; return; }
     // 仅在登录用户变化时重建工作台，避免 token 刷新把正在填写的表单清空
-    if (ok && uid && uid !== initializedForUser) initTeacherView();
+    if (uid && (uid !== initializedForUser || !activeContext?.active)) initTeacherView();
   });
 
   if (hasAccess) {
@@ -99,7 +118,9 @@ import {create as similarity} from './similarity.js';
 
   // ── 教师工作台主逻辑 ──
   async function initTeacherView() {
-const context={handlers:{}};
+if (activeContext) activeContext.active = false;
+const context={handlers:{}, active:true, userId:ScipOJPlatform.getUser()?.id};
+activeContext = context;
 Object.assign(context.handlers,invites(context,{esc,formatTime}));
 Object.assign(context.handlers,gradebook(context,{esc,formatTime}));
 Object.assign(context.handlers,evidence(context,{esc,formatTime}));
@@ -142,6 +163,7 @@ context.currentAssignmentsList = [];
 // 加载教师授课课程列表
 try {
     const enrollments = await ScipOJPlatform.getMyCourses();
+    if (!context.active || ScipOJPlatform.getUser()?.id !== context.userId) return;
     context.currentCoursesList = enrollments.filter(e => e.role === "teacher" || e.role === "ta" || e.role === "admin");
     if (context.currentCoursesList.length === 0) {
         context.courseSelect.innerHTML = "<option>未分配任何授课班级</option>";
@@ -161,11 +183,13 @@ catch (err) {
 // 班级切换
 context.courseSelect.onchange = async () => {
     context.currentCourseId = context.courseSelect.value;
+    context.currentRosterData = [];
+    context.currentAssignmentsList = [];
+    document.getElementById('submission-detail').hidden = true;
     context.handlers.updateCourseInviteDisplay();
     if (context.currentCourseId) {
-        await context.handlers.loadGradebook(context.currentCourseId);
-        context.handlers.loadPendingRoster(context.currentCourseId);
-        context.handlers.loadCourseAssignments(context.currentCourseId);
+        const courseId = context.currentCourseId;
+        await Promise.all([context.handlers.loadGradebook(courseId), context.handlers.loadPendingRoster(courseId)]);
     }
 };
 context.inviteDisplaySeq = 0;

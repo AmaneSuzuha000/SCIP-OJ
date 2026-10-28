@@ -6,6 +6,7 @@
   let readyApp, frame, appPromise, busy = false, generation = 0, notebook, changed;
   const managedWidgets = new Map();
   let notebookRequest = 0, notebookQueue = Promise.resolve();
+  let preparedKernel = null;
   // Runs inside the Lite document. Only the host owns the actual iframe.
   function getFrame() {
     if (!frame) frame = {contentWindow:window,remove(){},hidden:true};
@@ -23,6 +24,7 @@
     generation++;
     notebookQueue = Promise.resolve();
     managedWidgets.clear();
+    preparedKernel = null;
     detachNotebook();
     frame?.remove(); frame = null; appPromise = null; readyApp = null;
     const event = new Event('scip-runtime-reset');
@@ -61,7 +63,7 @@
           }
           if (Date.now() - started > 120000) throw new Error('建模环境加载超时，请检查网络后重试');
           setTimeout(inspect, 150);
-        } catch (e) { if (epoch === generation) reset(); reject(e); }
+        } catch (e) { if (epoch === generation) reset(e); reject(e); }
       };
       inspect();
     });
@@ -70,28 +72,54 @@
   function encode(value) {
     return btoa(Array.from(new TextEncoder().encode(JSON.stringify(value)), c => String.fromCharCode(c)).join(''));
   }
+  function bounded(task, milliseconds, message) {
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => { const error = new Error(message); reset(error); reject(error); }, milliseconds);
+    });
+    return Promise.race([task, timeout]).finally(() => clearTimeout(timer));
+  }
+  function prepare() {
+    if (preparedKernel) return preparedKernel;
+    const epoch = generation;
+    preparedKernel = (async () => {
+      let kernel;
+      try {
+        const app = await ensureReady();
+        const specs = app.serviceManager.kernelspecs.specs;
+        const name = Object.keys(specs.kernelspecs).find(n => /xpython|xeus/i.test(n));
+        if (!name) throw new Error('课程 Python 内核不可用');
+        await bounded((async () => {
+          kernel = await app.serviceManager.kernels.startNew({name});
+          if (epoch !== generation) { await kernel.shutdown(); throw new Error('运行环境已重置'); }
+          await kernel.info;
+          if (epoch !== generation) throw new Error('运行环境已重置');
+          // Verify the actual Python/SCIP installation, not just a registered spec.
+          const probe = kernel.requestExecute({store_history:false,stop_on_error:true,code:
+            "from pyscipopt import Model as __SCIP_Check\n__scip_check=__SCIP_Check()\n__scip_check.hideOutput()\n__scip_x=__scip_check.addVar(lb=0,ub=1,obj=1)\n__scip_check.setMaximize()\n__scip_check.optimize()\nassert str(__scip_check.getStatus()) == 'optimal' and abs(__scip_check.getObjVal()-1) < 1e-6\ndel __scip_x, __scip_check, __SCIP_Check"});
+          const reply = await probe.done;
+          if (reply.content.status !== 'ok') throw new Error('Python / SCIP 环境检测失败：' + (reply.content.evalue || '求解器不可用'));
+        })(), 120000, '运行环境准备超时，请重试。');
+        if (epoch !== generation) throw new Error('运行环境已重置');
+        return kernel;
+      } catch (error) {
+        kernel?.shutdown().catch(()=>{});
+        if (epoch === generation) reset(error);
+        throw error;
+      }
+    })();
+    return preparedKernel;
+  }
   async function runSolve(code, instance, seconds = 15, onProgress) {
     if (busy) throw new Error('请等待当前运行结束');
     busy = true;
-    let kernel, timer;
+    let kernel;
     try {
-      const app = await ensureReady();
-      const specs = app.serviceManager.kernelspecs.specs;
-      const name = Object.keys(specs.kernelspecs).find(n => /xpython|xeus/i.test(n)) || specs.default;
       const epoch = generation;
-      function bounded(task, milliseconds, message) {
-        const timeout = new Promise((_, reject) => {
-          timer = setTimeout(() => { const error = new Error(message); reset(error); reject(error); }, milliseconds);
-        });
-        return Promise.race([task, timeout]).finally(() => clearTimeout(timer));
-      }
-      onProgress?.('正在启动 Python 内核，首次使用需要下载运行文件…');
-      await bounded((async () => {
-        kernel = await app.serviceManager.kernels.startNew({name});
-        if (epoch !== generation) { await kernel.shutdown(); throw new Error('运行已取消'); }
-        await kernel.info;
-        if (epoch !== generation) throw new Error('运行已取消');
-      })(), 120000, 'Python 内核启动超时，请检查网络后重试；作业代码已保留。');
+      const prepared = prepare();
+      kernel = await prepared;
+      if (epoch !== generation) throw new Error('运行已取消');
+      if (preparedKernel === prepared) preparedKernel = null;
       onProgress?.('正在执行代码…');
       const execution = (async () => {
         const payload = encode({code, instance});
@@ -108,7 +136,6 @@
       return await bounded(execution, Math.max(.01, Math.min(Number(seconds) || 15, 60))*1000,
         '运行超时，环境已重置；作业代码已保留。');
     } finally {
-      clearTimeout(timer);
       // A timed-out iframe is destroyed, which terminates its kernel workers.
       if (frame && kernel) kernel.shutdown().catch(()=>{});
       busy = false;
@@ -186,5 +213,19 @@
     return notebook;
   }
   function hideNotebook() { if (frame) frame.hidden = true; }
-  window.ScipOJRuntime = {ensureReady,runSolve,openNotebook,readCode,hideNotebook,detachNotebook,reset,isReady:()=>!!readyApp};
+  function openStudyNotebook(path) {
+    detachNotebook();
+    const request=notebookRequest, epoch=generation;
+    const check=()=>{if(request!==notebookRequest||epoch!==generation){const e=new Error('Notebook 打开已取消');e.code='NOTEBOOK_CANCELLED';throw e;}};
+    const task=notebookQueue.catch(()=>{}).then(async()=>{
+      const app=await ensureReady();check();
+      const widget=await app.commands.execute('docmanager:open',{path,factory:'Notebook'});
+      if(!widget)throw new Error('无法打开该课程 Notebook');
+      try {await widget.context.ready;check();} catch(error){widget.dispose();throw error;}
+      app.shell.collapseLeft?.();app.shell.collapseRight?.();
+      window.dispatchEvent(new Event('resize'));
+    });
+    notebookQueue=task.catch(()=>{});return task;
+  }
+  window.ScipOJRuntime = {ensureReady,prepare,runSolve,openNotebook,openStudyNotebook,readCode,hideNotebook,detachNotebook,reset,isReady:()=>!!readyApp};
 })();

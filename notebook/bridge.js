@@ -11,7 +11,7 @@
    const progress=message=>send({type:'progress',id,message});
    try{
     let result=null;
-    if(method==='ready')await engine.ensureReady(progress);
+    if(method==='ready'||method==='prepare')await engine.prepare();
     else if(method==='run'){
      if(typeof args[0]!=='string'||args[0].length>200000)throw Error('代码格式或长度无效');
      result=await engine.runSolve(args[0],args[1],args[2],progress);
@@ -19,6 +19,9 @@
      if(!/^[A-Z0-9_-]{1,32}$/.test(args[0])||typeof args[1]!=='string')throw Error('作业参数无效');
      context=id;
      await engine.openNotebook(...args,(code,error)=>{if(context===id)send({type:'source',context:id,code,error:error?.message||null});});
+    }else if(method==='study'){
+     if(typeof args[0]!=='string'||args[0].length>180||!/^[A-Za-z0-9_-]+\.ipynb$/.test(args[0]))throw Error('Notebook 文件名无效');
+     context=null;await engine.openStudyNotebook(args[0]);
     }else if(method==='detach'){context=null;engine.detachNotebook();}
     else throw Error('不支持的运行环境命令');
     send({type:'reply',id,result});

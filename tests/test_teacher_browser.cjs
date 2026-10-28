@@ -13,10 +13,11 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
    const rows=[{course_id:'course',assignment_id:'assignment',user_id:'student',enroll_role:'student',student_no:'TEST001',display_name:'Fixture student',problem_id:'P001',best_score:100,passed:true,pass_score:90,submission_count:1}];
    window.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:{user:{id:'teacher'},access_token:'fixture'}}}),onAuthStateChange:()=>{}},
     from(table){const data=table==='profiles'?profile:table==='enrollments'?enrollments:table==='assignments'?[assignment]:[];
-     const q={};for(const m of ['select','eq','order','in','limit','not'])q[m]=()=>q;
+     const q={};for(const m of ['select','eq','order','in','limit','not','range'])q[m]=()=>q;
      q.maybeSingle=q.single=async()=>({data:Array.isArray(data)?data[0]||null:data,error:null});
      q.then=(a,b)=>Promise.resolve({data,error:null}).then(a,b);return q;},
-    rpc:async(name)=>({data:name==='get_teacher_gradebook'?rows:name==='get_course_invite_code'?'FIXTURE':[],error:null})
+    rpc(name){const data=name==='get_teacher_gradebook'?rows:name==='get_course_invite_code'?'FIXTURE':[];
+     const q={};q.order=q.range=()=>q;q.then=(a,b)=>Promise.resolve({data,error:null}).then(a,b);return q;}
    })};` }));
   await page.goto((process.env.SCIP_UI_TEST_ORIGIN||'http://127.0.0.1:8765')+'/teacher.html');
   await page.locator('#teacher-panel').waitFor({state:'visible'});

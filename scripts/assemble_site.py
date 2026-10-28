@@ -14,17 +14,21 @@ def assemble(lite, output):
     if output.exists():
         raise ValueError('Output must be a fresh directory')
     portal = ROOT / '.portal-build/js'
-    if not all((portal / (name+'.js')).is_file() for name in ('app','platform','teacher')):
+    if not all((portal / (name+'.js')).is_file() for name in ('app','platform','teacher','markdown')):
         raise ValueError('Build portal components first: npm ci && npm run build')
-    shutil.copytree(ROOT / 'site', output, ignore=shutil.ignore_patterns('src'))
-    for name in ('app','platform','teacher'):
+    shutil.copytree(ROOT / 'site', output, ignore=shutil.ignore_patterns('src','layout'))
+    for page in (ROOT / '.portal-build/html').glob('*.html'):
+        shutil.copyfile(page, output / page.name)
+    for name in ('app','platform','teacher','markdown'):
         shutil.copyfile(portal / (name+'.js'), output / 'js' / (name+'.js'))
+    shutil.copyfile(portal / 'markdown.css', output / 'js/markdown.css')
+    shutil.copytree(ROOT / '.portal-build/assets/katex', output / 'assets/katex')
     shutil.copytree(lite, output / 'notebooks')
     for name in ('engine.js', 'bridge.js'):
         shutil.copyfile(ROOT / 'notebook' / name, output / 'notebooks' / name)
     lab = output / 'notebooks/lab/index.html'
     html = lab.read_text(encoding='utf-8')
-    bridge = '<script src="../engine.js?v=progress2"></script><script src="../bridge.js?v=progress2"></script>'
+    bridge = '<script src="../engine.js?v=prewarm3"></script><script src="../bridge.js?v=prewarm3"></script>'
     lab.write_text(html.replace('</body>', bridge+'</body>') if '</body>' in html else html+bridge, encoding='utf-8')
     shutil.copytree(ROOT / 'docs', output / 'docs')
     shutil.copytree(ROOT / 'problems', output / 'problems')
@@ -33,8 +37,8 @@ def assemble(lite, output):
         target = output / app
         target.mkdir()
         (target / 'index.html').write_text('''<!doctype html><meta charset="utf-8"><title>课程实验</title>
-<script>location.replace('../notebooks/APP/index.html'+location.search+location.hash)</script>
-<a href="../notebooks/APP/index.html">打开课程实验</a>'''.replace('APP', app), encoding='utf-8')
+<script>const target=new URL('../index.html',location.href);const path=new URLSearchParams(location.search).get('path');target.hash=path?'notebook/'+encodeURIComponent(path):'course-labs';location.replace(target.href)</script>
+<a href="../index.html#course-labs">返回课程实验</a>''', encoding='utf-8')
     (output / '.nojekyll').touch()
 
 if __name__ == '__main__':

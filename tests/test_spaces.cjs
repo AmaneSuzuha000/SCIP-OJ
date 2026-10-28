@@ -14,6 +14,9 @@ assert.equal(parseRoute("#course-assessments").anchor, "course-assessments");
 assert.equal(parseRoute("#list").view, "problems", "Preserve old question-list bookmarks");
 assert.equal(parseRoute("#P001").problemId, "P001", "Preserve old problem bookmarks");
 assert.equal(parseRoute("#IE-DES-01").problemId, "IE-DES-01", "Course problem IDs may include hyphens");
+assert.equal(parseRoute('#notebook/01_P001_knapsack_PySCIPOpt.ipynb').space,'course');
+assert.equal(parseRoute('#notebook/03_IE_Facility_Location_PySCIPOpt.ipynb').space,'learn');
+assert.equal(parseRoute('#notebook/%E0%A4%A').view,'overview','Malformed notebook bookmarks recover safely');
 assert.equal(parseRoute("#submissions").view, "records");
 for (const hash of ["#list", "#problem-list-section", "#submissions", "#P001", "#P002", "#IE-DES-01"]) {
   assert.equal(parseRoute(hash).space, "course", "Every assignment/grade route belongs to teaching");

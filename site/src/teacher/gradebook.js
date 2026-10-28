@@ -1,3 +1,4 @@
+import {requestScope} from './scope.js';
 export function create(context,{esc,formatTime}) {
 let currentPage = 1;
 let pageSize = 50;
@@ -11,17 +12,21 @@ async function loadGradebook(courseId) {
         console.error("[Teacher] #roster-area missing");
         return;
     }
+    const current = requestScope(context, 'gradebookRequest', courseId);
     context.rosterArea.innerHTML = '<p style="color:var(--text-secondary); padding:1rem;">正在加载班级成绩表与评测状态...</p>';
     try {
         const data = await ScipOJPlatform.getTeacherRoster(courseId);
+        if (!current()) return;
         context.currentRosterData = data || [];
         context.handlers.updateFacultyMetrics(context.currentRosterData);
         await context.handlers.loadCourseAssignments(courseId);
+        if (!current()) return;
         context.handlers.updateProblemFilterOptions();
         resetGradebookPage();
         context.handlers.renderGradebookTable();
     }
     catch (err) {
+        if (!current()) return;
         console.error("[Teacher] loadGradebook failed:", err);
         context.rosterArea.innerHTML = `<p class="fail" style="padding:1rem;">加载成绩簿失败: ${esc(err.message)}</p>`;
     }
@@ -48,7 +53,7 @@ function updateProblemFilterOptions() {
     context.currentAssignmentsList.forEach(a => problemsSet.add(a.problem_id));
     const problems = Array.from(problemsSet).sort();
     context.filterProblem.innerHTML = '<option value="">全部题目</option>' +
-        problems.map(p => `<option value="${p}">${p}</option>`).join("");
+        problems.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join("");
     if (problems.includes(currentVal)) {
         context.filterProblem.value = currentVal;
     }
