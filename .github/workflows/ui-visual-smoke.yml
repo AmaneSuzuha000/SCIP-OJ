@@ -87,6 +87,7 @@ jobs:
         run: |
           node tests/test_ui_browser.cjs
           node tests/test_teacher_browser.cjs
+          node tests/test_practice_browser.cjs
           node tests/test_unified_runtime_browser.cjs
       - name: Save review screenshots
         if: always()

@@ -15,6 +15,13 @@ const source=fs.readFileSync('notebook/engine.js','utf8');
  assert.equal((await runtime.runSolve('code',{},1)).objective,7);
 
  assert.equal(shutdown,1);
+ // A slow kernel download/start must not consume the student's execution limit.
+ const progress=[];
+ kernel.info=new Promise(resolve=>setTimeout(resolve,35));
+ assert.equal((await runtime.runSolve('code',{},.01,message=>progress.push(message))).objective,7);
+ assert.ok(progress[0].includes('启动 Python'));
+ assert.ok(progress.at(-1).includes('执行代码'));
+ kernel.info=Promise.resolve();
  pending=true;
  await assert.rejects(runtime.runSolve('loop',{},.01),/运行超时/);
 
