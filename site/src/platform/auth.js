@@ -25,8 +25,19 @@ async function init() {
     const cfg = window.SCIP_OJ_CONFIG;
     state.supabase = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
     try {
-        // 恢复会话；失效 refresh_token（常见于站点短暂下线/缓存错乱）时清本地会话，避免卡在半登录态
-        const { data: { session }, error: sessionError } = await state.supabase.auth.getSession();
+        // 恢复会话；失效 refresh_token 时清本地会话。加超时，避免 refresh 挂起导致教师台只剩横幅
+        const sessionOutcome = await Promise.race([
+            state.supabase.auth.getSession().then((r) => ({ ok: true, r })).catch((e) => ({ ok: false, e })),
+            new Promise((resolve) => setTimeout(() => resolve({ ok: false, e: new Error("getSession timeout") }), 6000)),
+        ]);
+        let session = null;
+        let sessionError = null;
+        if (!sessionOutcome.ok) {
+            sessionError = sessionOutcome.e || new Error("getSession failed");
+        } else {
+            session = sessionOutcome.r?.data?.session || null;
+            sessionError = sessionOutcome.r?.error || null;
+        }
         if (sessionError) {
             console.warn("[Platform] 会话恢复失败，清理本地登录态:", sessionError.message || sessionError);
             try { await state.supabase.auth.signOut({ scope: "local" }); } catch (_) {}

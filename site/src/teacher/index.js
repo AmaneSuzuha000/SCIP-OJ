@@ -21,12 +21,30 @@ import {create as similarity} from './similarity.js';
     return;
   }
 
-  const configured = await ScipOJPlatform.init();
+  // 先露出登录区，避免 getSession/refresh 卡住时整页只剩顶部横幅
+  if (noAuthEl) noAuthEl.hidden = false;
+  if (forbiddenEl) forbiddenEl.hidden = true;
+  if (panelEl) panelEl.hidden = true;
+
+  let configured = false;
+  try {
+    configured = await Promise.race([
+      ScipOJPlatform.init(),
+      new Promise((resolve) => setTimeout(() => resolve(false), 8000)),
+    ]);
+  } catch (err) {
+    console.warn("[Teacher] 平台初始化异常:", err);
+    configured = false;
+  }
   ScipOJPlatform.updateAuthUI();
 
   if (!configured) {
-    if (noConfigEl) noConfigEl.hidden = false;
-    return;
+    // init 超时或失败时仍保留登录入口；若确实无配置再切提示
+    if (!ScipOJPlatform.isConfigured?.() && noConfigEl) {
+      noConfigEl.hidden = false;
+      if (noAuthEl) noAuthEl.hidden = true;
+    }
+    // 即使超时也继续绑定登录按钮，用户可手动重试登录
   }
 
   if (btnTeacherSignin) {
