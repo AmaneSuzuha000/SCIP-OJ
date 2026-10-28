@@ -13,9 +13,9 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from judge.common import average_scores, grade_assignment, grade_knapsack
+from judge.common import average_scores, grade_assignment, grade_knapsack, grade_ie_des01
 from judge.errors import SystemJudgeError
-from judge.private_instances import private_assignment, private_knapsack
+from judge.private_instances import private_assignment, private_knapsack, private_ie_des01
 from judge.catalog import problem_dir_for
 from judge.sandbox import IMAGE, _run_isolated
 
@@ -41,8 +41,16 @@ def grade_file(path: Path, problem_id: str | None = None,
     if not 1 <= n <= 20:
         return {"ok": False, "status": "system_error", "error": "非法测试实例数量",
                 "score": None, "passed": False, "path": str(path), "layer": "L2"}
-    gen = private_assignment if meta.get("grader") == "assignment" else private_knapsack
-    grade = grade_assignment if meta.get("grader") == "assignment" else grade_knapsack
+    grader = meta.get("grader")
+    if grader == "assignment":
+        gen = private_assignment
+        grade = grade_assignment
+    elif grader == "ie_des01":
+        gen = private_ie_des01
+        grade = grade_ie_des01
+    else:
+        gen = private_knapsack
+        grade = grade_knapsack
     try:
         inspected = subprocess.run(
             ["docker", "image", "inspect", IMAGE], timeout=10,

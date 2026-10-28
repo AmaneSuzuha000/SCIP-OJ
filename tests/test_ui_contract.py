@@ -34,7 +34,7 @@ class UIContractTests(unittest.TestCase):
             "teacher.html": ["teacher-panel", "course-select", "roster-area",
                              "tab-gradebook", "tab-roster", "tab-assignments",
                              "metric-students", "metric-graded", "metric-passrate",
-                             "assign-integrity-policy"],
+                             "assign-integrity-policy", "btn-similarity-audit"],
             "doc.html": ["md"],
         }
         for filename, ids in required.items():
@@ -73,6 +73,32 @@ class UIContractTests(unittest.TestCase):
         self.assertIn("SELECT DISTINCT ON (g.submission_id)", text)
         self.assertIn("ORDER BY g.submission_id, g.created_at DESC, g.id DESC", text)
         self.assertIn("JOIN latest_grading_per_submission g", text)
+
+    def test_teacher_gradebook_pagination_contract(self):
+        js = component_source('teacher')
+        self.assertIn("pageSize = 50", js)
+        self.assertIn("gradebook-pagination", js)
+        self.assertIn("gradebook-page-size", js)
+        self.assertIn("btn-page-prev", js)
+        self.assertIn("btn-page-next", js)
+        self.assertIn("resetGradebookPage", js)
+
+    def test_grading_image_digest_evidence_contract(self):
+        js = component_source('teacher')
+        self.assertIn("detail-environment-meta", js)
+        self.assertIn("detail-image-digest-val", js)
+        self.assertIn("image_digest", js)
+        grade_script = (SITE.parent / "scripts/run_formal_grade.py").read_text()
+        self.assertIn("image_digest", grade_script)
+        workflow = (SITE.parent / ".github/workflows/grade-submission.yml").read_text()
+        self.assertIn("IMAGE_DIGEST", workflow)
+
+    def test_similarity_audit_ui_contract(self):
+        js = component_source('teacher')
+        self.assertIn("btn-similarity-audit", js)
+        self.assertIn("runSimilarityAuditForCurrentProblem", js)
+        self.assertIn("computeCandidates", js)
+        self.assertIn("manual_review_only", js)
 
 
 if __name__ == "__main__":
