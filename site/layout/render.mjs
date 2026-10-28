@@ -1,5 +1,6 @@
 import {readFile} from 'node:fs/promises';
 import navigation from '../js/navigation.js';
+import {protectPage} from './access.mjs';
 
 const escape = value => String(value).replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
 function link(entry, {isIndex, section, page}, extra = '') {
@@ -31,5 +32,5 @@ export async function renderPage(name, source) {
     if (isIndex) source=source.replace('<!-- PLATFORM_SIDEBAR -->',rail);
     else header+=rail+'<script src="js/page-frame.js?v=ui-foundation1" defer></script>';
     header+='<script src="js/navigation.js?v=ui-foundation1"></script>';
-    return source.replace(/<template data-header-services>[\s\S]*?<\/template>/,'').replace('<!-- PLATFORM_HEADER -->',header);
+    return protectPage(source.replace(/<template data-header-services>[\s\S]*?<\/template>/,'').replace('<!-- PLATFORM_HEADER -->',header));
 }

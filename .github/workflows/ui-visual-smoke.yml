@@ -17,6 +17,7 @@ on:
       - "tests/test_math_browser.cjs"
       - "tests/test_navigation_browser.cjs"
       - "tests/test_teacher_browser.cjs"
+      - "tests/test_site_access_browser.cjs"
       - "judge/ie_des01_reference.py"
       - "tests/test_ui_browser.cjs"
       - ".github/workflows/ui-visual-smoke.yml"
@@ -35,6 +36,7 @@ on:
       - "tests/test_math_browser.cjs"
       - "tests/test_navigation_browser.cjs"
       - "tests/test_teacher_browser.cjs"
+      - "tests/test_site_access_browser.cjs"
       - "judge/ie_des01_reference.py"
       - "tests/test_ui_browser.cjs"
       - ".github/workflows/ui-visual-smoke.yml"
@@ -92,6 +94,13 @@ jobs:
           exit 1
       - name: Exercise responsive workbench, three labs, downloads and independent replay
         run: |
+          node tests/test_site_access_browser.cjs
+          python3 scripts/preview_ui_fixture.py --directory ui-preview --port 8766 > /tmp/scip-ui-fixture.log 2>&1 &
+          for attempt in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:8766/index.html > /dev/null; then break; fi
+            sleep 1
+          done
+          export SCIP_UI_TEST_ORIGIN=http://127.0.0.1:8766
           node tests/test_ui_browser.cjs
           node tests/test_teacher_browser.cjs
           node tests/test_navigation_browser.cjs

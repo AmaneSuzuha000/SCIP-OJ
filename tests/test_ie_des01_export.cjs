@@ -24,6 +24,7 @@ function el(id) {
 }
 const blobs = new Map(), clicks = [];
 const document = {
+  readyState: "loading",
   getElementById: el,
   addEventListener(name, callback) {
     assert.equal(name, "DOMContentLoaded");

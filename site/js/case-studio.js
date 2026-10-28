@@ -130,7 +130,7 @@
     }
   }
 
-  document.addEventListener("DOMContentLoaded", function () {
+  function initialize() {
     field("experiment-form").addEventListener("submit", function (event) {
       event.preventDefault();
       run();
@@ -150,5 +150,7 @@
       }
     });
     run();
-  });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initialize, {once:true});
+  else initialize();
 })();

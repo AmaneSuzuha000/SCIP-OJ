@@ -1,7 +1,7 @@
 // supabase/functions/_shared/auth.ts
 // 统一身份认证与角色鉴权助手
 
-import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
 
 export interface AuthResult {
   user: any;
@@ -29,6 +29,13 @@ export async function getAuthenticatedUser(
   if (error || !user) {
     return null;
   }
+
+  // The verified user's immutable OAuth identity is checked in PostgreSQL.
+  // Never authorize from mutable user_metadata or a client-supplied login.
+  const { data: allowed, error: accessError } = await supabase.rpc(
+    "check_site_user_access", { p_user_id: user.id },
+  );
+  if (accessError || allowed !== true) return null;
 
   return { user, jwt };
 }

@@ -26,6 +26,14 @@ def assemble(lite, output):
     shutil.copytree(lite, output / 'notebooks')
     for name in ('engine.js', 'bridge.js'):
         shutil.copyfile(ROOT / 'notebook' / name, output / 'notebooks' / name)
+    # Direct visits enter the same portal gate. The admitted portal owns iframes.
+    direct_guard = '<script>if(window.top===window){location.replace("../../index.html#course-labs")}</script>'
+    for app in ('lab', 'repl'):
+        entry = output / 'notebooks' / app / 'index.html'
+        if entry.is_file():
+            html = entry.read_text(encoding='utf-8')
+            html = html.replace('<head>', '<head>'+direct_guard, 1) if '<head>' in html else direct_guard+html
+            entry.write_text(html, encoding='utf-8')
     lab = output / 'notebooks/lab/index.html'
     html = lab.read_text(encoding='utf-8')
     bridge = '<script src="../engine.js?v=prewarm3"></script><script src="../bridge.js?v=prewarm3"></script>'

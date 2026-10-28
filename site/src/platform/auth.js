@@ -34,7 +34,7 @@ async function init() {
         return false;
     }
     const cfg = window.SCIP_OJ_CONFIG;
-    state.supabase = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+    state.supabase = window.ScipOJAccess?.getClient() || window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
     try {
         let session = null;
         let sessionError = null;
