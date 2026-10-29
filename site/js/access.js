@@ -1,6 +1,7 @@
 /* A login wall for public Pages. The database and Edge APIs enforce admission. */
 (() => {
     'use strict';
+    function reload(){window.ScipOJJourney?.allowUnload();location.reload();}
     const gate = document.getElementById('site-access-gate');
     const title = document.getElementById('site-access-title');
     const message = document.getElementById('site-access-message');
@@ -9,7 +10,7 @@
     const signout = document.getElementById('site-access-signout');
     const base = new URL('../', document.currentScript.src);
     const returnKey = 'scipoj:access:return';
-    let client, epoch = 0, admitted = null, started = false, authorized = false, bootFailed = false;
+    let client, epoch = 0, admitted = null, admittedUser = null, started = false, authorized = false, bootFailed = false;
     const deadline = (promise, ms = 8000) => new Promise((resolve, reject) => {
         const timer = setTimeout(() => reject(Error('ACCESS_TIMEOUT')), ms);
         Promise.resolve(promise).then(value => {clearTimeout(timer);resolve(value);}, error => {clearTimeout(timer);reject(error);});
@@ -17,7 +18,7 @@
     function show(state, text) {
         authorized = false;
         // Discard the complete application and its kernels after signout/revocation.
-        if (started) {location.reload();return;}
+        if (started) {reload();return;}
         gate.hidden = false;
         gate.dataset.state = state;
         title.textContent = state === 'denied' ? '此账号未获授权' : state === 'error' ? '暂时无法验证访问权限' : state === 'login' ? '请先登录' : '正在验证访问权限';
@@ -87,8 +88,9 @@
                 throw reply.error;
             }
             if (reply.data !== true) {show('denied','当前 GitHub 账号没有访问权限。请切换到已获授权的账号。');return;}
-            if (admitted && admitted !== session.user.id) {location.reload();return;}
+            if (admitted && admitted !== session.user.id) {reload();return;}
             admitted = session.user.id;
+            admittedUser = session.user;
             authorized = true;
             if (restoreReturn()) return;
             if (!started) {
@@ -100,14 +102,14 @@
                     gate.hidden = false;gate.dataset.state = 'error';
                     title.textContent = '页面加载未完成';message.textContent = '请检查网络后重新加载。';
                     signin.hidden = true;retry.hidden = false;signout.hidden = false;
-                    retry.onclick = () => location.reload();
+                    retry.onclick = () => reload();
                 }
             }
         } catch {
             if (version === epoch) show('error','访问验证暂不可用，请检查网络后重试。');
         }
     }
-    retry.onclick = () => client ? check() : location.reload();
+    retry.onclick = () => client ? check() : reload();
     signin.onclick = async () => {
         if (!client) return;
         signin.disabled = true;
@@ -124,7 +126,7 @@
         try {
             const result = await deadline(client.auth.signOut({scope:'local'}));
             if (result.error) throw result.error;
-            location.reload();
+            reload();
         } catch {show('error','切换账号未完成，请重试。');}
         finally {signout.disabled = false;}
     };
@@ -133,13 +135,13 @@
         client = window.supabase.createClient(config.SUPABASE_URL, config.SUPABASE_ANON_KEY);
         client.auth.onAuthStateChange((event, session) => {
             if (started && (event === 'SIGNED_OUT' || (session?.user?.id && session.user.id !== admitted))) {
-                authorized = false;location.reload();return;
+                authorized = false;reload();return;
             }
             // Never query Supabase while the auth callback holds its lock.
             setTimeout(check, 0);
         });
     }
-    window.ScipOJAccess = {getClient:() => client};
+    window.ScipOJAccess = {getClient:() => client,getUser:()=>admittedUser};
     document.addEventListener('visibilitychange', () => {if (!document.hidden) check();});
     window.addEventListener('pageshow', event => {if (event.persisted) check();});
     setInterval(() => {if (!document.hidden) check();}, 30000);

@@ -1,3 +1,4 @@
+import {installTeacherJourney} from './journey.js';
 import {create as invites} from './invites.js';
 import {create as gradebook} from './gradebook.js';
 import {create as evidence} from './evidence.js';
@@ -129,33 +130,17 @@ Object.assign(context.handlers,assignments(context,{esc,formatTime}));
 Object.assign(context.handlers,similarity(context,{esc,formatTime}));
 initializedForUser = ScipOJPlatform.getUser()?.id || null;
 context.courseSelect = document.getElementById("course-select");
+context.courseSelect.disabled=true;
 context.inviteCodeEl = document.getElementById("course-invite-code");
 context.btnCopyInvite = document.getElementById("btn-copy-invite");
 context.btnRotateInvite = document.getElementById("btn-rotate-invite");
 context.tabBtns = document.querySelectorAll(".teacher-tabs .tab-btn");
+context.tabBtns.forEach(button=>button.disabled=true);
 context.tabContents = {
     gradebook: document.getElementById("tab-gradebook"),
     roster: document.getElementById("tab-roster"),
     assignments: document.getElementById("tab-assignments"),
 };
-context.tabBtns.forEach(btn => {
-    btn.onclick = () => {
-        const targetTab = btn.dataset.tab;
-        context.tabBtns.forEach(b => b.classList.toggle("active", b === btn));
-        Object.keys(context.tabContents).forEach(key => {
-            if (context.tabContents[key]) {
-                context.tabContents[key].hidden = (key !== targetTab);
-            }
-        });
-        // 切换标签时按需加载
-        if (targetTab === "roster" && context.currentCourseId) {
-            context.handlers.loadPendingRoster(context.currentCourseId);
-        }
-        else if (targetTab === "assignments" && context.currentCourseId) {
-            context.handlers.loadCourseAssignments(context.currentCourseId);
-        }
-    };
-});
 context.currentCourseId = null;
 context.currentCoursesList = [];
 context.currentRosterData = [];
@@ -173,25 +158,13 @@ try {
         const c = e.courses || {};
         return `<option value="${c.id}">${esc(c.code || '')} - ${esc(c.name || c.id)}</option>`;
     }).join("");
-    context.currentCourseId = context.currentCoursesList[0].courses?.id;
+    context.currentCourseId = null;
     // 成绩表 / 邀请码加载必须等下方 rosterArea 等变量初始化后再跑，
     // 否则会命中 const TDZ，页面永远停在「正在加载班级成绩表...」。
 }
 catch (err) {
     console.error("[Teacher] 加载授课列表失败:", err);
 }
-// 班级切换
-context.courseSelect.onchange = async () => {
-    context.currentCourseId = context.courseSelect.value;
-    context.currentRosterData = [];
-    context.currentAssignmentsList = [];
-    document.getElementById('submission-detail').hidden = true;
-    context.handlers.updateCourseInviteDisplay();
-    if (context.currentCourseId) {
-        const courseId = context.currentCourseId;
-        await Promise.all([context.handlers.loadGradebook(courseId), context.handlers.loadPendingRoster(courseId)]);
-    }
-};
 context.inviteDisplaySeq = 0;
 // 复制邀请码
 if (context.btnCopyInvite) {
@@ -249,11 +222,6 @@ context.btnBatchRegrade = document.getElementById("btn-batch-regrade");
 context.btnRegradeProblem = document.getElementById("btn-regrade-problem");
 context.batchProgressBar = document.getElementById("batch-progress-bar");
 context.batchProgressText = document.getElementById("batch-progress-text");
-// 首屏加载：紧跟 loadGradebook 定义，避免后面绑定事件抛错导致永远不加载
-if (context.currentCourseId) {
-    context.handlers.updateCourseInviteDisplay();
-    void context.handlers.loadGradebook(context.currentCourseId);
-}
 if (context.filterProblem)
     context.filterProblem.onchange = () => {
         context.handlers.resetGradebookPage?.();
@@ -496,7 +464,7 @@ context.assignPolicy = document.getElementById("assign-policy");
 context.assignIntegrityPolicy = document.getElementById("assign-integrity-policy");
 context.publishStatus = document.getElementById("publish-status");
 context.courseAssignmentsArea = document.getElementById("course-assignments-area");
-context.handlers.initProblemOptions();
+await context.handlers.initProblemOptions();
 if (context.assignProblemSelect) {
     context.assignProblemSelect.onchange = () => {
         context.assignCustomProblem.hidden = (context.assignProblemSelect.value !== "__custom__");
@@ -541,6 +509,8 @@ if (context.formPublish) {
             return;
         }
         const btnSave = document.getElementById("btn-save-assignment");
+        context.publishing=true;
+        context.courseSelect.disabled=true;
         btnSave.disabled = true;
         btnSave.textContent = "保存配置中…";
         context.publishStatus.textContent = "";
@@ -556,6 +526,7 @@ if (context.formPublish) {
             });
             context.publishStatus.textContent = `✓ 作业 ${pId} 已成功发布/保存至当前班级！`;
             context.publishStatus.className = "pass";
+            context.markTeacherPublished?.();
             ScipOJPlatform.showToast(`作业 ${pId} 配置发布成功！`, "success");
             await context.handlers.loadCourseAssignments(context.currentCourseId);
             context.handlers.updateProblemFilterOptions();
@@ -566,11 +537,16 @@ if (context.formPublish) {
             ScipOJPlatform.showToast("保存作业失败: " + err.message, "error");
         }
         finally {
+            context.publishing=false;
+            context.courseSelect.disabled=false;
             btnSave.disabled = false;
             btnSave.textContent = "发布 / 保存作业配置";
         }
     };
 }
+await installTeacherJourney(context);
+context.courseSelect.disabled=false;
+context.tabBtns.forEach(button=>button.disabled=false);
 }
 
   function esc(s) {

@@ -30,7 +30,8 @@
     const copyBtn = document.getElementById("btn-copy-template");
     if (policy !== "standard" && problemId) {
       // Exam drafts must not survive logout or be exposed on a shared machine.
-      try { localStorage.removeItem("scipoj:draft:" + problemId); } catch { /* private mode */ }
+      try { localStorage.removeItem("scipoj:draft:" + problemId);
+        const scoped=window.ScipOJTask?.draftKey();if(scoped)localStorage.removeItem(scoped); } catch { /* private mode */ }
     }
     if (notice) {
       notice.hidden = policy === "standard";

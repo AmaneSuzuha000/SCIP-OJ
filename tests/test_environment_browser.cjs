@@ -54,7 +54,7 @@ const {chromium}=require('playwright'), assert=require('node:assert/strict');
   assert.equal(await page.locator('#workspace').evaluate(el=>el.classList.contains('study-mode')),false);
   assert.equal(await page.locator('.editor-container').isVisible(),true);
   assert.equal(await page.locator('.actions-bar').isVisible(),true);
-  assert.equal(await page.locator('#btn-back-to-list').getAttribute('href'),'#list');
+  assert.equal(await page.locator('#btn-back-to-list').evaluate(el=>window.ScipOJNavigation.parseRoute(el.hash).view),'problems');
   await page.evaluate(()=>location.hash='#notebook/03_IE_Facility_Location_PySCIPOpt.ipynb');
   await page.locator('#workspace.study-mode').waitFor();
   await page.waitForFunction(()=>document.getElementById('notebook-state').textContent==='');

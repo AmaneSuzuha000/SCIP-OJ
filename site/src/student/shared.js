@@ -1,5 +1,6 @@
 import {state} from './state.js';
 import {sampleInstance} from './practice.js';
+import {taskKey} from './context.js';
 export async function loadJSON(path) {
     const r = await fetch(new URL(path, state.BASE));
     if (!r.ok)
@@ -23,7 +24,7 @@ export function setCodeValue(value) {
 }
 export function getPracticeProgress(id) {
     try {
-        const raw = localStorage.getItem("scip-oj-practice:" + id);
+        const raw = localStorage.getItem(taskKey('practice',id));
         return raw ? JSON.parse(raw) : null;
     }
     catch {

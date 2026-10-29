@@ -10,7 +10,7 @@ const source=fs.readFileSync('notebook/engine.js','utf8');
  const app={started:Promise.resolve(),serviceManager:{ready:Promise.resolve(),kernelspecs:{refreshSpecs:async()=>{},specs:{default:'xpython',kernelspecs:{xpython:{}}}},kernels:{startNew:async()=>{started++;return {...kernel};}}}};
  const window={dispatchEvent:()=>{},jupyterapp:app};
  const document={currentScript:{src:'https://example.test/SCIP-OJ/js/python_runtime.js'},getElementById:()=>({appendChild:f=>frames.push(f)}),createElement:()=>({style:{},contentWindow:{jupyterapp:app,dispatchEvent:()=>{}},remove(){this.removed=true;}})};
- vm.runInNewContext(source,{window,document,URL,Event,TextEncoder,TextDecoder,Uint8Array,btoa,atob,setTimeout,clearTimeout});
+ vm.runInNewContext(source,{window,document,URL,Event,CustomEvent,TextEncoder,TextDecoder,Uint8Array,btoa,atob,setTimeout,clearTimeout});
  const runtime=window.ScipOJRuntime;
  await Promise.all([runtime.prepare(),runtime.prepare()]);
  assert.equal(started,1);assert.equal(probes,1,'Prewarm performs a real solver preflight once');

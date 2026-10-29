@@ -6,6 +6,8 @@ let pageSize = 50;
 function resetGradebookPage() {
     currentPage = 1;
 }
+function getPagination(){return {page:currentPage,size:pageSize};}
+function restorePagination(page,size){currentPage=Math.max(1,Math.floor(Number(page)||1));pageSize=[0,20,50,100,200].includes(Number(size))?Number(size):50;}
 
 async function loadGradebook(courseId) {
     if (!context.rosterArea) {
@@ -181,6 +183,7 @@ function renderGradebookTable() {
             pageSize = parseInt(e.target.value, 10) || 0;
             currentPage = 1;
             renderGradebookTable();
+            context.paginationChanged?.(getPagination());
         };
     }
     const prevBtn = paginationEl.querySelector("#btn-page-prev");
@@ -189,6 +192,7 @@ function renderGradebookTable() {
             if (currentPage > 1) {
                 currentPage--;
                 renderGradebookTable();
+                context.paginationChanged?.(getPagination());
             }
         };
     }
@@ -198,6 +202,7 @@ function renderGradebookTable() {
             if (currentPage < totalPages) {
                 currentPage++;
                 renderGradebookTable();
+                context.paginationChanged?.(getPagination());
             }
         };
     }
@@ -215,9 +220,9 @@ function renderGradebookTable() {
     table.querySelectorAll(".btn-view-evidence").forEach(btn => {
         btn.onclick = () => {
             const row = filtered[parseInt(btn.dataset.idx, 10)];
-            context.handlers.showSubmissionEvidence(row);
+            if(context.navigateEvidence)context.navigateEvidence(row);else context.handlers.showSubmissionEvidence(row);
         };
     });
 }
-return {loadGradebook,updateFacultyMetrics,updateProblemFilterOptions,getFilteredRoster,renderGradebookTable,resetGradebookPage};
+return {loadGradebook,updateFacultyMetrics,updateProblemFilterOptions,getFilteredRoster,renderGradebookTable,resetGradebookPage,getPagination,restorePagination};
 }

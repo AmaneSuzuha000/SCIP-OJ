@@ -96,6 +96,7 @@ async function loadCourseAssignments(courseId) {
                 context.assignPolicy.value = a.score_policy || "highest_before_due";
                 if (context.assignIntegrityPolicy)
                     context.assignIntegrityPolicy.value = a.integrity_policy || "standard";
+                context.formPublish.dispatchEvent(new Event('input',{bubbles:true}));
                 context.formPublish.scrollIntoView({ behavior: "smooth" });
             };
         });

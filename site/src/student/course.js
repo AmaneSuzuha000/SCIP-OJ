@@ -1,11 +1,13 @@
 import {state} from './state.js';
 import {normalizeDifficulty,getPracticeProgress,escapeHtml} from './shared.js';
-import {openProblem} from './workbench.js';
+import {contextHash} from './context.js';
 export function applyProblemFilters() {
     const query = (document.getElementById("problem-search-input")?.value || "").trim().toLowerCase();
     const difficulty = document.getElementById("filter-difficulty")?.value || "all";
     const progress = document.getElementById("filter-progress")?.value || "all";
     const filtered = state.problemIndex.filter(p => {
+        if (state.contextError || state.courseMode==='choose') return false;
+        if (state.courseId && !state.courseAssignments.some(a=>a.problem_id===p.id)) return false;
         const searchable = [p.id, p.title, p.difficulty, ...(p.tags || [])].join(" ").toLowerCase();
         if (query && !searchable.includes(query))
             return false;
@@ -23,15 +25,21 @@ function updateBannerCourseInfo() {
     if (!bannerTitle || !window.ScipOJPlatform)
         return;
     const enrollments = window.ScipOJPlatform.getEnrollments();
-    if (enrollments && enrollments.length > 0) {
-        const c = enrollments[0].courses;
+    if (state.courseId) {
+        const c = enrollments.find(e=>e.course_id===state.courseId)?.courses;
         if (c) {
             bannerTitle.innerHTML = `🏫 当前班级：<strong>${escapeHtml(c.name || c.code)}</strong> · <code>${escapeHtml(c.code || '')}</code>`;
             bannerDesc.textContent = "已就绪：编写模型后可一键提交至服务端获取正式作业权威评分。";
             return;
         }
     }
-    if (window.ScipOJPlatform.getUser()) {
+    if (state.courseMode==='choose') {
+        bannerTitle.textContent='请选择当前教学班级';
+        bannerDesc.textContent='您加入了多个班级，请在上方选择本次作业所属的班级。';
+    } else if (enrollments.length) {
+        bannerTitle.textContent='自主练习';
+        bannerDesc.textContent='练习不计入正式成绩；选择教学班级后查看该班级的作业。';
+    } else if (window.ScipOJPlatform.getUser()) {
         bannerTitle.textContent = "尚未选修任何教学班级";
         bannerDesc.textContent = "您当前处于自主练习模式。请输入任课教师提供的邀请码（如 REDACTED-INVITE）加入课程。";
     }
@@ -49,7 +57,7 @@ function renderProblemList(list) {
     if (countEl)
         countEl.textContent = String(list.length).padStart(2, "0");
     if (list.length === 0) {
-        listEl.innerHTML = `<p style="color:var(--text-secondary); grid-column:span 3; padding:2rem 0; text-align:center;">未找到匹配的题目。</p>`;
+        listEl.textContent = state.contextError || (state.courseMode==='choose'?'请先选择教学班级，或选择自主练习。':state.courseId&&!state.courseAssignments.length?'该班级尚未发布课程作业。':'未找到匹配的题目。');
         return;
     }
     listEl.classList.toggle("problem-list-mode", state.listViewMode === "table");
@@ -66,8 +74,10 @@ function renderProblemList(list) {
         const solvedMark = solved ? "✓" : "○";
         const difficulty = normalizeDifficulty(p.difficulty);
         const difficultyLabel = { easy: "简单", medium: "中等", hard: "困难" }[difficulty];
+        const assignment=state.courseAssignments.find(a=>a.problem_id===p.id);
+        const href=window.ScipOJNavigation.withParams(contextHash('#'+p.id),{assignment:assignment?.id});
         if (state.listViewMode === "table") {
-            return `<a class="problem-card problem-row" href="#${escapeHtml(p.id)}" data-id="${escapeHtml(p.id)}" data-path="${escapeHtml(p.path)}">
+            return `<a class="problem-card problem-row" href="${escapeHtml(href)}" data-id="${escapeHtml(p.id)}" data-path="${escapeHtml(p.path)}">
         <span class="problem-progress ${solved ? "solved" : ""}" aria-label="${solved ? "本地练习已通过" : "尚未通过"}">${solvedMark}</span>
         <span class="problem-row-title"><b class="problem-number">${escapeHtml(p.id)}</b><strong>${escapeHtml(p.title)}</strong></span>
         <span class="problem-row-difficulty ${diffClass}">${difficultyLabel}</span>
@@ -75,24 +85,11 @@ function renderProblemList(list) {
         <span class="problem-row-arrow" aria-hidden="true">↗</span>
       </a>`;
         }
-        return `<a class="problem-card" href="#${escapeHtml(p.id)}" data-id="${escapeHtml(p.id)}" data-path="${escapeHtml(p.path)}">
+        return `<a class="problem-card" href="${escapeHtml(href)}" data-id="${escapeHtml(p.id)}" data-path="${escapeHtml(p.path)}">
       <div class="problem-card-top"><span class="problem-id-tag">${escapeHtml(p.id)}</span><span class="topic-tag ${diffClass}">${difficultyLabel}</span></div>
       <div class="problem-card-title">${escapeHtml(p.title)}</div>
       <div class="problem-tags">${tagsHtml}</div>
       <div class="card-progress">${solved ? "✓ 本地练习已通过" : "○ 尚未通过"}</div>
     </a>`;
     }).join("");
-    listEl.querySelectorAll("a.problem-card").forEach(a => {
-        a.addEventListener("click", (e) => {
-            e.preventDefault();
-            const target = `#${a.dataset.id}`;
-            if (location.hash === target) {
-                // 同一题目重复点击时 hashchange 不会触发，直接打开
-                openProblem(a.dataset.path, a.dataset.id);
-            }
-            else {
-                location.hash = target; // 由 hashchange 统一处理，避免重复加载
-            }
-        });
-    });
 }

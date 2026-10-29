@@ -59,6 +59,7 @@ const out=path.resolve(process.env.SCIP_UI_SCREENSHOT_DIR || 'ui-artifacts');
    await page.goBack();await page.locator('#workspace.study-mode').waitFor();
    assert.equal(await page.locator('#btn-back-to-list').getAttribute('href'),'#learn-notebooks');
    await page.goForward();await page.locator('#workspace[aria-busy="false"]').waitFor();
+   await page.locator('.editor-container').waitFor({state:'visible'});
    assert.equal(await page.locator('.editor-container').isVisible(),true);
   }
   assert.deepEqual(errors,[]);

@@ -12,6 +12,7 @@ export async function showStudyNotebook(notebook, sequence) {
     workspace.classList.add('study-mode');
     document.body.classList.add('workbench-active');
     document.querySelector('.workspace-layout').classList.add('notebook-mode');
+    document.querySelector('.workspace-layout').inert=false;
     document.querySelector('.editor-container').hidden = true;
     document.getElementById('title').textContent = notebook.title;
     const back = document.getElementById('btn-back-to-list');

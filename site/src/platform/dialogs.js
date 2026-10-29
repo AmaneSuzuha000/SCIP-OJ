@@ -57,10 +57,15 @@ function updateAuthUI() {
         const toggle = document.getElementById('account-menu-toggle');
         const closeAccount = (restoreFocus = false) => {
             menu.open = false;
+            toggle.setAttribute('aria-expanded','false');
             if (restoreFocus) toggle.focus();
         };
         accountEvents = new AbortController();
         const options = {signal:accountEvents.signal};
+        toggle.addEventListener('click',event=>{
+            event.preventDefault();menu.open=!menu.open;
+            toggle.setAttribute('aria-expanded',String(menu.open));
+        },options);
         menu.addEventListener('toggle', () => toggle.setAttribute('aria-expanded', String(menu.open)), options);
         document.addEventListener('click', event => {if (!menu.contains(event.target)) closeAccount();}, options);
         document.addEventListener('keydown', event => {

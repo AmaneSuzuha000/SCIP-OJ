@@ -25,6 +25,7 @@ async function showSubmissionEvidence(row) {
     detailTimeline.innerHTML = '<li style="color:var(--text-secondary);">加载评测时间线中...</li>';
     if (btnCloseDetail) {
         btnCloseDetail.onclick = () => {
+            if(context.closeEvidence){context.closeEvidence();return;}
             context.evidenceRequest++;
             detailSection.hidden = true;
             if (envMetaEl) envMetaEl.hidden = true;

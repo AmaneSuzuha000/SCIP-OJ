@@ -2,10 +2,17 @@
 (() => {
  'use strict';
  const url = new URL('../notebooks/lab/index.html', document.currentScript.src);
- url.searchParams.set('scip-runtime', 'prewarm3');
+ url.searchParams.set('scip-runtime', 'journey2');
  let frame, port, connection, preparation, busy = false, sequence = 0, epoch = 0;
  let active = null, source = null, invalid = null, rejectConnection, connectionTimer;
  let status = {phase:'idle', error:null};
+ let notebookStatus={dirty:false,error:null};
+ async function notebookScope(id) {
+  const actor=window.ScipOJPlatform?.getUser()?.id||window.ScipOJAccess?.getUser?.()?.id||'visitor';
+  const route=window.ScipOJNavigation.parseRoute(location.hash);
+  const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode([actor,route.courseId||'practice',route.assignmentId||'',id].join('|')));
+  return Array.from(new Uint8Array(bytes)).map(x=>x.toString(16).padStart(2,'0')).join('').slice(0,32);
+ }
  const pending = new Map();
  function publish(phase, error = null) {
   status = {phase, error};
@@ -65,6 +72,7 @@
       if (!invalid && typeof data.code === 'string') source = data.code;
       active.changed(source, invalid); return;
      }
+     if(data.type==='notebook-state'){notebookStatus={dirty:!!data.dirty,error:data.error||null};return;}
      if (data.type !== 'reply') return;
      const item = pending.get(data.id); if (!item) return;
      pending.delete(data.id); clearTimeout(item.timer);
@@ -119,7 +127,8 @@
  async function openNotebook(id, code, instance, onChange) {
   detachNotebook(); const marker = {id:null, changed:onChange}; active = marker;
   await prewarm(); if (active !== marker) throw cancelled();
-  const request = rpc('open', [id, code, instance]); marker.id = request.id;
+  const scope=await notebookScope(id);if(active!==marker)throw cancelled();
+  const request = rpc('open', [id, code, instance,scope]); marker.id = request.id;
   await request.promise; if (active !== marker) throw cancelled(); frame.hidden = false;
  }
  function readCode() {
@@ -130,10 +139,12 @@
  async function openStudyNotebook(path) {
   detachNotebook();const marker={id:null,changed:()=>{}};active=marker;
   await prewarm();if(active!==marker)throw cancelled();
-  const request=rpc('study',[path]);marker.id=request.id;
+  const scope=await notebookScope(path);if(active!==marker)throw cancelled();
+  const request=rpc('study',[path,scope]);marker.id=request.id;
   await request.promise;if(active!==marker)throw cancelled();frame.hidden=false;
  }
  function hideNotebook() { if (frame) frame.hidden = true; }
  window.ScipOJRuntime = {prewarm, ensureReady:prewarm, runSolve, openNotebook, openStudyNotebook, readCode,
-  detachNotebook, hideNotebook, reset, isReady:() => status.phase === 'ready', getStatus:() => ({...status})};
+  detachNotebook, hideNotebook, reset, isReady:() => status.phase === 'ready', getStatus:() => ({...status}),
+  saveNotebooks:async()=>{if(port)await rpc('save',[],15000).promise;},getNotebookStatus:()=>({...notebookStatus})};
 })();

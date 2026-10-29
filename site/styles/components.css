@@ -18,3 +18,5 @@
 .ui-page-heading .space-eyebrow{margin:0 0 8px;color:var(--ui-primary);font-size:12px;letter-spacing:.06em;font-weight:650}
 @media(max-width:840px){.ui-page-heading>p{font-size:15px}}
 @media(prefers-reduced-motion:reduce){.ui-button{transition:none}}
+
+.journey-context{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 0 20px;color:var(--ui-muted);font-size:13px}.journey-context label{font-weight:650;color:var(--ui-ink)}.journey-context select{max-width:100%;min-height:40px;padding:6px 10px;border:1px solid var(--ui-border);border-radius:8px;background:var(--ui-surface,#fff);font:inherit;color:var(--ui-ink)}.journey-error{padding:16px;margin-bottom:20px;border:1px solid #d8b794;border-radius:10px;background:#fff8ee}.journey-error[hidden]{display:none}.journey-return{display:inline-flex;margin:0 0 18px}.journey-draft-status{font-size:13px;color:var(--ui-muted);margin:10px 0}

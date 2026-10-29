@@ -16,6 +16,8 @@
 <div id="toast-container"></div>
 <main class="main-content studio-content" id="main-content" tabindex="-1">
 <section id="course-space" aria-label="课程教学">
+<div class="journey-context"><label for="student-course-select">当前任务范围</label><select id="student-course-select" aria-describedby="student-course-status"><option value="practice">自主练习</option></select><span id="student-course-status" role="status"></span></div>
+<div id="journey-error" class="journey-error" role="alert" hidden><span data-error-message></span> <button type="button" id="journey-retry" class="ui-button">重试</button> <a href="#problem-list-section" class="ui-button">返回课程作业</a></div>
 <div class="teaching-overview" data-teaching-view-panel="overview">
 <header class="ui-page-heading"><p class="space-eyebrow">SCIP-OJ · 课程教学</p><h1 id="course-heading">课程教学</h1><p>加入班级，完成建模作业，查看评测反馈。</p></header>
 <div class="course-banner" id="current-course-banner"><div class="course-title-group"><h2 id="banner-course-title">加入你的教学班级</h2><p id="banner-course-desc">登录并加入班级后查看对应的正式作业。</p></div><div id="banner-course-action"><button type="button" class="ui-button" id="btn-banner-join-course">加入教学班级</button></div></div>
@@ -179,21 +181,21 @@
   <!-- 依赖脚本 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js"></script>
   <script src="config.js?v=ui2" onerror="console.log('[SCIP-OJ] config.js not found, fallback to defaults')"></script>
-  <script src="js/grading-state.js?v=1"></script>
-  <script src="js/request-keys.js?v=1"></script>
-  <script src="js/grading-api.js?v=1"></script>
-  <script src="js/platform.js?v=audit2"></script>
-  <script src="js/marked.min.js"></script>
-  <script src="js/purify.min.js"></script>
-  <script src="js/markdown.js?v=math1"></script>
-  <script src="js/knapsack_judge.js"></script>
-  <script src="js/assignment_judge.js"></script>
-  <script src="js/python_runtime.js?v=prewarm3"></script>
+  <script src="js/grading-state.js?v=journey2"></script>
+  <script src="js/request-keys.js?v=journey2"></script>
+  <script src="js/grading-api.js?v=journey2"></script>
+  <script src="js/platform.js?v=journey2"></script>
+  <script src="js/marked.min.js?v=journey2"></script>
+  <script src="js/purify.min.js?v=journey2"></script>
+  <script src="js/markdown.js?v=journey2"></script>
+  <script src="js/knapsack_judge.js?v=journey2"></script>
+  <script src="js/assignment_judge.js?v=journey2"></script>
+  <script src="js/python_runtime.js?v=journey2"></script>
   <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.20/lib/codemirror.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.20/mode/python/python.min.js"></script>
-  <script src="js/editor.js?v=leetcode1"></script>
-  <script src="js/exam-integrity.js?v=leetcode1"></script>
-  <script src="js/spaces.js?v=nav2"></script>
-  <script src="js/app.js?v=prewarm4"></script>
+  <script src="js/editor.js?v=journey2"></script>
+  <script src="js/exam-integrity.js?v=journey2"></script>
+  <script src="js/spaces.js?v=journey2"></script>
+  <script src="js/app.js?v=journey2"></script>
 </body>
 </html>

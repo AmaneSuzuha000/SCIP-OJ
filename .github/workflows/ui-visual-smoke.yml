@@ -17,6 +17,8 @@ on:
       - "tests/test_math_browser.cjs"
       - "tests/test_navigation_browser.cjs"
       - "tests/test_teacher_browser.cjs"
+      - "tests/test_interaction_browser.cjs"
+      - "tests/fixtures/**"
       - "tests/test_site_access_browser.cjs"
       - "judge/ie_des01_reference.py"
       - "tests/test_ui_browser.cjs"
@@ -36,6 +38,8 @@ on:
       - "tests/test_math_browser.cjs"
       - "tests/test_navigation_browser.cjs"
       - "tests/test_teacher_browser.cjs"
+      - "tests/test_interaction_browser.cjs"
+      - "tests/fixtures/**"
       - "tests/test_site_access_browser.cjs"
       - "judge/ie_des01_reference.py"
       - "tests/test_ui_browser.cjs"
@@ -103,6 +107,7 @@ jobs:
           export SCIP_UI_TEST_ORIGIN=http://127.0.0.1:8766
           node tests/test_ui_browser.cjs
           node tests/test_teacher_browser.cjs
+          node tests/test_interaction_browser.cjs
           node tests/test_navigation_browser.cjs
           node tests/test_environment_browser.cjs
           node tests/test_math_browser.cjs

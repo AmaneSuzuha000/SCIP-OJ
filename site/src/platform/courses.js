@@ -101,7 +101,9 @@ async function getAssignmentForProblem(problemId, courseId = null) {
             const courseIds = state.currentEnrollments.map(e => e.course_id).filter(Boolean);
             if (courseIds.length === 0)
                 return null;
-            query = query.in("course_id", courseIds);
+            // A problem number cannot choose between several courses.
+            if (courseIds.length !== 1) return null;
+            query = query.eq("course_id", courseIds[0]);
         }
         const { data, error } = await query
             .order("created_at", { ascending: false })
@@ -117,6 +119,10 @@ async function getAssignmentForProblem(problemId, courseId = null) {
         console.warn("[Platform] getAssignmentForProblem exception:", e);
         return null;
     }
+}
+export async function getCourseAssignments(courseId) {
+    if (!state.supabase || !state.currentUser || !courseId) return [];
+    return await readPages(() => state.supabase.from('assignments').select('*').eq('course_id',courseId).order('created_at',{ascending:false}).order('id'));
 }
 export // ── 教师功能 ──
 async function getMyCourses() {

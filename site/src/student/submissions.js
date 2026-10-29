@@ -3,7 +3,7 @@ import {escapeHtml} from './shared.js';
 export /** 刷新学生在该题目的提交历史记录 */
 async function refreshSubmissionsList() {
     const requestSeq = ++state.submissionsFetchSeq;
-    const context = `${state.activeProblemId || ""}|${state.activeAssignment?.id || ""}|${document.body.dataset.teachingView}`;
+    const context = `${state.courseId||''}|${state.activeProblemId || ""}|${state.activeAssignment?.id || ""}|${document.body.dataset.teachingView}`;
     const globalHistory = document.body.dataset.teachingView === "records";
     const container = document.getElementById("my-submissions-container");
     if (!container)
@@ -34,13 +34,14 @@ async function refreshSubmissionsList() {
     }
     container.innerHTML = `<p style="color:var(--text-secondary); padding:1rem;">正在加载历史提交记录...</p>`;
     try {
+        if(globalHistory && !state.courseId){container.textContent='请先选择教学班级，再查看该班级的正式提交记录。';return;}
         if (!globalHistory && state.activeProblemId && !state.activeAssignment?.id) {
             container.innerHTML = '<p class="history-empty">当前题目没有可用的正式作业。可继续本地练习，或进入「提交记录」查看其他作业。</p>';
             return;
         }
         const assignmentId = globalHistory ? null : state.activeAssignment?.id || null;
-        const submissions = await window.ScipOJPlatform.getMySubmissions(assignmentId);
-        if (requestSeq !== state.submissionsFetchSeq || context !== `${state.activeProblemId || ""}|${state.activeAssignment?.id || ""}|${document.body.dataset.teachingView}`)
+        const submissions = await window.ScipOJPlatform.getMySubmissions(assignmentId,state.courseId);
+        if (requestSeq !== state.submissionsFetchSeq || context !== `${state.courseId||''}|${state.activeProblemId || ""}|${state.activeAssignment?.id || ""}|${document.body.dataset.teachingView}`)
             return;
         if (submissions.length === 0) {
             container.innerHTML = `
@@ -51,6 +52,14 @@ async function refreshSubmissionsList() {
             return;
         }
         renderSubmissionsTable(container, submissions);
+        const requested=window.ScipOJNavigation.parseRoute(location.hash).submissionId;
+        if(requested){
+            const found=submissions.find(sub=>sub.id===requested);
+            if(found)showReportDialog(found);
+            else {const notice=document.createElement('p');notice.setAttribute('role','alert');notice.textContent='该提交不存在或不属于当前作业与班级。';container.prepend(notice);}
+        }else{
+            const dialog=document.getElementById('report-dialog');if(dialog&&!dialog.hidden)window.ScipOJPlatform.closeModal(dialog);
+        }
         // 检查是否有排队或运行中的任务，若有则保持轮询
         const hasPending = submissions.some(s => {
             const g = Array.isArray(s.gradings) ? s.gradings[0] : s.gradings;
@@ -171,7 +180,7 @@ function renderSubmissionsTable(container, list) {
         btn.onclick = () => {
             const sub = list[parseInt(btn.dataset.idx, 10)];
             if (sub)
-                showReportDialog(sub);
+                window.ScipOJJourney ? window.ScipOJJourney.patch({submission:sub.id}) : showReportDialog(sub);
         };
     });
 }
@@ -219,7 +228,9 @@ function showReportDialog(sub) {
     document.getElementById("btn-close-report-x").setAttribute("aria-label", "关闭提交详情");
     dialog.onclick = (e) => { if (e.target === dialog)
         close(); };
-    window.ScipOJPlatform.openModal(dialog);
+    window.ScipOJPlatform.openModal(dialog,{onClose:()=>{
+        if(window.ScipOJNavigation?.parseRoute(location.hash).submissionId===sub.id)window.ScipOJJourney?.patch({submission:null},{replace:true});
+    }});
 }
 export /** 智能轮询评测状态 */
 function startSubmissionsPolling() {

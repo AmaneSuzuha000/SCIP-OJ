@@ -55,8 +55,8 @@ class UIContractTests(unittest.TestCase):
 
     def test_draft_is_local_and_server_submission_remains(self):
         script = component_source('student')
-        self.assertIn('localStorage.setItem("scipoj:draft:"', script)
-        self.assertIn('localStorage.removeItem("scipoj:draft:"', script)
+        self.assertIn('localStorage.setItem(taskKey("draft")', script)
+        self.assertIn('localStorage.removeItem(taskKey("draft",id))', script)
         self.assertIn("submitAssignment", script)
 
     def test_immersive_workbench_hides_landing_and_guards_exam_draft(self):

@@ -6,7 +6,21 @@
   let readyApp, frame, appPromise, busy = false, generation = 0, notebook, changed;
   const managedWidgets = new Map();
   let notebookRequest = 0, notebookQueue = Promise.resolve();
-  let preparedKernel = null;
+  let preparedKernel = null, saveTimer, saving=Promise.resolve();
+  function saveState(dirty,error=null){window.dispatchEvent(new CustomEvent('scip-notebook-save-state',{detail:{dirty,error}}));}
+  function saveNotebooks(){
+    clearTimeout(saveTimer);
+    const work=async()=>{
+      try {
+        for(const widget of managedWidgets.values())if(!widget.isDisposed)await widget.context.save();
+        const dirty=[...managedWidgets.values()].some(widget=>!widget.isDisposed&&widget.context.model?.dirty);
+        saveState(dirty);
+      } catch(error){saveState(true,error.message);throw error;}
+    };
+    saving=saving.catch(()=>{}).then(work);return saving;
+  }
+  function scheduleSave(){saveState(true);clearTimeout(saveTimer);saveTimer=setTimeout(()=>saveNotebooks().catch(()=>{}),400);}
+
   // Runs inside the Lite document. Only the host owns the actual iframe.
   function getFrame() {
     if (!frame) frame = {contentWindow:window,remove(){},hidden:true};
@@ -147,7 +161,7 @@
     if (sources.length !== 1) throw new Error('请保留唯一的作业代码单元（submission）');
     return sources[0];
   }
-  function openNotebook(id, code, instance, onChange) {
+  function openNotebook(id, code, instance, onChange, scope) {
     detachNotebook();
     const request = notebookRequest, epoch = generation;
     const check = () => {
@@ -158,16 +172,16 @@
       }
     };
     // Serialize file operations: a cancelled save cannot overwrite a newer open.
-    const task = notebookQueue.catch(()=>{}).then(()=>openNotebookSession(id,code,instance,onChange,check));
+    const task = notebookQueue.catch(()=>{}).then(()=>openNotebookSession(id,code,instance,onChange,check,scope));
     notebookQueue = task.catch(()=>{});
     return task;
   }
-  async function openNotebookSession(id, code, instance, onChange, check) {
+  async function openNotebookSession(id, code, instance, onChange, check, scope) {
     check();
     const app = await ensureReady();
     check();
     const contents = app.serviceManager.contents;
-    const path = `SCIP_${id}_assignment.ipynb`;
+    const path = `SCIP_${id}${scope?"_"+scope:""}_assignment.ipynb`;
     const specs = app.serviceManager.kernelspecs.specs;
     const name = Object.keys(specs.kernelspecs).find(n=>/xpython|xeus/i.test(n)) || specs.default;
     let model = {nbformat:4,nbformat_minor:5,metadata:{kernelspec:{name,display_name:'Python · PySCIPOpt',language:'python'},scip_oj:{problem_id:id}},cells:[
@@ -203,6 +217,7 @@
       if (notebook !== widget) return;
       try { check(); } catch { return; }
       try { onChange(readCode(),null); } catch(e) { onChange(null,e); }
+      scheduleSave();
     };
     notebook.content.model.contentChanged.connect(changed);
     changed();
@@ -213,19 +228,27 @@
     return notebook;
   }
   function hideNotebook() { if (frame) frame.hidden = true; }
-  function openStudyNotebook(path) {
+  function openStudyNotebook(path,scope) {
     detachNotebook();
     const request=notebookRequest, epoch=generation;
     const check=()=>{if(request!==notebookRequest||epoch!==generation){const e=new Error('Notebook 打开已取消');e.code='NOTEBOOK_CANCELLED';throw e;}};
     const task=notebookQueue.catch(()=>{}).then(async()=>{
       const app=await ensureReady();check();
+      if(scope){
+        const original=path;path='SCIP_STUDY_'+scope+'_'+original;
+        try {await app.serviceManager.contents.get(path,{content:true});check();}
+        catch(error){if(error.response?.status!==404)throw error;const source=await app.serviceManager.contents.get(original,{content:true});check();await app.serviceManager.contents.save(path,{type:'notebook',format:'json',content:source.content});check();}
+      }
       const widget=await app.commands.execute('docmanager:open',{path,factory:'Notebook'});
       if(!widget)throw new Error('无法打开该课程 Notebook');
       try {await widget.context.ready;check();} catch(error){widget.dispose();throw error;}
+      notebook=widget;managedWidgets.set(path,widget);
+      changed=()=>{if(notebook===widget)scheduleSave();};
+      notebook.content.model.contentChanged.connect(changed);
       app.shell.collapseLeft?.();app.shell.collapseRight?.();
       window.dispatchEvent(new Event('resize'));
     });
     notebookQueue=task.catch(()=>{});return task;
   }
-  window.ScipOJRuntime = {ensureReady,prepare,runSolve,openNotebook,openStudyNotebook,readCode,hideNotebook,detachNotebook,reset,isReady:()=>!!readyApp};
+  window.ScipOJRuntime = {ensureReady,prepare,runSolve,openNotebook,openStudyNotebook,readCode,hideNotebook,detachNotebook,saveNotebooks,reset,isReady:()=>!!readyApp};
 })();

@@ -14,7 +14,7 @@ export function protectPage(html) {
 <link rel="stylesheet" href="styles/access.css?v=1">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js"></script>
 <script src="config.js?v=access1"></script>
-<script src="js/access.js?v=1"></script>
+<script src="js/access.js?v=journey2"></script>
 </body>`;
     });
 }

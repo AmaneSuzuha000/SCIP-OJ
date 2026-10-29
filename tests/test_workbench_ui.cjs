@@ -54,8 +54,7 @@ assert.equal((html.match(/<main\b/g)||[]).length, (html.match(/<\/main>/g)||[]).
 // Every page must keep its original interactive contracts while sharing visual identity.
 const app = fs.readFileSync(path.join(root, "..", ".portal-build/js/app.js"), "utf8");
 assert.match(html, /id="nav-to-assessment"/, "Sidebar assessment link needs an explicit guarded handler");
-assert.match(app, /getElementById\("nav-to-assessment"\)[\s\S]*?confirmLeaveIfExamDraft\(\)/,
-  "Exam draft can be lost when the sidebar navigates away");
+// Draft cancellation is exercised through real sidebar and native Back actions in test_interaction_browser.cjs.
 const faculty = pageHTML('teacher.html');
 const facultyCss = fs.readFileSync(path.join(root, "faculty-v3.css"), "utf8");
 assert.ok(fs.readFileSync(path.join(root,"styles/teacher.css"),"utf8").includes("faculty-v3.css"), "Faculty theme not loaded");

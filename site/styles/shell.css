@@ -1,5 +1,5 @@
 @import url("tokens.css");
-@import url("components.css");
+@import url("components.css?v=journey2");
 
 /* One owner for the header, account panel and sidebar on every public page. */
 .shared-topbar{position:fixed;inset:0 0 auto;z-index:100;height:var(--ui-header-height);box-sizing:border-box;margin:0;padding:0 28px;background:var(--ui-surface);border-bottom:1px solid var(--ui-border);font-family:var(--ui-font)}

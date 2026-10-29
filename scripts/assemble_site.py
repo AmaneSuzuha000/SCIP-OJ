@@ -36,7 +36,7 @@ def assemble(lite, output):
             entry.write_text(html, encoding='utf-8')
     lab = output / 'notebooks/lab/index.html'
     html = lab.read_text(encoding='utf-8')
-    bridge = '<script src="../engine.js?v=prewarm3"></script><script src="../bridge.js?v=prewarm3"></script>'
+    bridge = '<script src="../engine.js?v=journey2"></script><script src="../bridge.js?v=journey2"></script>'
     lab.write_text(html.replace('</body>', bridge+'</body>') if '</body>' in html else html+bridge, encoding='utf-8')
     shutil.copytree(ROOT / 'docs', output / 'docs')
     shutil.copytree(ROOT / 'problems', output / 'problems')

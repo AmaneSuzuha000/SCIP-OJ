@@ -142,7 +142,7 @@ async function run() {
     await desktop.locator("#nav-learning-space").click();
     await desktop.locator("#confirm-dialog").waitFor({ state: "visible" });
     await desktop.locator("#confirm-cancel").click();
-    await desktop.waitForURL(/#P001$/);
+    await desktop.waitForURL(/#P001(?:\?|$)/);
     assert.equal(await desktop.locator("#workspace").isVisible(), true);
     assert.equal(await desktop.locator("#learning-space").isVisible(), false);
     assert.ok(await desktop.evaluate(() => window.ScipOJEditor.getValue().includes("exam-navigation-regression")));
@@ -166,9 +166,10 @@ async function run() {
     assert.equal(await desktop.locator("#confirm-dialog").isVisible(), false,
       "Changing problems should ask once before discarding an exam draft");
     await desktop.locator("#nav-to-assessment").click();
+    await desktop.locator("#workspace").waitFor({state:'hidden'});
     assert.equal(await desktop.locator("#workspace").isVisible(), false);
     assert.equal(await desktop.locator("#problem-list-section").isVisible(), true);
-    assert.match(desktop.url(), /#problem-list-section$/,
+    assert.match(desktop.url(), /#problem-list-section(?:\?|$)/,
       "Sidebar must update the URL without a shadowed History API error");
     await openFirstProblem(desktop);
     await desktop.locator("#workspace").waitFor({ state: "visible" });
@@ -178,20 +179,21 @@ async function run() {
 
     await openFirstProblem(desktop);
     await desktop.waitForFunction(() => document.getElementById("title").textContent.startsWith("P001"));
-    // A slow assignment response must not re-enable exam policy after switching spaces.
+    // Practice must not discover a formal assignment without a selected course.
     await desktop.evaluate(() => {
       const platform = window.ScipOJPlatform;
       const originalConfigured = platform.isConfigured, originalLookup = platform.getAssignmentForProblem;
       platform.isConfigured = () => true;
-      platform.getAssignmentForProblem = () => new Promise(resolve => { window.__resolveAssignment = resolve; });
+      window.__assignmentLookups=0;
+      platform.getAssignmentForProblem = () => {window.__assignmentLookups++;throw Error('Unscoped lookup');};
       window.__assignmentRefresh = refreshAssignmentMeta("P001");
       window.__restoreAssignmentLookup = () => { platform.isConfigured = originalConfigured; platform.getAssignmentForProblem = originalLookup; };
     });
     await desktop.locator("#nav-learning-space").click();
     await desktop.locator("#learning-space").waitFor({ state: "visible" });
     await desktop.evaluate(async () => {
-      window.__resolveAssignment({ id: "qa-only", integrity_policy: "exam_block" });
       await window.__assignmentRefresh;
+      if(window.__assignmentLookups!==0)throw Error('Practice queried a formal assignment');
       window.__restoreAssignmentLookup();
     });
     assert.equal(await desktop.evaluate(() => window.ScipOJExam.getPolicy()), "standard");

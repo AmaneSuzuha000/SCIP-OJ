@@ -30,7 +30,7 @@ export async function submitAssignment(assignmentId, codeText, clientIntegrity =
     }
     return gradingAPI().submitAssignment(assignmentId, codeText, clientIntegrity);
 }
-export async function getMySubmissions(assignmentId) {
+export async function getMySubmissions(assignmentId, courseId = null) {
     if (!state.supabase || !state.currentUser)
         return [];
     try {
@@ -42,7 +42,7 @@ export async function getMySubmissions(assignmentId) {
           attempt_no,
           created_at,
           metadata,
-          assignments (problem_id, pass_score, courses (name, code)),
+          ${courseId?'assignments!inner':'assignments'} (course_id, problem_id, pass_score, courses (name, code)),
           gradings (
             id,
             status,
@@ -62,6 +62,7 @@ export async function getMySubmissions(assignmentId) {
         if (assignmentId) {
             query = query.eq("assignment_id", assignmentId);
         }
+        if (courseId) query = query.eq('assignments.course_id',courseId);
         const { data, error } = await query;
         if (error) {
             console.warn("[Platform] getMySubmissions error:", error);

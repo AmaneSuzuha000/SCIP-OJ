@@ -3,6 +3,7 @@ import {loadJSON,escapeHtml,getCodeValue} from './shared.js';
 import {applyProblemFilters,updateBannerCourseInfo} from './course.js';
 import {showWorkbenchTab,showConsoleTab,confirmLeaveIfExamDraft,closeWorkspace,handleRouteHash,refreshAssignmentMeta} from './workbench.js';
 import {refreshHistory,refreshSubmissionsList} from './submissions.js';
+import {installContextControls,saveList,taskKey,contextHash} from './context.js';
 export async function main() {
     document.querySelector(".skip-link")?.addEventListener("click", event => {
         event.preventDefault();
@@ -19,27 +20,27 @@ export async function main() {
         catch (e) {
             console.warn("[App] 平台初始化异常:", e);
         }
-        window.ScipOJPlatform.onAuthChange?.(async () => {
+        window.ScipOJPlatform.onAuthChange?.(() => {
             updateBannerCourseInfo();
-            if (state.activeProblemId) {
-                await refreshAssignmentMeta(state.activeProblemId);
-                await refreshSubmissionsList();
-            }
+            const fingerprint=JSON.stringify(window.ScipOJPlatform.getEnrollments().map(e=>[e.course_id,e.role]));
+            if(state.navigationReady&&fingerprint!==state.courseFingerprint){state.courseFingerprint=fingerprint;state.assignmentCache=null;window.ScipOJJourney.go(location.href,{force:true});}
+            if(state.activeProblemId)refreshAssignmentMeta(state.activeProblemId);
         });
-        document.addEventListener("scipoj:enrollments-changed", async () => {
-            updateBannerCourseInfo();
-            if (state.activeProblemId) {
-                await refreshAssignmentMeta(state.activeProblemId);
-            }
+        document.addEventListener('scipoj:enrollments-changed',()=>{
+            state.assignmentCache=null;
+            window.ScipOJJourney.go(location.href,{force:true});
         });
       }
       state.platformReady = true;
+      state.courseFingerprint=JSON.stringify(window.ScipOJPlatform?.getEnrollments().map(e=>[e.course_id,e.role])||[]);
       updateBannerCourseInfo();
-      if (state.activeProblemId) {
-          await refreshAssignmentMeta(state.activeProblemId);
-          await refreshSubmissionsList();
-      }
     })().catch(error => console.warn('[App] 课程信息恢复失败:', error));
+    platformReady.then(()=>{
+        window.ScipOJJourney.setUser(window.ScipOJPlatform?.getUser()?.id);
+        if(state.navigationReady){state.assignmentCache=null;window.ScipOJJourney.go(location.href,{force:true});}
+    });
+    window.ScipOJJourney.setUser(window.ScipOJPlatform?.getUser()?.id);
+    installContextControls();
     // 2. 加载题目索引
     try {
         state.problemIndex = await loadJSON("problems/index.json");
@@ -59,31 +60,39 @@ export async function main() {
     document.getElementById("code")?.addEventListener("input", (event) => {
         if (!state.activeProblemId)
             return;
+        if(!state.problemLoaded)return;
         const status = document.getElementById("draft-state");
         if (window.ScipOJExam?.getPolicy() !== "standard") {
             if (status)
                 status.textContent = "考试模式：本地草稿存储已停用。请通过正式提交保存答案。";
             return;
         }
+        if(!state.platformReady) {
+            state.pendingDraft={problemId:state.activeProblemId,source:event.target.value};
+            if(status)status.textContent='代码暂存于当前页面 · 正在确认课程信息';
+            return;
+        }
         try {
-            localStorage.setItem("scipoj:draft:" + state.activeProblemId, event.target.value);
+            localStorage.setItem(taskKey("draft"), event.target.value);
+            state.draftSaveFailed=false;
             if (status)
                 status.textContent = "草稿已保存到本浏览器 · 尚未正式提交";
         }
         catch {
+            state.draftSaveFailed=true;
             if (status)
                 status.textContent = "浏览器存储不可用，请复制代码自行保存";
         }
     });
     // 3. Search, difficulty, progress, layout and workbench tabs
-    document.getElementById("problem-search-input")?.addEventListener("input", applyProblemFilters);
-    document.getElementById("filter-difficulty")?.addEventListener("change", applyProblemFilters);
-    document.getElementById("filter-progress")?.addEventListener("change", applyProblemFilters);
+    document.getElementById("problem-search-input")?.addEventListener("input", () => {applyProblemFilters();saveList();});
+    document.getElementById("filter-difficulty")?.addEventListener("change", () => {applyProblemFilters();saveList();});
+    document.getElementById("filter-progress")?.addEventListener("change", () => {applyProblemFilters();saveList();});
     try {
         state.listViewMode = localStorage.getItem("scipoj:list-view") === "grid" ? "grid" : "table";
     }
     catch { /* blocked storage */ }
-    const switchView = mode => {
+    const switchView = (mode,persist=true) => {
         state.listViewMode = mode;
         try {
             localStorage.setItem("scipoj:list-view", mode);
@@ -96,13 +105,13 @@ export async function main() {
                 button.setAttribute("aria-pressed", String(selected));
             }
         }
-        applyProblemFilters();
+        applyProblemFilters();if(persist)saveList();
     };
     document.getElementById("view-list")?.addEventListener("click", () => switchView("table"));
     document.getElementById("view-grid")?.addEventListener("click", () => switchView("grid"));
-    switchView(state.listViewMode);
-    document.getElementById("tab-description")?.addEventListener("click", () => showWorkbenchTab("description"));
-    document.getElementById("tab-history")?.addEventListener("click", () => showWorkbenchTab("history"));
+    switchView(state.listViewMode,false);
+    document.getElementById("tab-description")?.addEventListener("click", () => window.ScipOJJourney.patch({tab:null}));
+    document.getElementById("tab-history")?.addEventListener("click", () => window.ScipOJJourney.patch({tab:"history"}));
     // Reuse the existing submissions component without duplicating its ID or backend calls.
     const historyPanel = document.getElementById("history-tab");
     const submissions = document.getElementById("my-submissions-section");
@@ -111,8 +120,8 @@ export async function main() {
     document.getElementById("btn-refresh-submissions").onclick = refreshHistory;
     window.ScipOJEditor?.init();
     window.ScipOJExam?.bind();
-    document.getElementById("tab-testcase")?.addEventListener("click", () => showConsoleTab("testcase"));
-    document.getElementById("tab-result")?.addEventListener("click", () => showConsoleTab("result"));
+    document.getElementById("tab-testcase")?.addEventListener("click", () => window.ScipOJJourney.patch({console:null}));
+    document.getElementById("tab-result")?.addEventListener("click", () => window.ScipOJJourney.patch({console:"result"}));
     document.addEventListener("keydown", e => {
         if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && state.activeProblemId) {
             e.preventDefault();
@@ -121,50 +130,27 @@ export async function main() {
                 button.click();
         }
     });
-    const courseMenu = document.getElementById("btn-course-menu");
-    courseMenu?.addEventListener("click", () => {
-        const expanded = courseMenu.getAttribute("aria-expanded") !== "true";
-        courseMenu.setAttribute("aria-expanded", String(expanded));
-        document.querySelector(".studio-rail")?.classList.toggle("rail-menu-open", expanded);
-    });
-    // From the course sidebar, never discard unsaved exam code silently.
-    document.getElementById("nav-to-assessment")?.addEventListener("click", async (event) => {
-        if (!state.activeProblemId)
-            return; // The native anchor scroll works on the course landing.
+    const btnBack=document.getElementById('btn-back-to-list');
+    btnBack.onclick=event=>{
         event.preventDefault();
-        if (!(await confirmLeaveIfExamDraft()))
-            return;
-        closeWorkspace();
-        window.history.replaceState(null, "", "#problem-list-section");
-        document.getElementById("problem-list-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-    // 4. 返回题单按钮
-    const btnBack = document.getElementById("btn-back-to-list");
-    if (btnBack) {
-        btnBack.onclick = async (e) => {
-            e.preventDefault();
-            if (state.studyNotebook) {
-                location.hash = state.studyNotebook.space === 'course' ? '#course-labs' : '#learn-notebooks';
-                return;
-            }
-            if (await confirmLeaveIfExamDraft()) {
-                closeWorkspace();
-                document.getElementById("problem-list-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
-            }
-        };
-    }
+        const target=state.studyNotebook ? (state.studyNotebook.space==='course'?'#course-labs':'#learn-notebooks') : '#problem-list-section';
+        window.ScipOJJourney.back(contextHash(target));
+    };
     // Keep exam navigation explicit; switching discards unsaved exam source.
     for (const [id, step] of [["btn-prev-problem", -1], ["btn-next-problem", 1]]) {
         document.getElementById(id)?.addEventListener("click", async () => {
-            const index = state.problemIndex.findIndex(p => p.id === state.activeProblemId);
-            const next = state.problemIndex[index + step];
+            const problems=state.problemIndex.filter(p=>!state.courseId||state.courseAssignments.some(a=>a.problem_id===p.id));
+            const index = problems.findIndex(p => p.id === state.activeProblemId);
+            const next = problems[index + step];
             if (!next)
                 return; // The hash router asks once before leaving an exam draft.
-            location.hash = "#" + next.id;
+            window.ScipOJJourney.go(contextHash("#"+next.id));
         });
     }
     window.addEventListener("beforeunload", event => {
-        if (window.ScipOJExam?.getPolicy() !== "standard" && state.activeProblemId && getCodeValue().trim() !== state.currentTemplate.trim()) {
+        if(!window.ScipOJJourney.isLeaving()&&state.activeProblemId&&(state.draftSaveFailed||state.pendingDraft?.problemId===state.activeProblemId)&&getCodeValue().trim()!==state.currentTemplate.trim()){event.preventDefault();event.returnValue='';}
+        if(!window.ScipOJJourney.isLeaving()&&window.ScipOJRuntime?.getNotebookStatus?.().dirty){event.preventDefault();event.returnValue='';}
+        if (!window.ScipOJJourney.isLeaving() && window.ScipOJExam?.getPolicy() !== "standard" && state.activeProblemId && getCodeValue().trim() !== state.currentTemplate.trim()) {
             event.preventDefault();
             event.returnValue = "";
         }
@@ -181,9 +167,31 @@ export async function main() {
             }
         };
     }
-    // 6. 路由与 hashchange 监听
-    window.addEventListener("hashchange", () => {
-        handleRouteHash();
+    const sameTask=url=>{
+        if(url.pathname!==location.pathname)return false;
+        const next=window.ScipOJNavigation.parseRoute(url.hash);
+        const course=next.params.get('mode')==='practice'?null:(next.courseId||state.courseId);
+        return state.activeProblemId ? next.problemId===state.activeProblemId&&course===state.courseId : state.studyNotebook && next.notebook?.path===state.studyNotebook.path;
+    };
+    state.navigationReady=true;
+    await window.ScipOJJourney.configure({
+        render:handleRouteHash,
+        save:saveList,
+        beforeLeave:async url=>{
+            if(sameTask(url))return true;
+            if(state.activeProblemId && !(await confirmLeaveIfExamDraft()))return false;
+            if(state.submitting || window.ScipOJRuntime?.getStatus().phase==='running') {
+                const ok=await window.ScipOJPlatform.showConfirmDialog({title:'离开当前任务？',message:state.submitting?'正式提交正在处理中。离开后可在提交记录查看结果。':'当前练习仍在运行，离开将停止本次运行。',confirmText:'确定离开'});
+                if(!ok)return false;
+            }
+            if((state.draftSaveFailed||state.pendingDraft?.problemId===state.activeProblemId) && state.activeProblemId && getCodeValue().trim()!==state.currentTemplate.trim()) {
+                return window.ScipOJPlatform.showConfirmDialog({title:'草稿尚未保存',message:'代码只暂存在当前页面，请先复制代码或等待课程信息恢复；离开可能丢失修改。',confirmText:'确定离开',danger:true});
+            }
+            if(state.studyNotebook||document.querySelector('.workspace-layout').classList.contains('notebook-mode')||window.ScipOJRuntime?.getNotebookStatus?.().dirty) {
+                try {await window.ScipOJRuntime?.saveNotebooks?.();}
+                catch {window.ScipOJPlatform.showToast('Notebook 笔记保存失败，请保留当前页面并重试。','error');return false;}
+            }
+            return true;
+        }
     });
-    handleRouteHash();
 }

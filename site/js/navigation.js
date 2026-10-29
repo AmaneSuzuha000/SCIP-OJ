@@ -38,8 +38,23 @@
         ['06_IE_Stochastic_Inventory_PySCIPOpt.ipynb', '单周期随机库存优化', 'learn'],
     ].map(([path, title, space]) => ({path, title, space}));
 
+    function withParams(hash, values) {
+        const [key, search=''] = String(hash||'#course').replace(/^#/,'').split('?');
+        const params = new URLSearchParams(search);
+        for(const [name,value] of Object.entries(values)) {
+            if(value===null||value===undefined||value==='')params.delete(name);else params.set(name,String(value));
+        }
+        return '#'+key+(params.size?'?'+params.toString():'');
+    }
     function parseRoute(hash) {
-        const key = String(hash || '').replace(/^#/, '');
+        const [key, search=''] = String(hash || '').replace(/^#/, '').split('?');
+        const params = new URLSearchParams(search);
+        const route = matchRoute(key);
+        return {...route, params, courseId:params.get('course'), assignmentId:params.get('assignment'),
+            tab:params.get('tab')==='history'?'history':'description', console:params.get('console')==='result'?'result':'testcase',
+            presentation:params.get('view')==='notebook'?'notebook':'code', submissionId:params.get('submission')};
+    }
+    function matchRoute(key) {
         if (key.startsWith('notebook/')) {
             let path; try { path = decodeURIComponent(key.slice(9)); } catch { path = ''; }
             const notebook = notebooks.find(entry => entry.path === path);
@@ -55,7 +70,7 @@
             const canonical = key === 'course-cases' ? 'case-library' : key;
             return {space:'learn', view:'overview', key:canonical, anchor:canonical === 'learn' ? null : canonical};
         }
-        return {space:'course', view:'overview', key:'course', anchor:null};
+        return {space:'course', view:'overview', key:'course', anchor:null, error:key?'链接不存在或已失效，请从导航选择页面。':null};
     }
     function sectionForRoute(route) {
         return route.view === 'notebook' ? (route.space === 'course' ? 'course-labs' : 'learn-notebooks') : route.view === 'problem' ? 'problem-list-section' : route.key;
@@ -99,7 +114,7 @@
         const brand = doc.querySelector('.brand-logo');
         if (brand) brand.href = 'index.html#' + context.space;
     }
-    const api = {course, learn, resources, guides, labs, teacher, notebooks, parseRoute, sectionForRoute, resolveContext, applyContext};
+    const api = {course, learn, resources, guides, labs, teacher, notebooks, parseRoute, withParams, sectionForRoute, resolveContext, applyContext};
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
     else root.ScipOJNavigation = api;
 })(typeof window === 'undefined' ? globalThis : window);
