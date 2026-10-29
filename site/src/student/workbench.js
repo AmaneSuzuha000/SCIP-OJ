@@ -21,6 +21,84 @@ export async function confirmLeaveIfExamDraft() {
     }
     return window.confirm("考试模式未保存代码：离开后当前修改会丢失，确定继续？");
 }
+const PRACTICE_CONSTRAINTS = [
+    ['超重', '容量约束'],
+    ['非整数', '整数约束'],
+    ['超出 [0,1]', '0-1 取值'],
+    ['不一致', '目标与方案不一致'],
+    ['缺少 objective', '输出格式'],
+    ['长度', '解的长度'],
+    ['运行错误', '代码运行'],
+    ['执行异常', '代码运行'],
+];
+function practiceSummary(report) {
+    if (typeof report === 'string') {
+        const line = report.split('\n')[0];
+        return { tone: 'ui-banner--warning', text: line + '。这次结果不计正式成绩。' };
+    }
+    if (report?.kind === 'custom_test') {
+        return { tone: '', text: '这是自定义输入的试运行，没有按题目约束评分，也不计入正式成绩。' };
+    }
+    const failed = [];
+    (report?.instances || []).forEach((item, index) => {
+        if (item.passed) return;
+        const messages = item.messages || [];
+        const hit = PRACTICE_CONSTRAINTS.find(([needle]) => messages.some(message => String(message).includes(needle)));
+        failed.push(hit ? `第 ${index + 1} 组未满足${hit[1]}` : `第 ${index + 1} 组未通过`);
+    });
+    if (report?.passed) {
+        return { tone: '', text: `本地练习通过（${report.score} 分）。这只说明浏览器练习达标，不是已提交的正式作业。` };
+    }
+    const detail = failed.length ? failed.slice(0, 4).join('；') : '有测试组未达到通过线';
+    return { tone: 'ui-banner--warning', text: `本地练习未通过（${report?.score ?? 0} 分）。${detail}。练习结果不会写入正式成绩。` };
+}
+function showRunReport(payload) {
+    const reportEl = document.getElementById('report');
+    const summaryEl = document.getElementById('practice-summary');
+    if (reportEl) reportEl.textContent = typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2);
+    if (!summaryEl) return;
+    const summary = practiceSummary(payload);
+    summaryEl.hidden = false;
+    summaryEl.className = 'ui-banner ' + summary.tone;
+    summaryEl.textContent = summary.text;
+}
+function describeFormalGate() {
+    const platform = window.ScipOJPlatform;
+    if (!platform || !platform.isConfigured()) {
+        return { ready: false, reason: '课程服务未连接。正式提交不可用，可以先使用练习评分。', action: 'none' };
+    }
+    if (!platform.getUser()) {
+        return { ready: false, reason: '登录后才能把代码记为正式作业。点击「正式提交」去登录。', action: 'login' };
+    }
+    if (!platform.isTeacher() && !String(platform.getProfile()?.student_no || '').trim()) {
+        return { ready: false, reason: '正式提交前需要填写学号。点击「正式提交」打开个人资料。', action: 'profile' };
+    }
+    if (!platform.isTeacher() && !(platform.getEnrollments() || []).length) {
+        return { ready: false, reason: '尚未加入教学班级。点击「正式提交」填写教师给的邀请码。', action: 'join' };
+    }
+    if (!state.activeAssignment) {
+        return { ready: false, reason: '这道题还不是当前班级的正式作业。练习结果不会记入成绩。', action: 'none' };
+    }
+    return { ready: true, reason: '', action: 'submit' };
+}
+function paintFormalGate() {
+    const btn = document.getElementById('btn-submit-formal');
+    const note = document.getElementById('formal-submit-reason');
+    const gate = describeFormalGate();
+    if (btn) {
+        btn.classList.add('ui-button');
+        btn.classList.toggle('ui-button--primary', gate.ready);
+        btn.classList.toggle('ui-button--secondary', !gate.ready);
+        btn.classList.toggle('is-gated', !gate.ready);
+        btn.classList.remove('btn-blue');
+        btn.title = gate.ready ? '提交作业并记录成绩' : gate.reason;
+    }
+    if (note) {
+        note.hidden = gate.ready;
+        note.textContent = gate.reason;
+    }
+    return gate;
+}
 export function updateProblemSequence() {
     const index = state.problemIndex.findIndex(p => p.id === state.activeProblemId);
     const prev = document.getElementById("btn-prev-problem");
@@ -371,11 +449,6 @@ async function refreshAssignmentMeta(problemId) {
             const badge = state.activeAssignment.integrity_policy === "exam_block" ? "考试 · 限制粘贴" : "考试 · 操作提示";
             metaBar.insertAdjacentHTML("beforeend", `<div class="meta-item"><strong class="tag-pending">${badge}</strong></div>`);
         }
-        if (btnSubmitFormal) {
-            btnSubmitFormal.disabled = false;
-            btnSubmitFormal.title = "提交作业并记录成绩";
-            btnSubmitFormal.style.opacity = "1";
-        }
     }
     else {
         window.ScipOJExam?.activate("standard", problemId);
@@ -384,25 +457,20 @@ async function refreshAssignmentMeta(problemId) {
         const enrollments = (window.ScipOJPlatform && window.ScipOJPlatform.getEnrollments()) || [];
         let hint;
         if (!configured) {
-            hint = "🌿 <strong>离线练习模式</strong>：未配置后端服务，正式作业提交不可用；练习评分可正常使用。";
+            hint = "<strong>离线练习</strong>：课程服务未连接，正式提交不可用；练习评分可以继续使用。";
         }
         else if (!loggedIn) {
-            hint = "🔐 <strong>未登录</strong>：登录并绑定学号、加入班级后即可提交正式作业；当前可先进行 练习。";
+            hint = "<strong>未登录</strong>：登录并在账号菜单填写个人资料、加入课程后，才能提交正式作业。";
         }
         else if (enrollments.length === 0) {
-            hint = "🎓 <strong>尚未加入班级</strong>：请点击右上角「选课」输入教师提供的邀请码，之后即可提交正式作业。";
+            hint = "<strong>尚未加入班级</strong>：从账号菜单打开「加入课程」，填写教师给的邀请码。";
         }
         else {
-            hint = "🌿 <strong>自主练习模式</strong>：本题目当前未作为您所在班级的正式作业发布，您可在此进行 练习评分与算例调试。";
+            hint = "<strong>自主练习</strong>：这道题还不是当前班级的正式作业。练习评分只留在本机，不会变成作业成绩。";
         }
         metaBar.innerHTML = `<div class="meta-item" style="color:var(--text-secondary);">${hint}</div>`;
-        if (btnSubmitFormal) {
-            // 保持按钮可点击：点击后给出明确原因/引导，而不是让用户面对一个无反馈的禁用按钮
-            btnSubmitFormal.disabled = false;
-            btnSubmitFormal.title = "点击查看正式提交条件";
-            btnSubmitFormal.style.opacity = "1";
-        }
     }
+    paintFormalGate();
 }
 export function validNotebookSource() {
     if (!document.getElementById('workspace').dataset.notebookInvalid)
@@ -535,13 +603,13 @@ function setupActionButtons(meta, id) {
                     Math.min(Number(meta.time_limit_sec) || 15, 30), run.update);
                 if (!run.current()) return;
                 setRunStatus('done', '✓ 测试运行完成');
-                reportEl.textContent = JSON.stringify({ kind: "custom_test", result,
-                    note: "仅运行用户自定义输入；不验证最优性、不影响正式成绩。" }, null, 2);
+                showRunReport({ kind: "custom_test", result,
+                    note: "仅运行用户自定义输入；不验证最优性、不影响正式成绩。" });
             }
             catch (error) {
                 if (!run.current()) return;
                 setRunStatus('system_error', '运行失败');
-                reportEl.textContent = "运行错误（不计正式分）：\n" + String(error?.message || error);
+                showRunReport("运行错误（不计正式分）：\n" + String(error?.message || error));
             }
             finally {
                 run.finish();
@@ -570,7 +638,7 @@ function setupActionButtons(meta, id) {
             report.execution_mode = "python-wasm-student-code";
             report.execution_note = "浏览器 Python WASM 真实执行（练习自测，不写正式数据库）";
             if (!run.current()) return;
-            reportEl.textContent = JSON.stringify({ ...report, layer: "练习" }, null, 2);
+            showRunReport({ ...report, layer: "练习" });
             const isPass = report.passed;
             statusEl.innerHTML = isPass
                 ? `<span class="badge badge-done">✓ 练习通过 · ${report.score} 分</span>`
@@ -585,7 +653,7 @@ function setupActionButtons(meta, id) {
         catch (e) {
             if (!run.current()) return;
             statusEl.innerHTML = `<span class="badge badge-system_error">评测异常</span>`;
-            reportEl.textContent = "执行异常:\n" + String(e?.stack || e?.message || e);
+            showRunReport("执行异常:\n" + String(e?.stack || e?.message || e));
             window.ScipOJPlatform?.showToast("练习执行异常: " + (e?.message || e), "error");
         }
         finally {
@@ -596,29 +664,19 @@ function setupActionButtons(meta, id) {
     btnSubmitFormal.onclick = async () => {
         if (!validNotebookSource())
             return;
-        if (!window.ScipOJPlatform || !window.ScipOJPlatform.isConfigured()) {
-            window.ScipOJPlatform?.showToast("正式提交暂不可用，请先使用练习评分。", "warning");
-            return;
-        }
-        if (!window.ScipOJPlatform.getUser()) {
+        const gate = paintFormalGate();
+        if (gate.action === 'login') {
             window.ScipOJPlatform.showLoginDialog();
             return;
         }
-        // 检查学号门禁
-        const profile = window.ScipOJPlatform.getProfile();
-        const isTeacher = window.ScipOJPlatform.isTeacher();
-        if (!isTeacher && (!profile?.student_no || !profile.student_no.trim())) {
+        if (gate.action === 'profile') {
             window.ScipOJPlatform.showStudentNoDialog({
                 forced: true,
-                onComplete: () => {
-                    btnSubmitFormal.click();
-                }
+                onComplete: () => btnSubmitFormal.click()
             });
             return;
         }
-        // 检查选课门禁
-        const enrollments = window.ScipOJPlatform.getEnrollments();
-        if (!isTeacher && enrollments.length === 0) {
+        if (gate.action === 'join') {
             window.ScipOJPlatform.showJoinCourseDialog({
                 forced: true,
                 onComplete: async () => {
@@ -628,16 +686,8 @@ function setupActionButtons(meta, id) {
             });
             return;
         }
-        if (!state.activeAssignment) {
-            const enrollments = window.ScipOJPlatform.getEnrollments();
-            if (enrollments.length === 0) {
-                window.ScipOJPlatform.showJoinCourseDialog({ forced: true });
-            }
-            else {
-                window.ScipOJPlatform.showToast(`题目 ${id} 暂未在您选修的班级中开放正式作业提交，请联系任课教师。`, "warning");
-            }
+        if (!gate.ready)
             return;
-        }
         const userCode = getCodeValue().trim();
         if (!userCode) {
             window.ScipOJPlatform.showToast("提交代码不能为空，请先编写算法代码", "warning");

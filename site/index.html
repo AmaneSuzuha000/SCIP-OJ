@@ -32,7 +32,7 @@
 <section id="problem-list-section" class="studio-assessment-section" data-teaching-view-panel="problems" hidden>
 <header class="ui-page-heading"><h1>课程作业</h1><p>按课程要求完成建模、练习与正式提交。当前共 <strong id="overview-problems">—</strong> 道题。</p></header>
 <div class="section-header"><div class="section-heading-group"><h2>选择一道建模题 <small id="problem-count" aria-live="polite"></small></h2></div><div><label class="sr-only" for="problem-search-input">搜索题目</label><input type="search" id="problem-search-input" placeholder="搜索编号、名称、标签…" autocomplete="off"></div></div>
-<div class="catalog-toolbar" aria-label="筛选与布局"><div class="catalog-filters"><label for="filter-difficulty">难度</label><select id="filter-difficulty"><option value="all">全部难度</option><option value="easy">简单</option><option value="medium">中等</option><option value="hard">困难</option></select><label for="filter-progress">状态</label><select id="filter-progress"><option value="all">全部题目</option><option value="solved">练习已通过</option><option value="todo">尚未通过</option></select></div><div class="catalog-view" aria-label="题库显示方式"><button type="button" id="view-list" class="view-toggle active" aria-pressed="true">列表</button><button type="button" id="view-grid" class="view-toggle" aria-pressed="false">卡片</button></div></div><div id="problem-list" class="problem-grid problem-list-mode"><p>正在加载题目索引…</p></div>
+<div class="catalog-toolbar" aria-label="筛选与布局"><div class="catalog-filters"><label for="filter-difficulty">难度</label><select id="filter-difficulty"><option value="all">全部难度</option><option value="easy">简单</option><option value="medium">中等</option><option value="hard">困难</option></select><label for="filter-progress">状态</label><select id="filter-progress"><option value="all">全部题目</option><option value="solved">本地练习通过</option><option value="todo">本地练习未通过</option></select></div><div class="catalog-view" aria-label="题库显示方式"><button type="button" id="view-list" class="view-toggle active" aria-pressed="true">列表</button><button type="button" id="view-grid" class="view-toggle" aria-pressed="false">卡片</button></div></div><div id="problem-list" class="problem-grid problem-list-mode"><p>正在加载题目索引…</p></div>
 </section>
     <!-- 2. 题目工作台（选中题目后展开） -->
 
@@ -49,7 +49,7 @@
       <section id="workspace" hidden>
       <div class="workspace-header">
         <a href="#list" id="btn-back-to-list" class="btn-back">
-          ← 返回在线题库
+          ← 返回课程作业
         </a>
         <div class="workbench-page-actions">
           <span id="workspace-extra-links" class="workspace-contract">solve(instance) → dict</span>
@@ -122,9 +122,10 @@
         <button id="btn-grade" type="button" class="btn-green" disabled title="在浏览器本地通过 WebAssembly 快速自测，不写正式数据库">
           练习评分
         </button>
-        <button id="btn-submit-formal" type="button" class="btn-blue" title="提交作业并记录成绩">
+        <button id="btn-submit-formal" type="button" class="ui-button ui-button--primary" title="提交作业并记录成绩">
           正式提交
         </button>
+        <p id="formal-submit-reason" class="ui-banner ui-banner--warning formal-gate" hidden></p>
         <button id="btn-stop-run" type="button" class="btn-secondary" hidden>停止运行</button>
         <div id="status" class="status-badge" role="status" aria-live="polite"></div>
       </div>
@@ -148,7 +149,11 @@
           </div>
         </div>
         <div id="result-panel" role="tabpanel" aria-labelledby="tab-result" hidden>
-          <pre id="report" aria-label="运行与判分报告"></pre>
+          <div id="practice-summary" class="ui-banner" hidden></div>
+          <details class="practice-raw">
+            <summary>查看原始结果</summary>
+            <pre id="report" aria-label="运行与判分报告"></pre>
+          </details>
           <div id="testcase-run-note" class="testcase-run-note" hidden></div>
         </div>
       </div>

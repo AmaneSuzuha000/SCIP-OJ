@@ -15,7 +15,7 @@ async function refreshSubmissionsList() {
     if (!window.ScipOJPlatform || !window.ScipOJPlatform.isConfigured()) {
         container.innerHTML = `
       <p style="color:var(--text-secondary); padding:1rem;">
-        当前未连接课程服务。可进入「<a href="#problem-list-section">在线做题</a>」进行本地练习；正式提交记录需连接课程服务后查看。
+        当前未连接课程服务。可进入「<a href="#problem-list-section">课程作业</a>」做本地练习；正式提交记录需连接课程服务后查看。
       </p>
     `;
         return;
@@ -44,11 +44,7 @@ async function refreshSubmissionsList() {
         if (requestSeq !== state.submissionsFetchSeq || context !== `${state.courseId||''}|${state.activeProblemId || ""}|${state.activeAssignment?.id || ""}|${document.body.dataset.teachingView}`)
             return;
         if (submissions.length === 0) {
-            container.innerHTML = `
-        <p style="color:var(--text-secondary); padding:1.25rem;">
-          ${globalHistory ? '还没有正式提交记录。进入在线做题，选择当前班级的作业后提交。' : '您尚未对本题提交正式作业。完成后点击「提交正式作业」即可发起评测。'}
-        </p>
-      `;
+            container.innerHTML = `<div class="ui-empty"><p>${globalHistory ? '还没有正式提交记录。进入课程作业，选择当前班级的题目后再正式提交。' : '这道题还没有正式提交。本地练习不会出现在这里。'}</p></div>`;
             return;
         }
         renderSubmissionsTable(container, submissions);
@@ -139,7 +135,7 @@ function renderSubmissionsTable(container, list) {
         }
         let passDisplay = "-";
         if (effectiveGrade) {
-            passDisplay = passed ? '<span class="tag-normal">✓ 通过</span>' : '<span class="tag-late">✗ 未通过</span>';
+            passDisplay = passed ? '<span class="ui-badge ui-badge--formal">正式通过</span>' : '<span class="ui-badge">正式未通过</span>';
         }
         else if (status === "system_error") {
             passDisplay = '<span class="tag-pending">暂未出分</span>';
@@ -213,7 +209,7 @@ function showReportDialog(sub) {
         </div>
 
         <div class="form-group">
-          <label>评测报告 (report_json)：</label>
+          <label>评测说明</label>
           <pre style="background:var(--bg-base); border:1px solid var(--border-default); border-radius:6px; padding:0.85rem; max-height:280px; overflow:auto; font-size:12.5px; font-family:var(--font-mono); margin:0; color:#7ee787;">${escapeHtml(reportText)}</pre>
         </div>
       </div>
@@ -357,7 +353,7 @@ async function showLeaderboardDialog() {
         const msg = err?.message || String(err);
         if (err?.missingRpc || window.ScipOJPlatform?.isMissingRpcError?.(err) ||
             /does not exist|schema cache|42P01|PGRST205|permission denied|could not find the function/i.test(msg)) {
-            bodyEl.innerHTML = '<p class="fail" style="padding:1rem;">排行榜服务尚未部署（缺少 <code>get_course_leaderboard</code> 函数）。请联系管理员执行 <code>supabase/migrations/006_security_hardening_and_leaderboard.sql</code> 后重试。</p>';
+            bodyEl.innerHTML = '<p class="fail" style="padding:1rem;">排行榜暂时不可用。请稍后再试，或联系任课教师。</p>';
         }
         else {
             bodyEl.innerHTML = `<p class="fail" style="padding:1rem;">获取榜单异常: ${escapeHtml(msg)}</p>`;

@@ -10,10 +10,7 @@
 -- 1. courses 增加 invite_code 字段
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS invite_code TEXT UNIQUE;
 
--- 初始化既有课程的默认邀请码
-UPDATE courses
-SET invite_code = 'REDACTED-INVITE'
-WHERE code = 'SCIP2026A' AND (invite_code IS NULL OR invite_code = '');
+-- 邀请码由任课教师在控制台发放，迁移不写入可公开的默认码。
 
 -- 2. 表: course_invites (支持多邀请码、有效期与限额)
 CREATE TABLE IF NOT EXISTS course_invites (
@@ -29,13 +26,6 @@ CREATE TABLE IF NOT EXISTS course_invites (
 );
 
 COMMENT ON TABLE course_invites IS '课程邀请码管理表，支持有效期与使用上限';
-
--- 插入默认邀请码记录
-INSERT INTO course_invites (course_id, code, role)
-SELECT id, 'REDACTED-INVITE', 'student'
-FROM courses
-WHERE code = 'SCIP2026A'
-ON CONFLICT (code) DO NOTHING;
 
 -- 3. 表: roster_pending (教师导入的待绑定花名册)
 CREATE TABLE IF NOT EXISTS roster_pending (

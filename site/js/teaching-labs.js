@@ -67,9 +67,17 @@
    const judgment=better?"本组参数的配对区间支持方案 B 改善主指标。":
      worse?"本组参数的配对区间支持方案 B 恶化主指标。":
        "主指标的配对区间包含 0；此处不能断言方案 B 稳定更好。";
-   document.getElementById("lab-caveat").textContent=judgment+" "+specs.note+
-     " 这是教学数据下的统计判断，未调整多重比较，不构成真实产线优化承诺。";
-   status.textContent="完成 "+res.params.replications+" 次独立重复。A/B 同次重复共用输入随机流，导出可逐次核对。";
+   const caveat=document.getElementById("lab-caveat");
+   caveat.replaceChildren();
+   const lead=document.createElement("p");
+   lead.textContent=judgment;
+   const detail=document.createElement("p");
+   detail.textContent=specs.note+" 这是教学数据下的统计判断，未调整多重比较，不构成真实产线优化承诺。";
+   caveat.append(lead,detail);
+   const runs=Number(res.params.replications);
+   const ciNote=document.getElementById("ci-note");
+   if(ciNote) ciNote.textContent="样本标准差与 1.96 正态近似。本次运行 "+runs+" 次独立重复；次数较少时覆盖率可能不足，报告需检查稳定性。";
+   status.textContent="完成 "+runs+" 次独立重复。A/B 同次重复共用输入随机流，导出可逐次核对。";
    exporter.disabled=false;
  }
  function run() {
@@ -123,6 +131,5 @@
    document.body.appendChild(link);link.click();link.remove();
    window.setTimeout(()=>URL.revokeObjectURL(url),1000);
  });
- if(!core){status.textContent="模型代码未载入，请刷新页面。";document.getElementById("run-button").disabled=true;return;}
- form.requestSubmit();
+ if(!core){status.textContent="模型代码未载入，请刷新页面。";document.getElementById("run-button").disabled=true;}
 })();

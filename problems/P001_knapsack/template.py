@@ -1,40 +1,27 @@
-"""P001 student template — implement solve(instance)."""
+"""P001 学生模板：用 PySCIPOpt 完成 0-1 背包，不要硬编码 optimal_value。"""
 
 
 def solve(instance: dict) -> dict:
+    from pyscipopt import Model
+
     weights = instance["weights"]
     values = instance["values"]
-    capacity = instance["capacity"]
-    n = instance["n"]
+    capacity = int(instance["capacity"])
+    n = int(instance["n"])
 
-    # TODO: replace with MIP / DP. Demo DP so the page can smoke-test.
-    dp = [0] * (capacity + 1)
-    take = [-1] * (capacity + 1)
-    parent = [-1] * (capacity + 1)
-    for i, (w, v) in enumerate(zip(weights, values)):
-        for c in range(capacity, w - 1, -1):
-            cand = dp[c - w] + v
-            if cand > dp[c]:
-                dp[c] = cand
-                take[c] = i
-                parent[c] = c - w
+    model = Model("p001-knapsack")
+    model.hideOutput()
+    chosen = [model.addVar(vtype="B", name=f"x_{i}") for i in range(n)]
 
-    # reconstruct one optimal bitset (approx via replay)
-    best_c = max(range(capacity + 1), key=lambda c: dp[c])
-    chosen = set()
-    # recompute with classic 2D for correct reconstruction
-    W = [[0] * (capacity + 1) for _ in range(n + 1)]
-    for i in range(1, n + 1):
-        w, v = weights[i - 1], values[i - 1]
-        for c in range(capacity + 1):
-            W[i][c] = W[i - 1][c]
-            if c >= w:
-                W[i][c] = max(W[i][c], W[i - 1][c - w] + v)
-    c = capacity
-    sol = {i: 0.0 for i in range(n)}
-    for i in range(n, 0, -1):
-        if W[i][c] != W[i - 1][c]:
-            sol[i - 1] = 1.0
-            c -= weights[i - 1]
+    # 容量约束：选中物品的重量之和不超过 capacity。
+    # model.addCons(sum(weights[i] * chosen[i] for i in range(n)) <= capacity)
+    # 目标：最大化选中物品的价值。
+    # model.setObjective(sum(values[i] * chosen[i] for i in range(n)), "maximize")
 
-    return {"status": "optimal", "objective": float(W[n][capacity]), "solution": sol}
+    model.optimize()
+    solution = {i: 0.0 for i in range(n)}
+    objective = 0.0
+    if model.getNSols() > 0:
+        solution = {i: float(round(model.getVal(chosen[i]))) for i in range(n)}
+        objective = float(model.getObjVal())
+    return {"status": str(model.getStatus()), "objective": objective, "solution": solution}

@@ -15,7 +15,7 @@
   <main id="main">
     <section class="hero">
       <div class="hero-content">
-        <p class="eyebrow">CASE LAB / 01 · DISCRETE-EVENT SIMULATION</p>
+        <p class="eyebrow">案例实验 01 · 离散事件仿真</p>
         <h1>让一个工业问题，<br><span>成为可验证的仿真实验。</span></h1>
         <p class="lead">从系统边界、随机输入、事件逻辑到重复实验与方案比较。你改变的不只是参数，还要能解释结论为什么可信。</p>
         <div class="hero-buttons">
@@ -25,7 +25,7 @@
         <p class="scope-note">教学演示采用合成数据。实验结果仅在本地计算，<strong>不是正式课程成绩</strong>。</p>
       </div>
       <div class="hero-card" aria-label="系统建模与仿真实验流程">
-        <div class="hero-card-title">EXPERIMENT PROTOCOL <span>01 / 05</span></div>
+        <div class="hero-card-title">实验流程 <span>01 / 05</span></div>
         <ol>
           <li><b>系统抽象</b><span>实体 · 资源 · 队列 · 事件</span></li>
           <li><b>随机输入</b><span>到达过程 · 服务时间</span></li>
@@ -43,14 +43,14 @@
     </section>
 
     <section class="section-heading" id="experiment">
-      <div><span class="eyebrow dark">FLAGSHIP CASE / IE-DES-01</span><h2>检修工位配置：排队到底发生在哪里？</h2>
+      <div><span class="eyebrow dark">主案例 · IE-DES-01</span><h2>检修工位配置：排队到底发生在哪里？</h2>
         <p>车辆检修作业陆续到达工位。增加工位可以缩短等待，但也会降低资源利用率、增加投入。如何设计公平的仿真实验比较两种配置？</p></div>
       <span class="status-label">可运行 · 教学案例</span>
     </section>
 
     <div class="experiment-grid">
       <section class="panel controls" aria-labelledby="controls-title">
-        <div class="panel-top"><span>01 / 实验设置</span><h3 id="controls-title">定义系统与两组方案</h3></div>
+        <div class="panel-top"><span>01 / 输入与假设</span><h3 id="controls-title">定义系统与两组方案</h3></div>
         <form id="experiment-form">
           <div class="field-grid">
             <label>平均到达间隔 <span>分钟 / 件</span><input id="arrivalMean" type="number" min="1" max="120" step="0.5" value="8" required></label>
@@ -69,7 +69,7 @@
       </section>
 
       <section class="panel results" aria-labelledby="results-title">
-        <div class="panel-top"><span>02 / 输出分析</span><h3 id="results-title">比较结果</h3></div>
+        <div class="panel-top"><span>02 / 测量与比较</span><h3 id="results-title">比较结果</h3></div>
         <p id="run-status" class="run-status" role="status" aria-live="polite">等待运行</p>
         <div class="metrics">
           <div class="metric"><span>平均排队等待 · A</span><strong id="wait-a">—</strong><small>分钟 / 件</small></div>
@@ -95,7 +95,7 @@
     </div>
 
     <section class="methodology" id="lab-tasks" aria-labelledby="lab-tasks-title">
-      <div class="section-heading"><div><span class="eyebrow dark">TEACHING ASSIGNMENT / IE-DES-01</span><h2 id="lab-tasks-title">从一键运行，到能独立核验的课程实验</h2>
+      <div class="section-heading"><div><span class="eyebrow dark">课程任务 · IE-DES-01</span><h2 id="lab-tasks-title">从一键运行，到能独立核验的课程实验</h2>
         <p>先作预测，再用固定协议实验，最后解释反例与工程约束。以下是可交付的课堂学习任务，不计入 正式成绩。</p></div></div>
       <div class="method-grid">
         <article class="method-card"><span>01 / 实验前预测</span><h3>先不运行，算负荷率</h3><p>计算 ρ＝平均工时 ÷（平均到达间隔 × 工位数）。分别判断 A/B 是否满足 ρ &lt; 1，并预测等待时间方向。</p></article>
@@ -112,7 +112,7 @@
     </section>
 
     <section class="methodology" aria-labelledby="method-title">
-      <div class="section-heading"><div><span class="eyebrow dark">MODEL VALIDITY / TEACHING NOTES</span><h2 id="method-title">一份像样的仿真实验报告，应回答什么？</h2></div></div>
+      <div class="section-heading"><div><span class="eyebrow dark">模型有效性</span><h2 id="method-title">一份像样的仿真实验报告，应回答什么？</h2></div></div>
       <div class="method-grid">
         <article class="method-card"><span>01 / 建模边界</span><h3>先定义系统</h3><p>实体是检修任务，资源是并行工位，队列规则为先到先服务（FCFS）。不包含运输、设备故障、工人技能、优先级或跨线死锁。</p></article>
         <article class="method-card"><span>02 / 输入与假设</span><h3>辨认随机性</h3><p>泊松到达对应指数到达间隔；检修时长独立且服从指数分布。这是教学假设，不应未经验证就代入真实检修现场。</p></article>
@@ -128,7 +128,7 @@
     </section>
 
     <section id="learning-path" class="learning-path" aria-labelledby="path-title">
-      <div class="section-heading"><div><span class="eyebrow dark">COURSE CATALOG / THREE RUNNABLE CASES</span><h2 id="path-title">仿真案例</h2><p>选择案例，进行实验与分析。</p></div></div>
+      <div class="section-heading"><div><span class="eyebrow dark">三个可运行案例</span><h2 id="path-title">仿真案例</h2><p>选择案例，进行实验与分析。</p></div></div>
       <div class="case-grid">
         <article class="case-card live"><span>01 · DES 基础</span><h3>检修工位与排队系统</h3><p>实体—事件—资源、重复仿真、共同随机数</p><b>可运行 · 当前案例</b></article>
         <article class="case-card live"><span>02 · MONTE CARLO</span><h3>随机需求与库存策略</h3><p>需求分布、服务水平、缺货风险、补货策略</p><b>可运行 · <a href="inventory-lab.html">进入库存实验 ↗</a></b></article>

@@ -133,7 +133,7 @@ function mulberry32(a) {
   };
 }
 
-/** Minimal DP solve matching template.py (for demo button without Pyodide). */
+/** Judge-side DP oracle. Students start from problems/P001_knapsack/template.py. */
 function demoSolve(instance) {
   const { n, weights, values, capacity } = instance;
   const W = Array.from({ length: n + 1 }, () => Array(capacity + 1).fill(0));

@@ -55,6 +55,7 @@ vm.runInNewContext(fs.readFileSync("site/js/case-studio.js", "utf8"), {
 document.ready();
 
 async function main() {
+  el("experiment-form").dispatch("submit", { preventDefault() {} });
   assert.equal(el("export-json-button").disabled, false);
   el("export-json-button").dispatch("click");
   assert.equal(clicks.length, 1);

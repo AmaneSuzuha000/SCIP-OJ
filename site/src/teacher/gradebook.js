@@ -114,8 +114,9 @@ function renderGradebookTable() {
         <tbody>
           ${pageRows.map((row, idx) => {
         const globalIdx = startIndex + idx;
-        const passScore = row.pass_score ?? 90;
-        const isPass = row.best_score != null && row.best_score >= passScore;
+        const scored = row.best_score != null && Number.isFinite(Number(row.best_score));
+        const submitted = scored || !!row.best_submission_id || Number(row.attempt_count || row.submission_count || 0) > 0;
+        const isPass = row.passed === true;
         const curAssign = context.currentAssignmentsList.find(a => a.id === row.assignment_id || a.problem_id === row.problem_id);
         const isLate = curAssign?.due_at && row.last_submitted_at ? new Date(row.last_submitted_at) > new Date(curAssign.due_at) : false;
         return `
@@ -127,13 +128,15 @@ function renderGradebookTable() {
                 <td>${esc(row.display_name || '-')}${row.enroll_role && row.enroll_role !== 'student' ? ' <span class="tag-pending" title="教师/助教账号的正式提交烟测">试交</span>' : ''}</td>
                 <td><code>${esc(row.problem_id || '-')}</code></td>
                 <td>
-                  ${row.best_score != null
+                  ${scored
             ? `<strong class="${isPass ? 'pass' : 'fail'}">${row.best_score} 分</strong>`
             : '<span style="color:var(--text-secondary);">未出分</span>'}
                 </td>
-                <td>${row.best_score == null
-            ? '<span class="tag-pending">— 未提交</span>'
-            : (row.passed ? '<span class="tag-normal">✓ 通过</span>' : '<span class="tag-late">✗ 未通过</span>')}</td>
+                <td>${!submitted
+            ? '<span class="tag-pending">未提交</span>'
+            : !scored
+            ? '<span class="tag-pending">未出分</span>'
+            : (isPass ? '<span class="ui-badge ui-badge--formal">通过</span>' : '<span class="ui-badge">未通过</span>')}</td>
                 <td>${isLate ? '<span class="tag-late">迟交</span>' : '<span class="tag-normal">正常</span>'}</td>
                 <td>${row.attempt_count != null ? `第 ${row.attempt_count} 次` : '-'}</td>
                 <td style="color:var(--text-secondary); font-size:0.8rem;">${row.last_submitted_at ? formatTime(row.last_submitted_at) : '-'}</td>

@@ -2,8 +2,13 @@
 .site-access-card{box-sizing:border-box;width:min(100%,460px);padding:36px;background:#fff;border:1px solid #dce7e4;border-radius:16px;box-shadow:0 12px 40px #183c3810}
 .site-access-card>img{display:block;margin-bottom:16px}
 .site-access-brand{margin:0 0 12px;font-size:14px;letter-spacing:.06em;color:#075c60;font-weight:750}
+.site-access-kicker{margin:0 0 8px;color:#075c60;font-size:13px;font-weight:700}
 .site-access-card h1{margin:0 0 12px;font-size:26px;line-height:1.4;letter-spacing:-.03em;color:#203238}
 .site-access-card p{color:#5f747b}
+.site-access-destination{margin:0 0 12px;padding:10px 12px;border-radius:8px;background:#f4f8f6;color:#203238}
+.site-access-note{margin:0 0 8px;font-size:14px;line-height:1.7}
+.site-access-guide{margin:0}
+.site-access-guide a{color:#075c60;font-weight:700}
 .site-access-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
 .site-access-actions button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;margin:0;padding:10px 16px;border:1px solid #dce7e4;border-radius:8px;background:#fff;color:#203238;font-family:inherit;font-size:14px;font-weight:600;line-height:1.5;cursor:pointer}
 .site-access-actions #site-access-signin{background:#075c60;border-color:#075c60;color:#fff}

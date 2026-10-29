@@ -13,7 +13,7 @@ class PrivilegeDefaultTests(unittest.TestCase):
                          "FOR ROLE postgres\n  REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC"]:
             self.assertIn(expected,sql)
     def test_superadmin_defaults_not_silently_claimed_fixed(self):
-        doc=(ROOT/"docs/SECURITY_VALIDATION_V6.md").read_text()
+        doc=(ROOT/"supabase/migrations/014_postgres_default_privileges.sql").read_text()
         self.assertIn("supabase_admin",doc)
         self.assertIn("not",doc.lower())
 

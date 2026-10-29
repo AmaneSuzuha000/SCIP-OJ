@@ -38,7 +38,17 @@ def assemble(lite, output):
     html = lab.read_text(encoding='utf-8')
     bridge = '<script src="../engine.js?v=journey2"></script><script src="../bridge.js?v=journey2"></script>'
     lab.write_text(html.replace('</body>', bridge+'</body>') if '</body>' in html else html+bridge, encoding='utf-8')
-    shutil.copytree(ROOT / 'docs', output / 'docs')
+    public_docs = (
+        '学生指南.md', '教师指南.md', '出题指南.md', '拓展学习指南.md',
+        '教师手册-考试花名册核验.md', 'IE_DES_01_精品案例实验指导书.md',
+        '课程实验与评价规范.md', '判分协议-已冻结.md',
+    )
+    docs_out = output / 'docs'
+    docs_out.mkdir()
+    for name in public_docs:
+        source = ROOT / 'docs' / name
+        if source.is_file():
+            shutil.copyfile(source, docs_out / name)
     shutil.copytree(ROOT / 'problems', output / 'problems')
     shutil.copyfile(ROOT / 'README.md', output / 'README.md')
     for app in ('lab', 'repl'):

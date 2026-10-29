@@ -15,28 +15,28 @@
 <main id="main">
   <section class="hero">
     <div class="hero-content">
-      <span class="eyebrow">CASE IE-DES-03 / DISCRETE EVENT · MANUFACTURING</span>
+      <span class="eyebrow">案例 IE-DES-03 · 离散事件 · 制造</span>
       <h1>双工序生产线与有限缓冲区</h1>
       <p class="lead">机器效率并非越高越好；缓冲不足会让上游完成工件后无法释放资源。</p>
       <div class="hero-buttons"><a class="primary-link" href="#experiment">运行模拟实验 ↘</a><a class="secondary-link" href="#methodology">查看模型与课后题</a></div>
       <p class="scope-note">独立课程教学案例 · 合成数据 · 浏览器内仿真 · 非正式课程成绩</p>
     </div>
-    <aside class="hero-card"><div class="hero-card-title">MODEL / EVENT FLOW <span>IE-DES-03</span></div><ol><li><b>随机到达</b><span>STEP 1</span></li>
-<li><b>工序一加工</b><span>STEP 2</span></li>
-<li><b>阻塞/缓冲</b><span>STEP 3</span></li>
-<li><b>工序二完工</b><span>STEP 4</span></li></ol></aside>
+    <aside class="hero-card"><div class="hero-card-title">模型与事件流 <span>IE-DES-03</span></div><ol><li><b>随机到达</b><span>步骤 1</span></li>
+<li><b>工序一加工</b><span>步骤 2</span></li>
+<li><b>阻塞/缓冲</b><span>步骤 3</span></li>
+<li><b>工序二完工</b><span>步骤 4</span></li></ol></aside>
   </section>
   <section class="overview" aria-label="案例要素"><div><strong>系统建模</strong><span>变量 / 边界 / 假设</span></div><div><strong>重复仿真</strong><span>固定种子 / 公平配对</span></div><div><strong>实验分析</strong><span>统计区间 / 方案决策</span></div></section>
   <section id="experiment" class="experiment">
-    <div class="section-heading"><div><span class="eyebrow dark">RUN AN EXPERIMENT</span><h2>可复现的 A/B 工程实验</h2><p>搭建包含上游排队、两台串联加工设备和工序间有限缓冲区的事件仿真。只改变缓冲容量，观察阻塞率、产出与在制品之间的权衡。</p></div><span class="status-label">浏览器可运行</span></div>
+    <div class="section-heading"><div><span class="eyebrow dark">运行实验</span><h2>可复现的 A/B 工程实验</h2><p>搭建包含上游排队、两台串联加工设备和工序间有限缓冲区的事件仿真。只改变缓冲容量，观察阻塞率、产出与在制品之间的权衡。</p></div><span class="status-label">浏览器可运行</span></div>
     <div class="experiment-grid">
       <form class="panel" id="lab-form">
-        <div class="panel-top"><span>01 / INPUT & ASSUMPTIONS</span><h3>场景与策略参数</h3></div>
-        <div class="field-grid"><label for="arrivalMean">平均到达间隔 <span>分钟</span><input id="arrivalMean" name="arrivalMean" type="number" value="4" min="1" max="120" step="0.5" required></label>
-<label for="stage1Mean">工序一平均工时 <span>分钟</span><input id="stage1Mean" name="stage1Mean" type="number" value="3" min="1" max="180" step="0.5" required></label>
+        <div class="panel-top"><span>01 / 输入与假设</span><h3>场景与策略参数</h3></div>
+        <div class="field-grid"><label for="stage1Mean">工序一平均工时 <span>分钟</span><input id="stage1Mean" name="stage1Mean" type="number" value="3" min="1" max="180" step="0.5" required></label>
 <label for="stage2Mean">工序二平均工时 <span>分钟</span><input id="stage2Mean" name="stage2Mean" type="number" value="5" min="1" max="180" step="0.5" required></label>
 <label for="bufferA">方案 A 缓冲容量 <span>件</span><input id="bufferA" name="bufferA" type="number" value="0" min="0" max="25" step="1" required></label>
 <label for="bufferB">方案 B 缓冲容量 <span>件</span><input id="bufferB" name="bufferB" type="number" value="3" min="0" max="25" step="1" required></label>
+<label class="field-span" for="arrivalMean">平均到达间隔 <span>分钟</span><input id="arrivalMean" name="arrivalMean" type="number" value="4" min="1" max="120" step="0.5" required></label>
 <label for="horizon">仿真时长 <span>分钟</span><input id="horizon" name="horizon" type="number" value="960" min="120" max="10080" step="1" required></label>
 <label for="warmup">预热时长 <span>分钟</span><input id="warmup" name="warmup" type="number" value="180" min="0" max="9999" step="1" required></label>
 <label for="replications">独立重复次数 <span>次</span><input id="replications" name="replications" type="number" value="30" min="5" max="100" step="1" required></label>
@@ -46,11 +46,11 @@
         <div id="lab-error" class="error" role="alert" hidden></div>
       </form>
       <section class="panel results" aria-label="实验结果">
-        <div class="panel-top"><span>02 / MEASUREMENT & COMPARISON</span><h3>可解释的方案比较</h3></div>
+        <div class="panel-top"><span>02 / 测量与比较</span><h3>可解释的方案比较</h3></div>
         <div class="run-status" id="run-status" role="status" aria-live="polite">准备就绪。结果为本地计算，未上传到正式成绩库。</div>
         <div class="metrics" id="headline-metrics" aria-label="关键结果"><div class="metric"><span>方案 A</span><strong>—</strong><small>尚未运行</small></div><div class="metric emphasis"><span>方案 B</span><strong>—</strong><small>尚未运行</small></div><div class="metric"><span>差值 B − A</span><strong>—</strong><small>尚未运行</small></div></div>
         <div class="chart-section"><div class="chart-heading"><h4 id="chart-title">关键指标比较</h4><span>直条只用于相对视觉比较</span></div><div class="bar-row"><span>方案 A</span><div class="bar-track"><i id="bar-a"></i></div><b id="bar-label-a">—</b></div><div class="bar-row"><span>方案 B</span><div class="bar-track"><i id="bar-b" class="alternative"></i></div><b id="bar-label-b">—</b></div></div>
-        <div class="interval"><span id="ci-name">跨独立重复实验的配对差值（B − A）</span><strong id="ci-value">—</strong><small>样本标准差与 1.96 正态近似；5 次重复的覆盖率可能不足，报告需检查稳定性。</small></div>
+        <div class="interval"><span id="ci-name">跨独立重复实验的配对差值（B − A）</span><strong id="ci-value">—</strong><small id="ci-note">运行后按实际重复次数给出样本标准差与 1.96 正态近似。次数较少时覆盖率可能不足。</small></div>
         <table><caption>各重复实验指标的算术平均</caption><thead><tr><th scope="col">指标</th><th scope="col">方案 A</th><th scope="col">方案 B</th></tr></thead><tbody id="result-rows"></tbody></table>
         <div class="caveat" id="lab-caveat" role="note"></div>
         <div class="form-actions"><button type="button" id="export-button" disabled>导出数据 CSV</button><span class="quiet">无远端数据上传，不写入学号或成绩</span></div>
@@ -58,7 +58,7 @@
     </div>
   </section>
   <section id="methodology" class="methodology">
-    <div class="section-heading"><div><span class="eyebrow dark">MODEL / VALIDATION / DECISION</span><h2>模型假设与验证边界</h2></div></div>
+    <div class="section-heading"><div><span class="eyebrow dark">模型、验证与决策</span><h2>模型假设与验证边界</h2></div></div>
     <div class="method-grid"><article class="method-card"><span>01 / 资源与实体</span><h3>两工序串联</h3><p>所有任务依次经过工序一和工序二；外部等待区无限，工序间缓冲有限；每个工序一次加工一件。</p></article>
 <article class="method-card"><span>02 / 阻塞规则</span><h3>加工完成后阻塞 BAS</h3><p>工序一完成任务时，若工序二忙且缓冲区已满，它会持有任务并阻塞；此时工序一不能处理新工件。</p></article>
 <article class="method-card"><span>03 / 随机过程</span><h3>FCFS 与指数工时</h3><p>到达为 Poisson，两个工序的服务时间相互独立且服从指数分布；两方案复用同一到达与工时样本。</p></article>
@@ -68,9 +68,9 @@
 <li>若外部到达率长期大于产线瓶颈产能，有限时域结果为何不能当稳态？</li>
 <li>为什么阻塞比不等于工序一加工利用率？WIP 与产出怎样权衡？</li></ol></div>
   </section>
-  <section class="next-steps"><span class="eyebrow dark">NEXT / COURSE PATH</span><h2>继续系统建模实验</h2><div class="next-grid"><a href="case-studio.html"><span>IE-DES-01</span><strong>检修工位排队仿真 ↗</strong><small>M/M/c · CRN · 等待与资源负荷</small></a><a href="inventory-lab.html"><span>IE-MC-02</span><strong>随机库存策略 ↗</strong><small>改变系统结构，观察结果如何变化</small></a><a href="official-examples.html"><span>OFFICIAL SOURCES</span><strong>Gurobi / SCIP 官方例题 ↗</strong><small>以原始教程为技术来源</small></a></div></section>
+  <section class="next-steps"><span class="eyebrow dark">后续学习</span><h2>继续系统建模实验</h2><div class="next-grid"><a href="case-studio.html"><span>IE-DES-01</span><strong>检修工位排队仿真 ↗</strong><small>多服务台 · 共同随机数 · 等待与负荷</small></a><a href="inventory-lab.html"><span>IE-MC-02</span><strong>随机库存策略 ↗</strong><small>改变系统结构，观察结果如何变化</small></a><a href="official-examples.html"><span>官方来源</span><strong>Gurobi / SCIP 官方例题 ↗</strong><small>以原始教程为技术来源</small></a></div></section>
 </main>
-<footer><strong>SCIP-OJ · IE MODELING & SIMULATION LAB</strong><span>本地仿真演示不等于 可信成绩；真实课堂采用教师确认的考核规范。</span></footer>
+<footer><strong>SCIP-OJ · 系统建模与仿真实验</strong><span>本地仿真演示不等于正式成绩；真实课堂采用教师确认的考核规范。</span></footer>
 <script src="js/flow-core.js?v=journey2"></script>
 <script src="js/teaching-labs.js?v=session1"></script>
 </body>

@@ -6,8 +6,20 @@ dist/
 _output/
 .jupyterlite.doit.db
 .env
-.env.local
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
 site/config.js
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+credentials.json
+secrets.json
 _grading_tmp/
 
 supabase/.temp/

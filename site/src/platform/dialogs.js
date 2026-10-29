@@ -211,14 +211,13 @@ function showLoginDialog() {
           </div>
           <div class="modal-body">
             <p style="color:var(--text-secondary); margin-top:0;">
-              平台统一采用 <strong>GitHub OAuth</strong> 认证登录。<br/>
-              无需提交 PR 或手动触发 Actions，GitHub 仅用于可信身份认证与作业成绩归属。
+              使用已经获授权的 GitHub 账号登录。登录后可在账号菜单里填写个人资料、加入课程。
             </p>
             <div id="login-error" class="fail" style="font-size:0.85rem; margin:0.5rem 0;" hidden></div>
           </div>
           <div class="modal-actions">
-            <button type="button" id="login-cancel" class="btn-secondary">取消</button>
-            <button type="button" id="login-github" class="btn-blue" data-autofocus>使用 GitHub 账号登录</button>
+            <button type="button" id="login-cancel" class="ui-button ui-button--ghost">取消</button>
+            <button type="button" id="login-github" class="ui-button ui-button--primary" data-autofocus>使用 GitHub 账号登录</button>
           </div>
         </div>
       `;
@@ -270,19 +269,19 @@ function showStudentNoDialog(options = {}) {
             <p style="color:var(--text-secondary); margin-top:0; line-height:1.6;">
               为了确保您的正式作业成绩能准确计入教师成绩册，请核对并绑定您的<strong>真实学号</strong>与<strong>姓名</strong>。
             </p>
-            <div class="form-group">
+            <div class="ui-field">
               <label for="input-student-no">学号 (如 20260001)：</label>
               <input type="text" id="input-student-no" placeholder="输入您的学号" data-autofocus />
             </div>
-            <div class="form-group">
+            <div class="ui-field">
               <label for="input-display-name">真实姓名 / 显示名：</label>
               <input type="text" id="input-display-name" placeholder="输入真实姓名" />
             </div>
             <p id="sno-error" class="fail" style="font-size:0.85rem; margin-top:0.5rem;" hidden></p>
           </div>
           <div class="modal-actions">
-            <button type="button" id="btn-sno-cancel" class="btn-secondary">取消</button>
-            <button type="button" id="btn-sno-save" class="btn-blue">保存资料</button>
+            <button type="button" id="btn-sno-cancel" class="ui-button ui-button--ghost">取消</button>
+            <button type="button" id="btn-sno-save" class="ui-button ui-button--primary">保存资料</button>
           </div>
         </div>
       `;
@@ -371,17 +370,17 @@ function showJoinCourseDialog(options = {}) {
           </div>
           <div class="modal-body">
             <p style="color:var(--text-secondary); margin-top:0; line-height:1.6;">
-              请输入任课教师提供的<strong>选课邀请码</strong>（例如 <code>REDACTED-INVITE</code>），加入教学班级后方可提交课程正式作业。
+              请输入任课教师提供的<strong>邀请码</strong>。加入教学班级后，才能提交该班的正式作业。
             </p>
-            <div class="form-group">
+            <div class="ui-field">
               <label for="input-invite-code">课程邀请码：</label>
-              <input type="text" id="input-invite-code" placeholder="如 REDACTED-INVITE" data-autofocus />
+              <input type="text" id="input-invite-code" placeholder="教师发放的邀请码" data-autofocus />
             </div>
             <p id="join-course-error" class="fail" style="font-size:0.85rem; margin-top:0.5rem;" hidden></p>
           </div>
           <div class="modal-actions">
-            <button type="button" id="btn-join-cancel" class="btn-secondary">稍后再说</button>
-            <button type="button" id="btn-join-submit" class="btn-blue">确认加入课程</button>
+            <button type="button" id="btn-join-cancel" class="ui-button ui-button--ghost">稍后再说</button>
+            <button type="button" id="btn-join-submit" class="ui-button ui-button--primary">确认加入课程</button>
           </div>
         </div>
       `;

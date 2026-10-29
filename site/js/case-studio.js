@@ -137,10 +137,19 @@
     });
     field("reset-button").addEventListener("click", function () {
       for (const [key, value] of Object.entries(defaults)) field(key).value = String(value);
-      run();
+      clearResults("已恢复教学示例。先计算负荷率，需要结果时再运行仿真。");
     });
     field("export-button").addEventListener("click", exportCsv);
     field("export-json-button").addEventListener("click", exportJson);
+    function clearResults(message) {
+      last = null;
+      field("export-button").disabled = true;
+      field("export-json-button").disabled = true;
+      for (const id of ["wait-a","wait-b","wait-diff","ci-value","throughput-a","throughput-b","util-a","util-b","queue-a","queue-b","wip-a","wip-b","bar-label-a","bar-label-b","stability-note"]) setText(id, id === "stability-note" ? "" : "—");
+      field("bar-a").style.width = "0";
+      field("bar-b").style.width = "0";
+      setText("run-status", message);
+    }
     field("experiment-form").addEventListener("input", function () {
       if (last) {
         last = null;
@@ -149,7 +158,6 @@
         setText("run-status", "实验设置已改变；请重新运行后再导出新证据。");
       }
     });
-    run();
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initialize, {once:true});
   else initialize();

@@ -368,8 +368,10 @@ if (context.btnExportCsv) {
         }
         const headers = ["学号", "姓名", "题目", "最高分", "是否通过", "迟交状态", "提交轮次", "最后提交时间"];
         const rows = filtered.map(row => {
-            const passScore = row.pass_score ?? 90;
-            const isPass = row.best_score != null && row.best_score >= passScore;
+            const scored = row.best_score != null && Number.isFinite(Number(row.best_score));
+            const submitted = scored || !!row.best_submission_id || Number(row.attempt_count || row.submission_count || 0) > 0;
+            const isPass = row.passed === true;
+            const verdict = !submitted ? "未提交" : !scored ? "未出分" : isPass ? "通过" : "未通过";
             const curAssign = context.currentAssignmentsList.find(a => a.id === row.assignment_id || a.problem_id === row.problem_id);
             const isLate = curAssign?.due_at && row.last_submitted_at ? new Date(row.last_submitted_at) > new Date(curAssign.due_at) : false;
             return [
@@ -377,7 +379,7 @@ if (context.btnExportCsv) {
                 row.display_name || "",
                 row.problem_id || "",
                 row.best_score != null ? row.best_score : "",
-                isPass ? "通过" : "未通过",
+                verdict,
                 isLate ? "迟交" : "正常",
                 row.attempt_count != null ? row.attempt_count : "",
                 row.last_submitted_at || "",

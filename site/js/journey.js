@@ -121,7 +121,7 @@
     function setUser(id) {actor=id||window.ScipOJAccess?.getUser?.()?.id||'visitor';}
     function courseContext(value) {remember('course', value);}
     function configure(next) {handlers=next;return render(new URL(location.href),{initial:true});}
-    // Lab parameters are restored before their scripts perform the initial run.
+    // Restore saved lab inputs only. Running waits for the student to submit the form.
     function restoreLab() {
      if(/\/(case-studio|inventory-lab|flow-lab)\.html$/.test(location.pathname)) {
         const form=document.querySelector('form');
@@ -138,10 +138,7 @@
         }
     }
      }
-    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{
-        restoreLab();
-        if(/\/(inventory-lab|flow-lab)\.html$/.test(location.pathname))document.querySelector('form')?.requestSubmit();
-    },{once:true});else restoreLab();
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',restoreLab,{once:true});else restoreLab();
     document.addEventListener('click',event=>{
         if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
         const link=event.target.closest('a[href]');

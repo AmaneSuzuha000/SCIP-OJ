@@ -34,6 +34,7 @@ async function checkLab(model, params, metricLabel, metricKey, editedKey, edited
     URL: { createObjectURL(blob) { blobs.push(blob); return "blob:lab-test"; }, revokeObjectURL() {} }
   });
   const exporter = element("export-button");
+  form.requestSubmit();
   assert.equal(exporter.disabled, false);
   exporter.dispatch("click");
   assert.equal(downloads.length, 1);
