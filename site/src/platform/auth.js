@@ -1,6 +1,7 @@
 import {state} from './state.js';
 import {withDeadline} from './deadline.js';
 import {updateAuthUI,showConfigWarning,showToast,checkStudentGates} from './dialogs.js';
+let initialization;
 export function isConfigured() {
     const cfg = window.SCIP_OJ_CONFIG;
     return !!(cfg && cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY);
@@ -21,6 +22,11 @@ export function acceptSession(session) {
 }
 export // ── 初始化平台服务 ──
 async function init() {
+    if(initialization){const ready=await initialization;updateAuthUI();return ready;}
+    initialization=initialize();
+    return initialization;
+}
+async function initialize() {
     if (!isConfigured()) {
         console.log("[Platform] 未检测到 Supabase 配置，平台运行于离线练习模式（WASM 练习正常可用）");
         updateAuthUI();
@@ -171,6 +177,7 @@ export function onAuthChange(fn) {
     if (typeof fn === "function") {
         state.authListeners.push(fn);
     }
+    return ()=>{state.authListeners=state.authListeners.filter(listener=>listener!==fn);};
 }
 export function notifyAuthListeners() {
     state.authListeners.forEach((fn) => {

@@ -5,6 +5,12 @@ import {showWorkbenchTab,showConsoleTab,confirmLeaveIfExamDraft,closeWorkspace,h
 import {refreshHistory,refreshSubmissionsList} from './submissions.js';
 import {installContextControls,saveList,taskKey,contextHash} from './context.js';
 export async function main() {
+    const signal=window.ScipOJPageSession?.signal;
+    let unsubscribe;
+    window.ScipOJPageSession?.onDispose(()=>{
+        unsubscribe?.();state.navigationReady=false;state.routeSeq++;
+        closeWorkspace(false);window.ScipOJExam?.dispose?.();window.ScipOJEditor?.dispose?.();
+    });
     document.querySelector(".skip-link")?.addEventListener("click", event => {
         event.preventDefault();
         const mainContent = document.getElementById("main-content");
@@ -20,22 +26,25 @@ export async function main() {
         catch (e) {
             console.warn("[App] 平台初始化异常:", e);
         }
-        window.ScipOJPlatform.onAuthChange?.(() => {
+        if(signal?.aborted)return;
+        unsubscribe=window.ScipOJPlatform.onAuthChange?.(() => {
+            if(signal?.aborted)return;
             updateBannerCourseInfo();
             const fingerprint=JSON.stringify(window.ScipOJPlatform.getEnrollments().map(e=>[e.course_id,e.role]));
             if(state.navigationReady&&fingerprint!==state.courseFingerprint){state.courseFingerprint=fingerprint;state.assignmentCache=null;window.ScipOJJourney.go(location.href,{force:true});}
             if(state.activeProblemId)refreshAssignmentMeta(state.activeProblemId);
-        });
+        },{signal});
         document.addEventListener('scipoj:enrollments-changed',()=>{
             state.assignmentCache=null;
             window.ScipOJJourney.go(location.href,{force:true});
-        });
+        },{signal});
       }
       state.platformReady = true;
       state.courseFingerprint=JSON.stringify(window.ScipOJPlatform?.getEnrollments().map(e=>[e.course_id,e.role])||[]);
       updateBannerCourseInfo();
     })().catch(error => console.warn('[App] 课程信息恢复失败:', error));
     platformReady.then(()=>{
+        if(signal?.aborted)return;
         window.ScipOJJourney.setUser(window.ScipOJPlatform?.getUser()?.id);
         if(state.navigationReady){state.assignmentCache=null;window.ScipOJJourney.go(location.href,{force:true});}
     });
@@ -44,12 +53,14 @@ export async function main() {
     // 2. 加载题目索引
     try {
         state.problemIndex = await loadJSON("problems/index.json");
+        if(signal?.aborted)return;
         applyProblemFilters();
         const overviewEl = document.getElementById("overview-problems");
         if (overviewEl)
             overviewEl.textContent = String(state.problemIndex.length).padStart(2, "0");
     }
     catch (err) {
+        if(signal?.aborted)return;
         const listEl = document.getElementById("problem-list");
         if (listEl) {
             listEl.innerHTML = `<p class="fail">题目索引加载失败: ${escapeHtml(err.message)}</p>`;
@@ -129,7 +140,7 @@ export async function main() {
             if (button && !button.disabled)
                 button.click();
         }
-    });
+    },{signal});
     const btnBack=document.getElementById('btn-back-to-list');
     btnBack.onclick=event=>{
         event.preventDefault();
@@ -154,7 +165,7 @@ export async function main() {
             event.preventDefault();
             event.returnValue = "";
         }
-    });
+    },{signal});
     // 5. 班级横幅选课按钮
     const btnBannerJoin = document.getElementById("btn-banner-join-course");
     if (btnBannerJoin && window.ScipOJPlatform) {

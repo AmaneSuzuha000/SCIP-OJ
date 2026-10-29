@@ -23,6 +23,6 @@ export function initEnvironment() {
         refresh();
     }
     retry.onclick = prepare;
-    window.addEventListener('scip-runtime-state', refresh);
+    window.addEventListener('scip-runtime-state', refresh,{signal:window.ScipOJPageSession?.signal});
     prepare();
 }

@@ -11,7 +11,10 @@ import {withDeadline} from '../platform/deadline.js';
  * 依赖: ScipOJPlatform (platform.js)
  */
 
-(async function teacherInit() {
+const ready=(async function teacherInit() {
+  const signal=window.ScipOJPageSession?.signal;
+  let activeContext=null,accessSequence=0,unsubscribe;
+  window.ScipOJPageSession?.onDispose(()=>{accessSequence++;if(activeContext)activeContext.active=false;unsubscribe?.();});
   const noConfigEl = document.getElementById("teacher-no-config");
   const noAuthEl = document.getElementById("teacher-no-auth");
   const forbiddenEl = document.getElementById("teacher-forbidden");
@@ -35,6 +38,7 @@ import {withDeadline} from '../platform/deadline.js';
     console.warn("[Teacher] 平台初始化异常:", err);
     configured = false;
   }
+  if(signal?.aborted)return;
   ScipOJPlatform.updateAuthUI();
 
   if (!configured) {
@@ -52,8 +56,8 @@ import {withDeadline} from '../platform/deadline.js';
   }
 
   // ── 认证与角色权限检查 ──
-  let activeContext = null, accessSequence = 0;
   async function checkTeacherAccess() {
+    if(signal?.aborted)return false;
     const sequence = ++accessSequence;
     const accessStatus=document.getElementById('teacher-access-status');
     accessStatus.hidden=true;
@@ -105,7 +109,8 @@ import {withDeadline} from '../platform/deadline.js';
   let initializedForUser = null;
 
   const hasAccess = await checkTeacherAccess();
-  ScipOJPlatform.onAuthChange(async () => {
+  if(signal?.aborted)return;
+  unsubscribe=ScipOJPlatform.onAuthChange(async () => {
     const ok = await checkTeacherAccess();
     const uid = ScipOJPlatform.getUser()?.id || null;
     if (!ok) { initializedForUser = null; return; }
@@ -114,7 +119,7 @@ import {withDeadline} from '../platform/deadline.js';
   });
 
   if (hasAccess) {
-    initTeacherView();
+    await initTeacherView();
   }
 
   // ── 教师工作台主逻辑 ──
@@ -544,7 +549,9 @@ if (context.formPublish) {
         }
     };
 }
+if(!context.active||signal?.aborted)return;
 await installTeacherJourney(context);
+if(!context.active||signal?.aborted)return;
 context.courseSelect.disabled=false;
 context.tabBtns.forEach(button=>button.disabled=false);
 }
@@ -562,3 +569,4 @@ context.tabBtns.forEach(button=>button.disabled=false);
     }
   }
 })();
+window.ScipOJPageSession?.ready(ready);

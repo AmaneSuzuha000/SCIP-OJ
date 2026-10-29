@@ -2,6 +2,7 @@
 (() => {
     'use strict';
     const nav = window.ScipOJNavigation;
+    const base=new URL('../',document.currentScript.src),pages=window.ScipOJPageSession;
     let actor = window.ScipOJAccess?.getUser?.()?.id || 'visitor', handlers = {}, version = 0, reverting = false, nativePending=null, approvedUnload=false;
     const tagged = (entry = {}) => ({...history.state, scipJourney: entry});
     let entry = history.state?.scipJourney || {index:0, previous:null};
@@ -20,7 +21,6 @@
         if(!value)return null;
         try {
             const url = new URL(value, location.href);
-            const base = new URL('../', document.querySelector('script[src*="js/journey.js"]').src);
             return url.origin === base.origin && url.pathname.startsWith(base.pathname) ? url : null;
         } catch {return null;}
     }
@@ -38,7 +38,11 @@
     async function render(url, options = {}) {
         document.querySelector('.studio-rail')?.classList.remove('rail-menu-open');
         document.getElementById('btn-course-menu')?.setAttribute('aria-expanded','false');
-        await handlers.render?.(url, options);
+        if(!options.pageChanged)await handlers.render?.(url, options);
+        if(options.pageChanged&&!options.restore&&document.body.dataset.pageName!=='index.html'){
+            let anchor;try{anchor=document.getElementById(decodeURIComponent(url.hash.slice(1)));}catch{}
+            if(anchor)anchor.scrollIntoView();else window.scrollTo({top:0,left:0,behavior:'instant'});
+        }
         if (options.restore && entry.scroll) window.scrollTo({left:entry.scroll[0],top:entry.scroll[1],behavior:'instant'});
         if(options.restore&&entry.focus)document.getElementById(entry.focus)?.focus({preventScroll:true});
         else if(options.focus){
@@ -49,12 +53,16 @@
     }
     async function allowed(url) {return !handlers.beforeLeave || await handlers.beforeLeave(url) !== false;}
     async function go(value, options = {}) {
+        if(pages?.mounting)return false;
         const url = target(value);if (!url) return false;
         if (url.href === current.href && !options.force) return true;
         const ticket=++version;
         if (!(await allowed(url)) || ticket!==version) return false;
+        const changed=!sameDocument(url);
+        const page=changed&&pages?.supported(url)?await pages.prepare(url):null;
+        if(ticket!==version){page?.discard();return false;}
         save();
-        if (!sameDocument(url)) {
+        if (changed&&!page) {
             approvedUnload=true;
             location.assign(url.href);return true;
         }
@@ -62,9 +70,11 @@
         entry=options.replace?{...entry,scroll:null}:{index:entry.index+1,previous,scroll:null};
         history[options.replace?'replaceState':'pushState'](tagged(entry),'',url);
         current=url;
-        await render(url,options);return true;
+        if(page){handlers={};await pages.mount(page);}
+        await render(url,{...options,pageChanged:!!page});return true;
     }
     async function nativeChange() {
+        if(pages?.mounting){document.addEventListener('scipoj:page-ready',nativeChange,{once:true});return;}
         const url=new URL(location.href);
         if(reverting){reverting=false;nativePending=null;return;}
         if(url.href===current.href)return;
@@ -80,9 +90,18 @@
             return;
         }
         if(ticket!==version)return;
+        let page;
+        try{if(!sameDocument(url)&&pages?.supported(url))page=await pages.prepare(url);}
+        catch(error){
+            const delta=previousEntry.index-incoming.index;
+            if(delta){reverting=true;history.go(delta);}else history.replaceState(tagged(previousEntry),'',previous);
+            nativePending=null;window.ScipOJPlatform?.showToast(error.message,'error');return;
+        }
+        if(ticket!==version){page?.discard();return;}
         handlers.save?.();current=url;entry=incoming;nativePending=null;
         history.replaceState(tagged(entry),'',url);
-        await render(url,{restore:true});
+        if(page){handlers={};await pages.mount(page);}
+        await render(url,{restore:true,pageChanged:!!page});
     }
     function amend(value) {
         const url=safeURL(value);if(!url)return;
@@ -115,7 +134,7 @@
             form.addEventListener('input',store);form.addEventListener('change',store);
             form.addEventListener('reset',()=>setTimeout(store,0));
             document.getElementById('reset-button')?.addEventListener('click',()=>setTimeout(store,0));
-            window.addEventListener('pagehide',store);
+            pages?.onDispose(store);
         }
     }
      }
@@ -145,6 +164,6 @@
     window.addEventListener('hashchange',nativeChange);
     window.addEventListener('pagehide',()=>handlers.save?.());
     document.addEventListener('visibilitychange',()=>{if(document.hidden)handlers.save?.();});
-    window.ScipOJJourney={go,patch,back,amend,configure,remember,recall,forget,setUser,courseContext,safeURL,save,
+    window.ScipOJJourney={go,patch,back,amend,configure,remember,recall,forget,setUser,courseContext,safeURL,save,preparePage:restoreLab,
         isLeaving:()=>approvedUnload,allowUnload:()=>{approvedUnload=true;}};
 })();

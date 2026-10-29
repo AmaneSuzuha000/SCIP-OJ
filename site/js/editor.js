@@ -14,7 +14,7 @@
     if (editor) editor.setValue(textarea.value);
   }
   function focus() { if (editor) editor.focus(); else textarea?.focus(); }
-  function refresh() { if (editor) requestAnimationFrame(() => editor.refresh()); }
+  function refresh() { if (editor) requestAnimationFrame(() => editor?.refresh()); }
   function init() {
     if (initialized || !textarea) return;
     initialized = true;
@@ -66,6 +66,7 @@
     }
   }
   window.ScipOJEditor = {
+    dispose:()=>{editor?.toTextArea();editor=null;initialized=false;},
     init, getValue, setValue, focus, refresh,
     getInputElement: () => editor?.getWrapperElement() || textarea,
   };

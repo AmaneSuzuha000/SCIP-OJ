@@ -11,6 +11,7 @@
   let inputEvents = 0, pasteEvents = 0, blockedPastes = 0, copyEvents = 0;
   let dropEvents = 0, hiddenEvents = 0;
   let bound = false, lastWarningAt = 0;
+  const events=new AbortController();
 
   function notify(text) {
     if (Date.now() - lastWarningAt < 2000) return;
@@ -68,20 +69,20 @@
     if (bound) return;
     bound = true;
     for (const event of ["paste", "copy", "cut", "drop"]) {
-      document.addEventListener(event, recordClipboard, true);
+      document.addEventListener(event, recordClipboard, {capture:true,signal:events.signal});
     }
     document.addEventListener("beforeinput", event => {
       if (policy !== "exam_block" || !isEditorEvent(event)) return;
       if (["insertFromPaste", "insertFromDrop"].includes(event.inputType)) {
         event.preventDefault();
       }
-    }, true);
+    }, {capture:true,signal:events.signal});
     document.getElementById("code")?.addEventListener("input", () => {
       if (policy !== "standard") inputEvents += 1;
     });
     document.addEventListener("visibilitychange", () => {
       if (policy !== "standard" && document.hidden) hiddenEvents += 1;
-    });
+    },{signal:events.signal});
   }
 
   function snapshot() {
@@ -102,5 +103,5 @@
     };
   }
 
-  window.ScipOJExam = { bind, activate, snapshot, getPolicy: () => policy };
+  window.ScipOJExam = { bind, activate, snapshot, getPolicy: () => policy,dispose:()=>events.abort() };
 })();

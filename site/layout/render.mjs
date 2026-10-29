@@ -31,6 +31,6 @@ export async function renderPage(name, source) {
     source=source.replace('<body',`<body data-page-name="${name}"${isIndex?'':' data-page-frame="shared"'}`);
     if (isIndex) source=source.replace('<!-- PLATFORM_SIDEBAR -->',rail);
     else header+=rail+'<script src="js/page-frame.js?v=ui-foundation1" defer></script>';
-    header+='<script src="js/navigation.js?v=journey1"></script><script src="js/journey.js?v=1"></script>';
+    header+='<script src="js/navigation.js?v=journey1"></script><script src="js/page-session.js?v=session1"></script><script src="js/journey.js?v=session1"></script>';
     return protectPage(source.replace(/<template data-header-services>[\s\S]*?<\/template>/,'').replace('<!-- PLATFORM_HEADER -->',header));
 }

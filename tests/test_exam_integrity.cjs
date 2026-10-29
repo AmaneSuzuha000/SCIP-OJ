@@ -15,7 +15,7 @@ const document = {
 };
 const context = vm.createContext({
   window: { ScipOJEditor: { getInputElement: () => editor } },
-  document, Date, Set,
+  document, Date, Set, AbortController,
 });
 vm.runInContext(fs.readFileSync("site/js/exam-integrity.js", "utf8"), context);
 const exam = context.window.ScipOJExam;

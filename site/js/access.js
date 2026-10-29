@@ -141,7 +141,7 @@
             setTimeout(check, 0);
         });
     }
-    window.ScipOJAccess = {getClient:() => client,getUser:()=>admittedUser};
+    window.ScipOJAccess = {getClient:() => client,getUser:()=>admittedUser,isAuthorized:()=>authorized};
     document.addEventListener('visibilitychange', () => {if (!document.hidden) check();});
     window.addEventListener('pageshow', event => {if (event.persisted) check();});
     setInterval(() => {if (!document.hidden) check();}, 30000);

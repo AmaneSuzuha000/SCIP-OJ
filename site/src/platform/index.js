@@ -1,5 +1,9 @@
 import {state} from './state.js';
 import {getTopModal,closeModal} from './dialogs.js';
+window.addEventListener('scipoj:page-dispose',()=>{
+    for(const dialog of state.modalStack){dialog.__onClose=null;dialog.remove();}
+    state.modalStack=[];
+});
 document.addEventListener("keydown", (e) => {
     const top = getTopModal();
     if (!top)

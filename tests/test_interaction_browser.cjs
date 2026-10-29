@@ -58,6 +58,7 @@ const origin=process.env.SCIP_UI_TEST_ORIGIN||'http://127.0.0.1:8766';
   await page.locator('#problem-search-input').fill('P001');
   await page.locator('.studio-rail [data-nav-key="student-guide"]').click();await page.locator('#md h1').waitFor();
   await page.locator('.journey-return').click();await page.locator('#problem-search-input').waitFor();
+  await page.waitForFunction(()=>!window.ScipOJPageSession.mounting);
   assert.equal(await page.locator('#problem-search-input').inputValue(),'P001');
   await page.locator('#problem-list .problem-card').first().click();await loaded();
   await page.locator('#btn-back-to-list').click();await page.locator('#problem-list').waitFor({state:'visible'});

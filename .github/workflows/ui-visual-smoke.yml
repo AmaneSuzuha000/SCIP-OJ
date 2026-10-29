@@ -18,6 +18,8 @@ on:
       - "tests/test_navigation_browser.cjs"
       - "tests/test_teacher_browser.cjs"
       - "tests/test_interaction_browser.cjs"
+      - "tests/test_page_session_browser.cjs"
+      - "tests/test_runtime_cache_browser.cjs"
       - "tests/fixtures/**"
       - "tests/test_site_access_browser.cjs"
       - "judge/ie_des01_reference.py"
@@ -39,6 +41,8 @@ on:
       - "tests/test_navigation_browser.cjs"
       - "tests/test_teacher_browser.cjs"
       - "tests/test_interaction_browser.cjs"
+      - "tests/test_page_session_browser.cjs"
+      - "tests/test_runtime_cache_browser.cjs"
       - "tests/fixtures/**"
       - "tests/test_site_access_browser.cjs"
       - "judge/ie_des01_reference.py"
@@ -99,6 +103,7 @@ jobs:
       - name: Exercise responsive workbench, three labs, downloads and independent replay
         run: |
           node tests/test_site_access_browser.cjs
+          node tests/test_page_session_browser.cjs
           python3 scripts/preview_ui_fixture.py --directory ui-preview --port 8766 > /tmp/scip-ui-fixture.log 2>&1 &
           for attempt in $(seq 1 20); do
             if curl -fsS http://127.0.0.1:8766/index.html > /dev/null; then break; fi
@@ -113,6 +118,7 @@ jobs:
           node tests/test_math_browser.cjs
           node tests/test_practice_browser.cjs
           node tests/test_unified_runtime_browser.cjs
+          node tests/test_runtime_cache_browser.cjs
       - name: Save review screenshots
         if: always()
         uses: actions/upload-artifact@v4

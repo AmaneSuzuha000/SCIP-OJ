@@ -19,6 +19,9 @@
  const status=document.getElementById("run-status");
  const error=document.getElementById("lab-error");
  const exporter=document.getElementById("export-button");
+ const runButton=document.getElementById('run-button');
+ let pendingRun;
+ window.ScipOJPageSession?.onDispose(()=>clearTimeout(pendingRun));
  let last=null;
  function fmt(x,prec=2) {
    if(!Number.isFinite(x))return"—";
@@ -70,6 +73,7 @@
    exporter.disabled=false;
  }
  function run() {
+   if(form.isConnected===false)return;
    error.hidden=true;
    status.textContent="正在生成随机样本并运行仿真…";
    try{
@@ -81,11 +85,12 @@
      error.textContent=e&&e.message?e.message:"仿真失败，请检查参数";
      error.hidden=false;
      status.textContent="输入无效或仿真未完成；请调整后重试。";
-   } finally {document.getElementById("run-button").disabled=false;}
+   } finally {runButton.disabled=false;}
  }
  form.addEventListener("submit",function(e){
    e.preventDefault();document.getElementById("run-button").disabled=true;
-   window.setTimeout(run,15);
+   if(pendingRun!==undefined)clearTimeout(pendingRun);
+   pendingRun=window.setTimeout(run,15);
  });
  form.addEventListener("input",()=>{
    if(last){

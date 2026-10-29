@@ -6,6 +6,7 @@
     "appUrl": "./lab",
     "baseUrl": "./",
     "exposeAppInBrowser": true,
+    "enableServiceWorkerCache": true,
     "contentsStorageName": "JupyterLite Storage - /SCIP-OJ/"
   }
 }

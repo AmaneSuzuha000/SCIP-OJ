@@ -99,5 +99,5 @@ export async function installTeacherJourney(context) {
             if(tab==='assignments'&&!changed)await context.handlers.loadCourseAssignments(id);
         }
     });
-    window.addEventListener('beforeunload',event=>{save();if(dirty&&saveFailed&&!journey.isLeaving()){event.preventDefault();event.returnValue='';}});
+    window.addEventListener('beforeunload',event=>{save();if(dirty&&saveFailed&&!journey.isLeaving()){event.preventDefault();event.returnValue='';}},{signal:window.ScipOJPageSession?.signal});
 }
