@@ -17,13 +17,20 @@
 4. **04_IE_Bin_Packing_PySCIPOpt.ipynb** — 仓储装箱、容量约束和独立递归 oracle
 5. **05_IE_Flow_Shop_PySCIPOpt.ipynb** — 排列流水车间、Cmax 与独立排列枚举
 6. **06_IE_Stochastic_Inventory_PySCIPOpt.ipynb** — 场景式随机库存优化与期望成本穷举
+7. **07_IE_Transportation_PySCIPOpt.ipynb** — 两仓三店辅料运输与运费枚举
+8. **08_IE_Cutting_Stock_PySCIPOpt.ipynb** — 铝材下料、裁法与最少母材
+9. **09_IE_TSP_MTZ_PySCIPOpt.ipynb** — 五点巡检回路（MTZ）与顺序枚举
+10. **10_IE_CVRP_PySCIPOpt.ipynb** — 带容量的社区店配送
+11. **11_IE_Single_Machine_PySCIPOpt.ipynb** — 单机位置模型与总延误
+
+阅读顺序见仓库 `docs/课程学习路径.md`。广义指派、带时间窗的车辆路径和并行机调度仍是后续题目，这里没有对应 Notebook。
 
 ## 成绩与运行环境说明
 
 - JupyterLite（xeus-python + PySCIPOpt）是浏览器建模实验环境。浏览器 L1 练习使用另一条 Pyodide Worker 运行时；**两者尚非同一内核**。
 - 三个案例交互实验全部在浏览器本地运行，不上传数据、不写正式成绩。
 - 正式作业通过学生网页登录、选课门禁及后台隔离 PySCIPOpt 私有测试后存入教师成绩簿；学生**不需要 Fork、提交 PR 或使用 Actions**。
-- 只有已有判题协议的 P001/P002 是目前 L2 支持的题型；新增 IE-OPT-03～06 Notebook 与 DES/库存案例不自动进入 L2。
+- 只有已有判题协议的 P001/P002 是目前 L2 支持的题型；IE-OPT-03～11 Notebook 与 DES/库存案例不自动进入 L2。
 - 真实教学前仍需师生账号端到端验收、成绩申诉和隐私流程核对。
 
 课程使用口径见仓库 README 与 docs/课程实验与评价规范.md。

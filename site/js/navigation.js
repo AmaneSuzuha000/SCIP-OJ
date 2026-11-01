@@ -13,14 +13,16 @@
         item('case-library', '仿真案例', '#case-library', 'flask', 'case-library'),
         item('learn-notebooks', '优化建模', '#learn-notebooks', 'code', 'learn-notebooks'),
     ];
+    const learningPath = item('learning-path', '课程学习路径', 'doc.html?path=docs/课程学习路径.md', 'book-open');
     const guides = [
         item('student-guide', '学生指南', 'doc.html?f=学生指南.md', 'book-open'),
         item('teacher-guide', '教师指南', 'doc.html?f=教师指南.md', 'file-text'),
         item('author-guide', '出题指南', 'doc.html?f=出题指南.md', 'file-text'),
+        learningPath,
     ];
     const resources = {
-        course: [guides[0], guides[1], item('course-assessments', '作业说明', '#course-assessments', 'list-checks', 'course-assessments')],
-        learn: [item('official-examples', '官方建模示例', 'official-examples.html', 'file-text'), item('learning-guide', '拓展学习指南', 'doc.html?f=拓展学习指南.md&space=learn', 'book-open')],
+        course: [guides[0], guides[1], learningPath, item('course-assessments', '作业说明', '#course-assessments', 'list-checks', 'course-assessments')],
+        learn: [item('official-examples', '官方建模示例', 'official-examples.html', 'file-text'), item('learning-guide', '拓展学习指南', 'doc.html?f=拓展学习指南.md&space=learn', 'book-open'), item('learning-path', '课程学习路径', 'doc.html?path=docs/课程学习路径.md&space=learn', 'book-open')],
     };
     const labs = [
         item('queue-lab', '检修排队', 'case-studio.html', 'flask'),
@@ -36,6 +38,11 @@
         ['04_IE_Bin_Packing_PySCIPOpt.ipynb', '仓储装箱', 'learn'],
         ['05_IE_Flow_Shop_PySCIPOpt.ipynb', '排列流水车间', 'learn'],
         ['06_IE_Stochastic_Inventory_PySCIPOpt.ipynb', '单周期随机库存优化', 'learn'],
+        ['07_IE_Transportation_PySCIPOpt.ipynb', '辅料运输', 'learn'],
+        ['08_IE_Cutting_Stock_PySCIPOpt.ipynb', '铝材下料', 'learn'],
+        ['09_IE_TSP_MTZ_PySCIPOpt.ipynb', '巡检回路', 'learn'],
+        ['10_IE_CVRP_PySCIPOpt.ipynb', '带容量配送', 'learn'],
+        ['11_IE_Single_Machine_PySCIPOpt.ipynb', '单机排序', 'learn'],
     ].map(([path, title, space]) => ({path, title, space}));
 
     function withParams(hash, values) {
@@ -75,6 +82,10 @@
     function sectionForRoute(route) {
         return route.view === 'notebook' ? (route.space === 'course' ? 'course-labs' : 'learn-notebooks') : route.view === 'problem' ? 'problem-list-section' : route.key;
     }
+    function docName(href) {
+        const params = new URL(href, 'https://navigation.invalid/').searchParams;
+        return (params.get('path') || params.get('f') || '').split('/').pop();
+    }
     function resolveContext(href) {
         const url = new URL(href, 'https://navigation.invalid/');
         const file = url.pathname.split('/').pop() || 'index.html';
@@ -86,8 +97,8 @@
         if (lab) return {space:'learn', section:lab.id === 'official-examples' ? lab.id : 'case-library', page:lab.id, returnTo:'index.html#case-library'};
         if (file === 'teacher.html') return {space:'course', section:'teacher', page:'teacher', returnTo:'index.html#course'};
         const space = url.searchParams.get('space') === 'learn' ? 'learn' : 'course';
-        const documentName = (url.searchParams.get('path') || url.searchParams.get('f') || '学生指南.md').split('/').pop();
-        const guide = [...guides, ...resources.learn].find(entry => new URL(entry.href, 'https://navigation.invalid/').searchParams.get('f') === documentName);
+        const documentName = docName(url.href) || '学生指南.md';
+        const guide = [...guides, ...resources.learn].find(entry => docName(entry.href) === documentName);
         const page = guide?.id || 'document';
         return {space, section:page, page, returnTo:'index.html#' + space};
     }
@@ -104,7 +115,9 @@
         }
         for (const link of doc.querySelectorAll('[data-nav-key]')) {
             const id = link.dataset.navKey;
-            const selected = id === context.page || id === context.section;
+            const owner = typeof link.closest === 'function' ? link.closest('[data-space-nav],[data-space-content]') : null;
+            const ownerSpace = owner ? (owner.dataset.spaceNav || owner.dataset.spaceContent) : null;
+            const selected = (id === context.page || id === context.section) && (ownerSpace === null || ownerSpace === context.space);
             link.classList.toggle('active', selected);
             if (selected) link.setAttribute('aria-current', id === context.page ? 'page' : 'location');
             else link.removeAttribute('aria-current');

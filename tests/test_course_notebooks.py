@@ -43,6 +43,46 @@ class CourseNotebookTests(unittest.TestCase):
                 self.assertIn("assert", code)
                 self.assertGreater(len(nb["cells"]), 5)
 
+    def test_new_modeling_notebooks_are_original_and_checked(self):
+        expected = {
+            "07_IE_Transportation_PySCIPOpt.ipynb": "oracle_min_cost",
+            "08_IE_Cutting_Stock_PySCIPOpt.ipynb": "oracle_min_rolls",
+            "09_IE_TSP_MTZ_PySCIPOpt.ipynb": "oracle_tour_cost",
+            "10_IE_CVRP_PySCIPOpt.ipynb": "oracle_min_distance",
+            "11_IE_Single_Machine_PySCIPOpt.ipynb": "oracle_total_tardiness",
+        }
+        for file, oracle in expected.items():
+            with self.subTest(file=file):
+                nb = json.loads((ROOT / "content" / file).read_text(encoding="utf-8"))
+                self.assertEqual(nb["nbformat"], 4)
+                code = "\n\n".join("".join(c["source"]) for c in nb["cells"] if c["cell_type"] == "code")
+                docs = "\n".join("".join(c["source"]) for c in nb["cells"] if c["cell_type"] == "markdown")
+                ast.parse(code)
+                self.assertIn("from pyscipopt import Model, quicksum", code)
+                self.assertIn(oracle, code)
+                self.assertIn("assert", code)
+                self.assertIn("合成教学数据", docs)
+                self.assertIn("不计入正式课程成绩", docs)
+                self.assertGreater(len(nb["cells"]), 5)
+
+    def test_published_lessons_exist_without_courseware_binaries(self):
+        for name in [
+            "docs/课程学习路径.md",
+            "docs/lessons/01-建模与SCIP入门.md",
+            "docs/lessons/02-经典组合优化应用.md",
+            "docs/lessons/03-路径与调度.md",
+        ]:
+            text = (ROOT / name).read_text(encoding="utf-8")
+            self.assertIn("不计入正式成绩", text)
+            self.assertGreater(len(text), 200)
+        banned = []
+        for path in ROOT.rglob("*"):
+            if any(part in {".git", "node_modules", ".portal-build", "lite-build", "ui-preview", "ui-artifacts"} for part in path.parts):
+                continue
+            if path.suffix.lower() in {".pptx", ".pdf"}:
+                banned.append(str(path.relative_to(ROOT)))
+        self.assertEqual(banned, [])
+
     def test_all_case_links_exist(self):
         for name in ["case-studio.html", "inventory-lab.html",
                      "flow-lab.html", "official-examples.html"]:

@@ -103,7 +103,7 @@ async function run() {
     assert.equal(await desktop.locator("#rail-services").isVisible(), false);
     assert.equal(await desktop.locator("#learning-space a[href='#problem-list-section'], #learning-space a[href='#submissions']").count(), 0);
     assert.equal(await desktop.locator("#learning-space .studio-case-card").count(), 3);
-    assert.equal(await desktop.locator(".extension-notebook").count(), 4);
+    assert.equal(await desktop.locator(".extension-notebook").count(), 9);
     await screenshot(desktop, "09-extension-learning.png");
     await desktop.locator("#nav-course-space").click();
     await desktop.locator(".teaching-overview").waitFor({ state: "visible" });

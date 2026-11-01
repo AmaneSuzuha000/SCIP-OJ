@@ -41,7 +41,7 @@ def assemble(lite, output):
     public_docs = (
         '学生指南.md', '教师指南.md', '出题指南.md', '拓展学习指南.md',
         '教师手册-考试花名册核验.md', 'IE_DES_01_精品案例实验指导书.md',
-        '课程实验与评价规范.md', '判分协议-已冻结.md',
+        '课程实验与评价规范.md', '判分协议-已冻结.md', '课程学习路径.md',
     )
     docs_out = output / 'docs'
     docs_out.mkdir()
@@ -49,6 +49,9 @@ def assemble(lite, output):
         source = ROOT / 'docs' / name
         if source.is_file():
             shutil.copyfile(source, docs_out / name)
+    lessons = ROOT / 'docs' / 'lessons'
+    if lessons.is_dir():
+        shutil.copytree(lessons, docs_out / 'lessons')
     shutil.copytree(ROOT / 'problems', output / 'problems')
     shutil.copyfile(ROOT / 'README.md', output / 'README.md')
     for app in ('lab', 'repl'):

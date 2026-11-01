@@ -3,7 +3,8 @@
 工业工程《系统建模与仿真》平台，按用途分为 **课程教学** 与 **拓展学习** 两个独立区域。默认进入课程教学。
 
 - **课程教学**：班级、P001/P002 配套建模实验、编程作业、正式提交、成绩记录和教师管理。入口：`index.html#course`。
-- **拓展学习**：开放仿真案例、SCIP/Gurobi 官方示例与四个进阶 Notebook。入口：`index.html#learn`。
+- **拓展学习**：开放仿真案例、SCIP/Gurobi 官方示例与进阶 Notebook。入口：`index.html#learn`。
+- **课程学习路径**：[docs/课程学习路径.md](docs/课程学习路径.md)。站内打开方式是登录后访问 `doc.html?path=docs/课程学习路径.md`。
 
 - **精品案例总览 / 排队仿真**：https://AmaneSuzuha000.github.io/SCIP-OJ/case-studio.html
 - **随机库存仿真**：https://AmaneSuzuha000.github.io/SCIP-OJ/inventory-lab.html
@@ -35,6 +36,7 @@
 - **IE-OPT-04《仓储装箱》Notebook**：物品—容器 MILP 与独立回溯装箱真值。
 - **IE-OPT-05《排列流水车间》Notebook**：位置索引调度模型与 4! 排列枚举真值。
 - **IE-OPT-06《单周期随机库存优化》Notebook**：随机需求场景 MILP 与 0～10 件订货量穷举。
+- **IE-OPT-07～11**：辅料运输、铝材下料、巡检回路（MTZ）、带容量配送、单机总延误。数据为合成示例，不进入现有 L2 判分。阅读顺序见 [课程学习路径](docs/课程学习路径.md)。
 - **官方 Examples 资源页**：直接链接 PySCIPOpt 官方背包、EOQ、设施选址、排列流水车间、装箱与资源受限调度，以及 Gurobi Modeling Examples；只提供来源和自主课程模型。
 
 
@@ -90,6 +92,11 @@ SCIP-OJ 采用**双轨制**，兼顾轻量免配置练习与可信正式成绩�
   - `content/04_IE_Bin_Packing_PySCIPOpt.ipynb`（装箱）
   - `content/05_IE_Flow_Shop_PySCIPOpt.ipynb`（排列流水车间）
   - `content/06_IE_Stochastic_Inventory_PySCIPOpt.ipynb`（单周期随机库存优化）
+  - `content/07_IE_Transportation_PySCIPOpt.ipynb`（辅料运输）
+  - `content/08_IE_Cutting_Stock_PySCIPOpt.ipynb`（铝材下料）
+  - `content/09_IE_TSP_MTZ_PySCIPOpt.ipynb`（巡检回路，MTZ）
+  - `content/10_IE_CVRP_PySCIPOpt.ipynb`（带容量配送）
+  - `content/11_IE_Single_Machine_PySCIPOpt.ipynb`（单机总延误）
 
 ---
 

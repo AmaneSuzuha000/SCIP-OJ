@@ -101,9 +101,9 @@ jobs:
               assert report["sandbox"] == "isolated_container"
               assert report["test_set"] == "server_private_v2"
           PY
-      - name: Execute 4 original IE PySCIPOpt Notebooks against independent oracles
+      - name: Execute IE PySCIPOpt Notebooks against independent oracles
         run: |
-          docker run --rm --network none -v "$PWD/content:/course:ro" --entrypoint python scip-oj-student:ci -c 'import glob,json; fs=sorted(glob.glob("/course/0[3-6]_IE_*_PySCIPOpt.ipynb")); assert len(fs)==4,fs; [(print("Checking",f),exec("\n\n".join("".join(c["source"]) for c in json.load(open(f))["cells"] if c["cell_type"]=="code"),{})) for f in fs]'
+          docker run --rm --network none -v "$PWD/content:/course:ro" --entrypoint python scip-oj-student:ci -c 'import glob,json; fs=sorted(glob.glob("/course/0[3-9]_IE_*_PySCIPOpt.ipynb")+glob.glob("/course/1[0-1]_IE_*_PySCIPOpt.ipynb")); assert len(fs)==9,fs; [(print("Checking",f),exec("\n\n".join("".join(c["source"]) for c in json.load(open(f))["cells"] if c["cell_type"]=="code"),{})) for f in fs]'
       - name: Adversarial execution regression
         run: |
           python - <<'PY'
