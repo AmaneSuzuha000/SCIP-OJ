@@ -4,7 +4,7 @@
 
 - **课程教学**：班级、P001/P002 配套建模实验、编程作业、正式提交、成绩记录和教师管理。入口：`index.html#course`。
 - **拓展学习**：开放仿真案例、SCIP/Gurobi 官方示例与进阶 Notebook。入口：`index.html#learn`。
-- **课程学习路径**：[docs/课程学习路径.md](docs/课程学习路径.md)。站内打开方式是登录后访问 `doc.html?path=docs/课程学习路径.md`。
+- **课程学习路径**：[docs/课程学习路径.md](docs/课程学习路径.md)。登录后从 `doc.html?path=docs/课程学习路径.md` 打开。
 
 - **精品案例总览 / 排队仿真**：https://AmaneSuzuha000.github.io/SCIP-OJ/case-studio.html
 - **随机库存仿真**：https://AmaneSuzuha000.github.io/SCIP-OJ/inventory-lab.html

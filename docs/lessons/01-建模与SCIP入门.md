@@ -7,7 +7,7 @@
 - 能把一个决策写成变量、约束和目标，并说清哪些量是数据、哪些量是要求解的。
 - 能区分线性规划、整数规划和混合整数规划。
 - 能说明分支定界为什么不必把所有整数点都试一遍。
-- 能在本站用 PySCIPOpt 跑通背包和指派两个小模型。
+- 能用 PySCIPOpt 跑通背包和指派两个小模型。
 
 ## 一个模型里有什么
 
@@ -45,7 +45,7 @@ SCIP 负责分支、剪枝、割平面和搜索策略。PySCIPOpt 是建模接�
 
 本课不实现分支规则。要建立的习惯是：先写对模型，再把求解器当成黑箱，并用一个小例子的独立枚举核对它。
 
-## 在本站上怎么练
+## 怎么练
 
 1. 读 [0-1 背包 Notebook](index.html#notebook/01_P001_knapsack_PySCIPOpt.ipynb)，对照 [P001](index.html#P001) 的 `solve(instance)` 契约。Notebook 和练习评分不计入正式成绩，正式分数要在课程作业里提交。
 2. 读 [指派 Notebook](index.html#notebook/02_P002_assignment_PySCIPOpt.ipynb)，再做 [P002](index.html#P002)。注意「每人一件、每事一人」是两组等式，少写一组就会出现一个人做两件或某件事没人做。

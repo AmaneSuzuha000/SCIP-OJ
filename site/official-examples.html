@@ -23,25 +23,25 @@
 <section class="hero"><div class="hero-content"><span class="eyebrow">CURATED OFFICIAL EXAMPLES / SCIP + GUROBI</span><h1>从官方 Examples，<br><span>建立严谨的工业工程案例课程。</span></h1>
 <p class="lead">先学习可信的数学建模方法，再把优化结果放回不确定性、排队和资源约束的系统仿真中验证。每一例给出原始官方出处、适用学习阶段和课程转化任务。</p>
 <div class="hero-buttons"><a href="#scip" class="primary-link">查阅 SCIP 官方案例 ↘</a><a href="#method" class="secondary-link">查看模型—仿真衔接</a></div>
-<p class="scope-note">本站为独立教学导航，与 SCIP、PySCIPOpt、Gurobi 官方无隶属关系；所列外部资源由各自原作者维护。</p></div>
+<p class="scope-note">这里是独立教学导航，与 SCIP、PySCIPOpt、Gurobi 官方无隶属关系；所列外部资源由各自原作者维护。</p></div>
 <aside class="hero-card"><div class="hero-card-title">REFERENCE HIERARCHY <span>VERIFIED SOURCES</span></div><ol>
 <li><b>入门建模</b><span>变量 / 目标 / 约束</span></li><li><b>工业工程</b><span>库存 / 生产 / 物流</span></li><li><b>高级优化</b><span>分解 / 分支定价</span></li><li><b>仿真决策</b><span>随机性 / 复现 / 验证</span></li></ol></aside></section>
-<section class="overview" aria-label="学习主线"><div><strong>官方原始教程</strong><span>PySCIPOpt & SCIP</span></div><div><strong>建模案例库</strong><span>Gurobi Examples</span></div><div><strong>课程原创仿真</strong><span>3 个可运行案例</span></div></section>
+<section class="overview" aria-label="学习主线"><div><strong>官方原始教程</strong><span>PySCIPOpt & SCIP</span></div><div><strong>建模案例库</strong><span>Gurobi Examples</span></div><div><strong>课程仿真</strong><span>3 个可运行案例</span></div></section>
 <section id="scip"><div class="section-heading"><div><span class="eyebrow dark">PYSCIPOPT / ORIGINAL EXAMPLE REPOSITORY</span><h2>SCIP 官方 Python 示例精选</h2><p>以下链接指向 PySCIPOpt 官方仓库中实际存在的源文件，供阅读和对照；未复制第三方代码。</p></div></div>
 <div class="catalog">
 <article><span class="eyebrow">01 / BEGINNER</span><h3>多约束背包 · MKP</h3><p>复习二元决策变量、容量约束及资源冲突；与当前 P001 背包 OJ 练习比较：增加第二类资源后，原算法是否仍适用？</p><a href="https://github.com/scipopt/PySCIPOpt/blob/master/examples/finished/mkp.py" target="_blank" rel="noopener noreferrer">打开官方 mkp.py ↗</a></article>
-<article><span class="eyebrow">02 / INVENTORY</span><h3>多品种经济订货量 · EOQ</h3><p>在需求已知的情况下优化订货周期与容量。随后转到本站 IE-MC-02，以随机需求反查确定性最优的适用边界。</p><a href="https://github.com/scipopt/PySCIPOpt/blob/master/examples/finished/eoq_en.py" target="_blank" rel="noopener noreferrer">打开官方 eoq_en.py ↗</a></article>
+<article><span class="eyebrow">02 / INVENTORY</span><h3>多品种经济订货量 · EOQ</h3><p>在需求已知的情况下优化订货周期与容量。随后转到 IE-MC-02，以随机需求反查确定性最优的适用边界。</p><a href="https://github.com/scipopt/PySCIPOpt/blob/master/examples/finished/eoq_en.py" target="_blank" rel="noopener noreferrer">打开官方 eoq_en.py ↗</a></article>
 <article><span class="eyebrow">03 / FACILITY</span><h3>容量约束设施选址 · FLP</h3><p>决定启用哪些设施，并分配客户需求；学习固定成本、需求守恒、容量与变量联动，然后讨论实际需求波动。</p><a href="https://github.com/scipopt/PySCIPOpt/blob/master/examples/finished/flp.py" target="_blank" rel="noopener noreferrer">打开官方 flp.py ↗</a></article>
-<article><span class="eyebrow">04 / PRODUCTION</span><h3>排列流水车间 · PFS</h3><p>用整数规划最小化 makespan，理解作业序列、工序先后约束；与本站 IE-DES-03 的动态有限缓冲仿真建立对照。</p><a href="https://github.com/scipopt/PySCIPOpt/blob/master/examples/finished/pfs.py" target="_blank" rel="noopener noreferrer">打开官方 pfs.py ↗</a></article>
+<article><span class="eyebrow">04 / PRODUCTION</span><h3>排列流水车间 · PFS</h3><p>用整数规划最小化 makespan，理解作业序列、工序先后约束；与 IE-DES-03 的动态有限缓冲仿真建立对照。</p><a href="https://github.com/scipopt/PySCIPOpt/blob/master/examples/finished/pfs.py" target="_blank" rel="noopener noreferrer">打开官方 pfs.py ↗</a></article>
 <article><span class="eyebrow">05 / LOGISTICS</span><h3>装箱优化 · BPP</h3><p>学习容量、分配和对称性消除；探究下界、简单启发式与整数规划的差距，联系仓储和运输资源配置。</p><a href="https://github.com/scipopt/PySCIPOpt/blob/master/examples/finished/bpp.py" target="_blank" rel="noopener noreferrer">打开官方 bpp.py ↗</a></article>
 <article><span class="eyebrow">06 / ADVANCED</span><h3>资源受限项目调度 · RCS</h3><p>建立资源上限与工序优先关系。官方源码应作为学习材料而非未经验证的标准答案；正式采用前需独立测试。</p><a href="https://github.com/scipopt/PySCIPOpt/blob/master/examples/finished/rcs.py" target="_blank" rel="noopener noreferrer">打开官方 rcs.py ↗</a></article>
 </div></section>
 <section class="notice"><h3>官方主入口与授权边界</h3><p><a href="https://pyscipopt.readthedocs.io/en/stable/tutorials/" target="_blank" rel="noopener noreferrer">PySCIPOpt 官方教程</a>：建模对象、变量、约束、参数、分支规则与分离器等；
 <a href="https://github.com/scipopt/PySCIPOpt/tree/master/examples/finished" target="_blank" rel="noopener noreferrer">官方完整 Python 示例目录</a>；
 <a href="https://www.scipopt.org/doc/html/EXAMPLES.php" target="_blank" rel="noopener noreferrer">SCIP 原生 Example Projects</a>：TSP、Sudoku、Branch-and-Price、Benders 等。</p>
-<p><a href="https://github.com/Gurobi/modeling-examples" target="_blank" rel="noopener noreferrer">Gurobi Modeling Examples</a> 按场景、难度与 notebook 分层组织。它是我们课程结构的参考，而不是本站 Python 运行环境默认使用的求解器；运行 Gurobi 官方示例时仍需遵守其许可条款。</p>
-<p><strong>出处与许可：</strong>PySCIPOpt 项目为 MIT；SCIP 8.0.3 起采用 Apache-2.0；Gurobi 建模示例项目采用 Apache-2.0。若未来将第三方代码纳入本仓库，需逐个保留原版权、许可声明并履行相关要求。本站现阶段只提供链接与自主编写的课程模型。</p></section>
-<section class="local-notebooks"><div class="section-heading"><div><span class="eyebrow dark">ORIGINAL PYSCIPOPT NOTEBOOKS / VERIFIED ORACLES</span><h2>平台原创、可在浏览器运行的教学 Notebook</h2><p>在 <a href="index.html#learn-notebooks">优化建模列表</a>中打开相应 Notebook；所有新增优化模型均有不依赖 SCIP 的独立小规模真值校验。</p></div></div>
+<p><a href="https://github.com/Gurobi/modeling-examples" target="_blank" rel="noopener noreferrer">Gurobi Modeling Examples</a> 按场景、难度与 notebook 分层组织。它是课程结构的参考，而不是这里默认使用的求解器；运行 Gurobi 官方示例时仍需遵守其许可条款。</p>
+<p><strong>出处与许可：</strong>PySCIPOpt 项目为 MIT；SCIP 8.0.3 起采用 Apache-2.0；Gurobi 建模示例项目采用 Apache-2.0。若未来将第三方代码纳入本仓库，需逐个保留原版权、许可声明并履行相关要求。现阶段只提供链接，课程模型另行编写。</p></section>
+<section class="local-notebooks"><div class="section-heading"><div><span class="eyebrow dark">PYSCIPOPT NOTEBOOKS / VERIFIED ORACLES</span><h2>可在浏览器里运行的 PySCIPOpt Notebook</h2><p>在 <a href="index.html#learn-notebooks">优化建模列表</a>中打开相应 Notebook；所有新增优化模型均有不依赖 SCIP 的独立小规模真值校验。</p></div></div>
 <div class="catalog">
 <article><span class="eyebrow">IE-OPT-03</span><h3>容量约束设施选址</h3><p>单源二元分配，容量守恒、启用成本；3 设施 × 4 客户，共 81 种候选分配穷举。</p><a href="index.html#notebook/03_IE_Facility_Location_PySCIPOpt.ipynb">打开 Notebook</a></article>
 <article><span class="eyebrow">IE-OPT-04</span><h3>仓储装箱</h3><p>二元物品分配、箱容量、对称性；以独立递归装箱算法验证最少箱数。</p><a href="index.html#notebook/04_IE_Bin_Packing_PySCIPOpt.ipynb">打开 Notebook</a></article>

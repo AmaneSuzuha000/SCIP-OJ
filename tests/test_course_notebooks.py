@@ -23,7 +23,7 @@ class CourseNotebookTests(unittest.TestCase):
         docs = "\n".join("".join(cell["source"]) for cell in cells if cell["cell_type"] == "markdown")
         self.assertIn("single-source", docs)
         self.assertIn("合成教学数据", docs)
-        self.assertIn("不计入正式课程成绩", docs)
+        self.assertIn("练习用，不计正式成绩。", docs)
 
 
     def test_independent_oracles_in_extended_notebooks(self):
@@ -62,7 +62,7 @@ class CourseNotebookTests(unittest.TestCase):
                 self.assertIn(oracle, code)
                 self.assertIn("assert", code)
                 self.assertIn("合成教学数据", docs)
-                self.assertIn("不计入正式课程成绩", docs)
+                self.assertIn("练习用，不计正式成绩。", docs)
                 self.assertGreater(len(nb["cells"]), 5)
 
     def test_published_lessons_exist_without_courseware_binaries(self):
