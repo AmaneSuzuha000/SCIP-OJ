@@ -23,6 +23,17 @@ on:
 permissions:
   contents: read
 
+# One run per grading attempt. A duplicate delivery is already rejected by the
+# idempotent claim, but serialising here avoids paying for two whole runners.
+concurrency:
+  group: grade-${{ inputs.grading_id }}
+  cancel-in-progress: false
+
+env:
+  # Containers are independent and startup dominates; three keeps wall time
+  # down on a two-core runner without oversubscribing memory.
+  SCIP_OJ_INSTANCE_PARALLELISM: '3'
+
 jobs:
   grade:
     runs-on: ubuntu-latest
@@ -48,10 +59,25 @@ jobs:
         with:
           ref: ${{ steps.claim.outputs.grader_ref }}
           clean: false
+      - name: Set up Buildx
+        if: steps.claim.outputs.claimed == 'true'
+        uses: docker/setup-buildx-action@v3
       - name: Build isolated student-execution image
         if: steps.claim.outputs.claimed == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: judge/Dockerfile.sandbox
+          tags: scip-oj-student:ci
+          load: true
+          pull: true
+          # Reuse the PySCIPOpt layer across runs instead of re-resolving it
+          # every time; the Dockerfile itself is the cache key.
+          cache-from: type=gha,scope=sandbox
+          cache-to: type=gha,mode=max,scope=sandbox
+      - name: Verify the sandbox image
+        if: steps.claim.outputs.claimed == 'true'
         run: |
-          docker build --pull --file judge/Dockerfile.sandbox --tag scip-oj-student:ci .
           docker run --rm --network none --entrypoint python scip-oj-student:ci \
             -c 'from pyscipopt import Model; print("SCIP image ready")'
           docker image inspect scip-oj-student:ci --format 'Sandbox image ID: {{.Id}}'
