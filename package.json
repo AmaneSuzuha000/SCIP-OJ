@@ -8,7 +8,11 @@
     "test:database": "node tests/test_grading_database.mjs",
     "test:grading": "node tests/test_grading_state.cjs && node tests/test_grading_api.cjs",
     "test:similarity": "node tests/test_similarity_js.mjs",
-    "build": "node scripts/build_portal.mjs"
+    "build": "node scripts/build_portal.mjs",
+    "dev:web": "npm --prefix web run dev",
+    "build:web": "npm --prefix web ci && npm --prefix web run build",
+    "test:web": "npm --prefix web test",
+    "test:parity": "python scripts/parity_report.py"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.3.14",

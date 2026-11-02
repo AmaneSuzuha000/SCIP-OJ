@@ -5,24 +5,40 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-def assemble(lite, output):
+def assemble(lite, output, web_dist=None):
+    """Stage a Pages artifact.
+
+    web_dist switches the application shell: when given, the React build in that
+    directory replaces site/ + .portal-build, while the notebook runtime, docs,
+    problems and KaTeX assets are staged exactly as before. The default path is
+    untouched, so switching back is deleting one argument.
+    """
     lite, output = Path(lite).resolve(), Path(output).resolve()
+    web_dist = Path(web_dist).resolve() if web_dist else None
     if not (lite / 'lab/index.html').is_file():
         raise ValueError('Missing built JupyterLite lab')
     if output == ROOT or output in lite.parents or lite == output or output in ROOT.parents:
         raise ValueError('Output must be separate from sources and runtime')
     if output.exists():
         raise ValueError('Output must be a fresh directory')
-    portal = ROOT / '.portal-build/js'
-    if not all((portal / (name+'.js')).is_file() for name in ('app','platform','teacher','markdown')):
-        raise ValueError('Build portal components first: npm ci && npm run build')
-    shutil.copytree(ROOT / 'site', output, ignore=shutil.ignore_patterns('src','layout'))
-    for page in (ROOT / '.portal-build/html').glob('*.html'):
-        shutil.copyfile(page, output / page.name)
-    for name in ('app','platform','teacher','markdown'):
-        shutil.copyfile(portal / (name+'.js'), output / 'js' / (name+'.js'))
-    shutil.copyfile(portal / 'markdown.css', output / 'js/markdown.css')
-    shutil.copytree(ROOT / '.portal-build/assets/katex', output / 'assets/katex')
+    if web_dist is not None:
+        if not (web_dist / 'index.html').is_file():
+            raise ValueError('Missing React shell: build it with npm --prefix web run build')
+        if not (web_dist / '404.html').is_file():
+            raise ValueError('React shell has no 404.html; GitHub Pages needs it for deep links')
+        shutil.copytree(web_dist, output)
+    else:
+        portal = ROOT / '.portal-build/js'
+        if not all((portal / (name+'.js')).is_file() for name in ('app','platform','teacher','markdown')):
+            raise ValueError('Build portal components first: npm ci && npm run build')
+        shutil.copytree(ROOT / 'site', output, ignore=shutil.ignore_patterns('src','layout'))
+        for page in (ROOT / '.portal-build/html').glob('*.html'):
+            shutil.copyfile(page, output / page.name)
+        for name in ('app','platform','teacher','markdown'):
+            shutil.copyfile(portal / (name+'.js'), output / 'js' / (name+'.js'))
+        shutil.copyfile(portal / 'markdown.css', output / 'js/markdown.css')
+    # KaTeX is shared by the lesson renderer, not owned by either shell.
+    shutil.copytree(ROOT / '.portal-build/assets/katex', output / 'assets/katex', dirs_exist_ok=True)
     shutil.copytree(lite, output / 'notebooks')
     for name in ('engine.js', 'bridge.js'):
         shutil.copyfile(ROOT / 'notebook' / name, output / 'notebooks' / name)
@@ -66,5 +82,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--lite', required=True)
     parser.add_argument('--output', required=True)
+    parser.add_argument('--web-dist', default=None,
+                        help='React shell build directory; omit to keep the legacy shell')
     args = parser.parse_args()
-    assemble(args.lite, args.output)
+    assemble(args.lite, args.output, args.web_dist)
