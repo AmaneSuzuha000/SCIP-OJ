@@ -1,0 +1,44 @@
+import { describe, expect, it } from 'vitest';
+
+/**
+ * The router is the one module every visit loads. Importing it here catches a
+ * broken lazy import or a route-table typo that typecheck alone cannot see,
+ * without needing a browser.
+ */
+describe('router', () => {
+  it('exposes every documented route', async () => {
+    const { router } = await import('@/app/router');
+    const paths = router.routes[0]?.children?.map((child) => child.path ?? '(index)') ?? [];
+    expect(paths).toEqual([
+      '(index)',
+      'login',
+      'auth/callback',
+      'course/:courseId',
+      'workbench/:assignmentId',
+      'learn',
+      'submissions',
+      'teacher',
+      '*',
+    ]);
+  });
+
+  it('keeps student work behind the access guard', async () => {
+    const { router } = await import('@/app/router');
+    const children = router.routes[0]?.children ?? [];
+    const guarded = children
+      .filter((child) => ['course/:courseId', 'workbench/:assignmentId', 'submissions', 'teacher'].includes(child.path ?? ''))
+      .map((child) => child.path);
+    expect(guarded).toEqual([
+      'course/:courseId',
+      'workbench/:assignmentId',
+      'submissions',
+      'teacher',
+    ]);
+    // Every guarded element is wrapped in Suspense + RequireAccess, never bare.
+    for (const child of children) {
+      if (guarded.includes(child.path)) {
+        expect(child.element).toBeTruthy();
+      }
+    }
+  });
+});

@@ -1,0 +1,102 @@
+/* Single source of truth for every visual constant.
+   Nothing in the app may hard-code a colour, radius, or spacing value. */
+:root {
+  --font-sans: "Inter", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 999px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --z-header: 40;
+  --z-overlay: 60;
+  --z-toast: 80;
+}
+
+/* Light theme */
+:root,
+[data-theme="light"] {
+  --bg-canvas: #f7f8fa;
+  --bg-surface: #ffffff;
+  --bg-raised: #ffffff;
+  --bg-muted: #eef1f5;
+  --bg-hover: #e8ecf2;
+
+  --border-subtle: #e3e7ee;
+  --border-strong: #c8d0dc;
+
+  --text-primary: #131a24;
+  --text-secondary: #4c5a6d;
+  --text-tertiary: #7a8798;
+  --text-inverse: #ffffff;
+
+  --brand-500: #2f6fed;
+  --brand-600: #1f57c9;
+  --brand-50: #eaf1fe;
+
+  --success-500: #17915c;
+  --success-50: #e6f6ee;
+  --warning-500: #b7791f;
+  --warning-50: #fdf4e3;
+  --danger-500: #cc3340;
+  --danger-50: #fdecee;
+
+  --shadow-sm: 0 1px 2px rgb(16 24 40 / 6%);
+  --shadow-md: 0 4px 16px rgb(16 24 40 / 8%);
+  --shadow-lg: 0 16px 48px rgb(16 24 40 / 12%);
+}
+
+/* Dark theme */
+[data-theme="dark"] {
+  --bg-canvas: #0d1117;
+  --bg-surface: #161b22;
+  --bg-raised: #1c232c;
+  --bg-muted: #21282f;
+  --bg-hover: #262d36;
+
+  --border-subtle: #2a323c;
+  --border-strong: #3d4753;
+
+  --text-primary: #e7edf4;
+  --text-secondary: #a9b6c6;
+  --text-tertiary: #76828f;
+  --text-inverse: #0d1117;
+
+  --brand-500: #5b8def;
+  --brand-600: #7aa5f5;
+  --brand-50: #16233a;
+
+  --success-500: #3fbf85;
+  --success-50: #10281c;
+  --warning-500: #d8a13a;
+  --warning-50: #2b2113;
+  --danger-500: #f26d7d;
+  --danger-50: #2d1519;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+  --shadow-md: 0 4px 16px rgb(0 0 0 / 45%);
+  --shadow-lg: 0 16px 48px rgb(0 0 0 / 55%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

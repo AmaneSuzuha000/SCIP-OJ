@@ -1,0 +1,51 @@
+@import "tailwindcss";
+@import "./tokens.css";
+
+@theme {
+  --color-canvas: var(--bg-canvas);
+  --color-surface: var(--bg-surface);
+  --color-raised: var(--bg-raised);
+  --color-muted: var(--bg-muted);
+  --color-hover: var(--bg-hover);
+  --color-subtle: var(--border-subtle);
+  --color-strong: var(--border-strong);
+  --color-primary: var(--text-primary);
+  --color-secondary: var(--text-secondary);
+  --color-tertiary: var(--text-tertiary);
+  --color-brand: var(--brand-500);
+  --color-brand-soft: var(--brand-50);
+  --color-success: var(--success-500);
+  --color-success-soft: var(--success-50);
+  --color-warning: var(--warning-500);
+  --color-warning-soft: var(--warning-50);
+  --color-danger: var(--danger-500);
+  --color-danger-soft: var(--danger-50);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+@layer base {
+  * {
+    border-color: var(--border-subtle);
+  }
+
+  html {
+    color-scheme: light dark;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg-canvas);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-synthesis-weight: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--brand-500);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+}
