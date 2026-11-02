@@ -2,12 +2,16 @@
 from __future__ import annotations
 import json
 import os
-import resource
 import subprocess
 import tempfile
 from pathlib import Path
 from typing import Any
 from judge.errors import SystemJudgeError
+
+try:  # POSIX only; grading actually runs on Linux containers.
+    import resource
+except ImportError:  # pragma: no cover - Windows development hosts
+    resource = None  # type: ignore[assignment]
 
 IMAGE = os.environ.get("SCIP_OJ_SANDBOX_IMAGE", "scip-oj-student:ci")
 RESULT_PREFIX = "SCIP_OJ_RESULT="
@@ -18,6 +22,8 @@ OUTPUT_LIMIT = 1 << 20
 def _limit_cli_output() -> None:
     # Limit file writes by the docker CLI (attached stdout/stderr), not only
     # the Python student process inside the container.
+    if resource is None:  # non-POSIX host: nothing to cap here
+        return
     resource.setrlimit(resource.RLIMIT_FSIZE, (OUTPUT_LIMIT, OUTPUT_LIMIT))
 
 

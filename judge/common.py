@@ -5,6 +5,73 @@ import math
 
 from typing import Any, Mapping, Sequence
 
+from judge.errors import JudgeConfigError
+
+
+# The objective direction belongs to the problem family, never to mutable
+# per-assignment metadata. A flipped sense must not be able to turn the worst
+# feasible solution into a full mark, so this mapping is authoritative and a
+# conflicting configuration raises instead of being silently trusted.
+SENSE_BY_GRADER: dict[str, str] = {
+    "knapsack": "maximize",
+    "assignment": "minimize",
+    "ie_des01": "minimize",
+}
+
+# Bump a grader version whenever its scoring logic changes, so a historical
+# report can never be mistaken for one produced by today's rules.
+GRADER_VERSION: dict[str, int] = {"knapsack": 1, "assignment": 1, "ie_des01": 1}
+
+
+def resolve_sense(grader: str, meta: Mapping[str, Any]) -> str:
+    """Return the pinned direction for a problem family, rejecting conflicts."""
+    try:
+        expected = SENSE_BY_GRADER[grader]
+    except KeyError as exc:
+        raise JudgeConfigError(f"未知的评分器类型: {grader!r}") from exc
+    configured = meta.get("sense")
+    if configured is not None and configured != expected:
+        raise JudgeConfigError(
+            f"sense 与题目族不一致: {grader} 必须是 {expected!r}，收到 {configured!r}"
+        )
+    return expected
+
+
+def validate_meta(grader: str, meta: Mapping[str, Any]) -> None:
+    """Reject an unusable problem configuration before any instance is graded.
+
+    Validating up front keeps a configuration fault from being reported once
+    per instance, and keeps it out of the per-instance handlers that are
+    reserved for genuinely bad student output.
+    """
+    resolve_sense(grader, meta)
+
+    # Each grader carries a built-in default weighting, so an absent weights
+    # block is legitimate. When one is supplied it must be internally sound.
+    weights = meta.get("weights")
+    if weights is not None:
+        if not isinstance(weights, Mapping):
+            raise JudgeConfigError(f"weights 必须是映射，收到 {type(weights).__name__}")
+        total = 0.0
+        for key, value in weights.items():
+            if not isinstance(value, (int, float)) or isinstance(value, bool):
+                raise JudgeConfigError(f"weights.{key} 必须是数值，收到 {value!r}")
+            if value < 0:
+                raise JudgeConfigError(f"weights.{key} 不能为负，收到 {value!r}")
+            total += float(value)
+        if abs(total - 100.0) > 1e-6:
+            raise JudgeConfigError(f"weights 合计必须为 100，当前为 {total:g}")
+
+    pass_score = meta.get("pass_score", 90)
+    if not isinstance(pass_score, (int, float)) or isinstance(pass_score, bool):
+        raise JudgeConfigError(f"pass_score 必须是数值，收到 {pass_score!r}")
+    if not 0 <= float(pass_score) <= 100:
+        raise JudgeConfigError(f"pass_score 必须在 0..100，收到 {pass_score!r}")
+
+    n = meta.get("n_instances_l1", 3)
+    if not isinstance(n, int) or isinstance(n, bool) or not 1 <= n <= 20:
+        raise JudgeConfigError(f"n_instances 必须是 1..20 的整数，收到 {n!r}")
+
 
 def check_format(result: Mapping[str, Any]) -> tuple[bool, str]:
     if not isinstance(result, Mapping):
@@ -63,6 +130,10 @@ def score_objective(
     """Return 0..35 raw objective points, scaled by O weight in each grader."""
     if not math.isfinite(obj) or not math.isfinite(opt):
         raise ValueError("objective 和 optimal_value 必须是有限数值")
+    if sense not in ("maximize", "minimize"):
+        # An unrecognised direction used to fall through to the minimize branch,
+        # silently rewarding the worst solution of a maximise problem.
+        raise ValueError(f"未知的 sense: {sense!r}")
     max_pts = 35
     if sense == "maximize":
         gap = (opt - obj) / max(1.0, abs(opt))
@@ -115,7 +186,7 @@ def grade_knapsack(result: Mapping[str, Any], instance: Mapping[str, Any], meta:
     pts, msg = score_objective(
         float(result["objective"]),
         float(instance["optimal_value"]),
-        meta.get("sense", "maximize"),
+        resolve_sense("knapsack", meta),
         meta.get("eps_obj", 1e-4),
     )
     # scale to configured O weight
@@ -362,7 +433,7 @@ def grade_assignment(result: Mapping[str, Any], instance: Mapping[str, Any], met
     pts, msg = score_objective(
         float(result["objective"]),
         float(instance["optimal_value"]),
-        meta.get("sense", "minimize"),
+        resolve_sense("assignment", meta),
         meta.get("eps_obj", 1e-4),
     )
     o_w = weights["O"]

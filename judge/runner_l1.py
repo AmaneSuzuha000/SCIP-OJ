@@ -8,10 +8,16 @@ import random
 from pathlib import Path
 from typing import Any, Callable
 
-from judge.common import average_scores, grade_assignment, grade_knapsack, grade_ie_des01
+from judge.common import (
+    average_scores,
+    grade_assignment,
+    grade_knapsack,
+    grade_ie_des01,
+    validate_meta,
+)
 
-
-from judge.errors import SystemJudgeError
+from judge.contract import contract_fingerprint, contract_view
+from judge.errors import JudgeConfigError, SystemJudgeError
 
 
 def load_solve(path: Path) -> Callable[[dict], dict]:
@@ -86,6 +92,13 @@ def run_l1(
     else:
         gen = gen_knapsack
         grade = grade_knapsack
+    try:
+        validate_meta(grader, meta)
+    except JudgeConfigError as exc:
+        return {"ok": False, "status": "system_error",
+                "error": "题目配置异常: " + str(exc)[:300],
+                "score": None, "passed": False,
+                "problem_id": pid, "layer": "L1"}
     n_inst = int(meta.get("n_instances_l1", 3))
     seed_base = int(meta.get("seed_base", 20261021))
     reports = []
@@ -122,4 +135,7 @@ def run_l1(
     out = average_scores(reports, int(meta.get("pass_score", 90)))
     out["problem_id"] = pid
     out["layer"] = "L1"
+    out["grader"] = grader
+    out["contract"] = contract_view(grader, meta)
+    out["contract_fingerprint"] = contract_fingerprint(grader, meta)
     return out

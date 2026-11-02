@@ -1,0 +1,734 @@
+{
+ "schema": 1,
+ "note": "Scores produced by the scoring layer only; container isolation is out of scope.",
+ "cases": [
+  {
+   "id": "P001:seed20261021:optimal",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "score": 100,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 45,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P001:seed20261021:greedy_ratio",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "score": 100,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 45,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P001:seed20261021:empty",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "score": 55,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P001:seed20261021:over_capacity",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "score": 10,
+    "breakdown": {
+     "F": 10,
+     "C": 0,
+     "I": 0,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P001:seed20261021:wrong_length",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "raised": "ValueError"
+   }
+  },
+  {
+   "id": "P001:seed20261021:fractional",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "score": 10,
+    "breakdown": {
+     "F": 10,
+     "C": 0,
+     "I": 0,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P001:seed20261021:non_finite",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "score": 0,
+    "breakdown": {
+     "F": 0,
+     "C": 0,
+     "I": 0,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P001:seed20261022:optimal",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "score": 100,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 45,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P001:seed20261022:greedy_ratio",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "score": 100,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 45,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P001:seed20261022:empty",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "score": 55,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P001:seed20261022:over_capacity",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "score": 10,
+    "breakdown": {
+     "F": 10,
+     "C": 0,
+     "I": 0,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P001:seed20261022:wrong_length",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "raised": "ValueError"
+   }
+  },
+  {
+   "id": "P001:seed20261022:fractional",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "score": 10,
+    "breakdown": {
+     "F": 10,
+     "C": 0,
+     "I": 0,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P001:seed20261022:non_finite",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "score": 0,
+    "breakdown": {
+     "F": 0,
+     "C": 0,
+     "I": 0,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P001:seed20261023:optimal",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "score": 100,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 45,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P001:seed20261023:greedy_ratio",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "score": 100,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 45,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P001:seed20261023:empty",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "score": 55,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P001:seed20261023:over_capacity",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "score": 10,
+    "breakdown": {
+     "F": 10,
+     "C": 0,
+     "I": 0,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P001:seed20261023:wrong_length",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "raised": "ValueError"
+   }
+  },
+  {
+   "id": "P001:seed20261023:fractional",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "score": 10,
+    "breakdown": {
+     "F": 10,
+     "C": 0,
+     "I": 0,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P001:seed20261023:non_finite",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "score": 0,
+    "breakdown": {
+     "F": 0,
+     "C": 0,
+     "I": 0,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P001:seed20261024:optimal",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "score": 100,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 45,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P001:seed20261024:greedy_ratio",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "score": 100,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 45,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P001:seed20261024:empty",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "score": 55,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P001:seed20261024:over_capacity",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "score": 10,
+    "breakdown": {
+     "F": 10,
+     "C": 0,
+     "I": 0,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P001:seed20261024:wrong_length",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "raised": "ValueError"
+   }
+  },
+  {
+   "id": "P001:seed20261024:fractional",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "score": 10,
+    "breakdown": {
+     "F": 10,
+     "C": 0,
+     "I": 0,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P001:seed20261024:non_finite",
+   "contract_fingerprint": "0a190d5462c0254e571e6b9f8242cec69fe7fce99d8ada563122221ea35c67cf",
+   "observed": {
+    "score": 0,
+    "breakdown": {
+     "F": 0,
+     "C": 0,
+     "I": 0,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P002:seed20261022:optimal",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "score": 100,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 45,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P002:seed20261022:identity",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "score": 55,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P002:seed20261022:reversed",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "score": 55,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P002:seed20261022:greedy_row",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "score": 100,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 45,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P002:seed20261022:wrong_shape",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "raised": "ValueError"
+   }
+  },
+  {
+   "id": "P002:seed20261022:duplicate_column",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "score": 10,
+    "breakdown": {
+     "F": 10,
+     "C": 0,
+     "I": 0,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P002:seed20261022:non_finite",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "score": 0,
+    "breakdown": {
+     "F": 0,
+     "C": 0,
+     "I": 0,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P002:seed20261023:optimal",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "score": 100,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 45,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P002:seed20261023:identity",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "score": 55,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P002:seed20261023:reversed",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "score": 55,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P002:seed20261023:greedy_row",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "score": 55,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P002:seed20261023:wrong_shape",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "raised": "ValueError"
+   }
+  },
+  {
+   "id": "P002:seed20261023:duplicate_column",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "score": 10,
+    "breakdown": {
+     "F": 10,
+     "C": 0,
+     "I": 0,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P002:seed20261023:non_finite",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "score": 0,
+    "breakdown": {
+     "F": 0,
+     "C": 0,
+     "I": 0,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P002:seed20261024:optimal",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "score": 100,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 45,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P002:seed20261024:identity",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "score": 55,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P002:seed20261024:reversed",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "score": 55,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P002:seed20261024:greedy_row",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "score": 65,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 10,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P002:seed20261024:wrong_shape",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "raised": "ValueError"
+   }
+  },
+  {
+   "id": "P002:seed20261024:duplicate_column",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "score": 10,
+    "breakdown": {
+     "F": 10,
+     "C": 0,
+     "I": 0,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P002:seed20261024:non_finite",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "score": 0,
+    "breakdown": {
+     "F": 0,
+     "C": 0,
+     "I": 0,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P002:seed20261025:optimal",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "score": 100,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 45,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P002:seed20261025:identity",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "score": 55,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P002:seed20261025:reversed",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "score": 55,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P002:seed20261025:greedy_row",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "score": 100,
+    "breakdown": {
+     "F": 10,
+     "C": 35,
+     "I": 10,
+     "O": 45,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P002:seed20261025:wrong_shape",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "raised": "ValueError"
+   }
+  },
+  {
+   "id": "P002:seed20261025:duplicate_column",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "score": 10,
+    "breakdown": {
+     "F": 10,
+     "C": 0,
+     "I": 0,
+     "O": 0,
+     "R": 0
+    }
+   }
+  },
+  {
+   "id": "P002:seed20261025:non_finite",
+   "contract_fingerprint": "442999e21b235d83a338bfd4cb418dce6ba88a5e9f536a86a0e0908338f16483",
+   "observed": {
+    "score": 0,
+    "breakdown": {
+     "F": 0,
+     "C": 0,
+     "I": 0,
+     "O": 0,
+     "R": 0
+    }
+   }
+  }
+ ]
+}
