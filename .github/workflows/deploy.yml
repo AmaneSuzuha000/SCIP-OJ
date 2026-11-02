@@ -44,6 +44,10 @@ jobs:
 
       - name: Build React shell (optional cutover)
         if: vars.WEB_SHELL == 'react'
+        env:
+          # A project page is served from /<repo>/, so the bundle and the
+          # injected config.js must be requested under that prefix.
+          VITE_BASE: ${{ format('/{0}/', github.event.repository.name) }}
         run: npm --prefix web ci && npm --prefix web run build
 
       - name: Assemble course portal and notebook runtime
