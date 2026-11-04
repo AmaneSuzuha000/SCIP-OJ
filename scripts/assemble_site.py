@@ -10,10 +10,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
+# Only the documents that describe the site as it is. The teacher guide, the
+# exam-roster handbook and the authoring guide described the retired portal, and
+# the grading protocol contradicted the shipping grader.
 PUBLIC_DOCS = (
-    '学生指南.md', '教师指南.md', '出题指南.md', '拓展学习指南.md',
-    '教师手册-考试花名册核验.md', 'IE_DES_01_精品案例实验指导书.md',
-    '课程实验与评价规范.md', '判分协议-已冻结.md', '课程学习路径.md',
+    '学生指南.md', '拓展学习指南.md', 'IE_DES_01_精品案例实验指导书.md',
+    '课程实验与评价规范.md', '课程学习路径.md',
 )
 
 

@@ -56,24 +56,53 @@ export async function rotateInviteCode(courseId: string, next: string | null): P
  * appears in roster_verifications and not in the pending list; without the
  * second read the table would silently drop everyone already checked.
  */
-export async function listRoster(courseId: string): Promise<RosterEntry[]> {
-  const client = supabase();
-  const [roster, verified] = await Promise.all([
-    client
+const ROSTER_PAGE = 500;
+
+/**
+ * A PostgREST select stops at 1000 rows without saying so. A class roster can
+ * exceed that, and the teacher's export is the gradebook of record, so page
+ * until a short page comes back rather than trusting the default limit.
+ *
+ * The page reader is a parameter so the loop can be tested without a client.
+ */
+export async function readAllPages<T>(
+  fetchPage: (from: number, to: number) => Promise<T[]>,
+  pageSize = ROSTER_PAGE,
+): Promise<T[]> {
+  const rows: T[] = [];
+  for (let from = 0; ; from += pageSize) {
+    const page = await fetchPage(from, from + pageSize - 1);
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
+async function readAllRoster(courseId: string): Promise<RosterRow[]> {
+  return readAllPages<RosterRow>(async (from, to) => {
+    const { data, error } = await supabase()
       .from('roster_pending')
       .select('id,student_no,display_name,github_login,status,matched_user_id')
       .eq('course_id', courseId)
-      .order('student_no', { ascending: true }),
+      .order('student_no', { ascending: true })
+      .range(from, to);
+    if (error) throw new Error(error.message);
+    return (data ?? []) as RosterRow[];
+  });
+}
+
+export async function listRoster(courseId: string): Promise<RosterEntry[]> {
+  const client = supabase();
+  const [roster, verified] = await Promise.all([
+    readAllRoster(courseId),
     client.rpc('get_course_verified_roster', { p_course_id: courseId }),
   ]);
-  if (roster.error) throw new Error(roster.error.message);
   if (verified.error) throw new Error(verified.error.message);
 
   const stamps = new Map<string, string>();
   for (const row of (verified.data ?? []) as { roster_id: string; verified_at: string }[]) {
     stamps.set(row.roster_id, row.verified_at);
   }
-  return ((roster.data ?? []) as RosterRow[]).map((row) => ({
+  return roster.map((row) => ({
     rosterId: row.id,
     studentNo: row.student_no,
     displayName: row.display_name,

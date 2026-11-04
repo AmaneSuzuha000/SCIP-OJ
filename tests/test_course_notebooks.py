@@ -65,15 +65,19 @@ class CourseNotebookTests(unittest.TestCase):
                 self.assertIn("练习用，不计正式成绩。", docs)
                 self.assertGreater(len(nb["cells"]), 5)
 
-    def test_published_lessons_exist_without_courseware_binaries(self):
-        for name in [
-            "docs/课程学习路径.md",
-            "docs/lessons/01-建模与SCIP入门.md",
-            "docs/lessons/02-经典组合优化应用.md",
-            "docs/lessons/03-路径与调度.md",
+    def test_published_docs_exist_without_courseware_binaries(self):
+        # docs/lessons/ held three hand-written lessons that only ever linked to
+        # the retired portal (doc.html?path=..., index.html#notebook/...). They
+        # are gone; what remains has to describe the site that exists.
+        # Each guide has to be explicit about the practice/graded boundary, but
+        # they are written by different hands and do not share a sentence.
+        for name, boundary in [
+            ("docs/课程学习路径.md", "不计入正式成绩"),
+            ("docs/学生指南.md", "不计成绩"),
+            ("docs/拓展学习指南.md", "不计入正式成绩"),
         ]:
             text = (ROOT / name).read_text(encoding="utf-8")
-            self.assertIn("不计入正式成绩", text)
+            self.assertIn(boundary, text)
             self.assertGreater(len(text), 200)
         banned = []
         for path in ROOT.rglob("*"):
@@ -92,8 +96,15 @@ class CourseNotebookTests(unittest.TestCase):
             text = path.read_text(encoding="utf-8")
             for name in retired:
                 self.assertNotIn(name, text, path.name + " still links to " + name)
-        self.assertTrue((ROOT / "site" / "official-examples.html").is_file())
         self.assertTrue((ROOT / "docs/课程实验与评价规范.md").is_file())
+        # The portal pages are retired and 404 live. Guard the removal rather
+        # than assert the files exist: a doc that links to them would be a dead
+        # end for a student who followed it.
+        for retired_page in ("doc.html", "teacher.html", "official-examples.html"):
+            self.assertFalse(
+                (ROOT / "site" / retired_page).is_file(),
+                retired_page + " was retired but is still in the tree",
+            )
 
 
 if __name__ == "__main__":

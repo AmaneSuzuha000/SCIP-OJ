@@ -90,9 +90,7 @@ SCIP-OJ 采用**双轨制**，兼顾轻量免配置练习与可信正式成绩�
 ## 功能与文档导航
 
 - **学生使用指南**：[docs/学生指南.md](docs/学生指南.md)
-- **教师与助教指南**：[docs/教师指南.md](docs/教师指南.md)
-- **出题指南（教师）**：[docs/出题指南.md](docs/出题指南.md)
-- **判分协议**：[docs/判分协议-已冻结.md](docs/判分协议-已冻结.md)
+- **IE-DES-01 实验指导书**：[docs/IE_DES_01_精品案例实验指导书.md](docs/IE_DES_01_精品案例实验指导书.md)
 - **JupyterLab 示例 Notebook**：
   - `content/01_P001_knapsack_PySCIPOpt.ipynb`（背包问题 MIP 建模）
   - `content/02_P002_assignment_PySCIPOpt.ipynb`（指派问题 MIP 建模）
@@ -158,7 +156,7 @@ npm run test:grading
 
 `npm test` 自动发现全部单元回归；浏览器测试依赖和公式渲染器版本由 lockfile 固定。数据库测试执行仓库的真实迁移、事务失败注入、权限与恢复场景。本地使用嵌入式 PostgreSQL；CI 使用 PostgreSQL 17 多个独立连接检查并发。隔离 Docker 和完整 JupyterLite / PySCIPOpt 浏览器测试在 CI 单独运行；这些检查不能替代隔离测试课程中的真实师生验收。
 
-`docs/` 只保留课程指南、实验规范和判分协议。相似度人工审查工具位于 `scripts/audit_similarity.py`。
+`docs/` 只保留仍然准确的课程指南与实验规范。描述已下线界面的文档一律删除，而不是留着等人照做出错。相似度人工审查工具位于 `scripts/audit_similarity.py`。
 
 ## 应用结构
 

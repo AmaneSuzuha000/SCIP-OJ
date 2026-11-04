@@ -17,7 +17,7 @@ export function DocsPage() {
         <Badge tone="brand">课程文档</Badge>
         <h1 className="text-3xl font-semibold tracking-tight text-primary">指南与规范</h1>
         <p className="max-w-2xl text-sm leading-relaxed text-secondary">
-          学生、教师和出题各自需要知道的东西都在这里。判分口径以《判分协议》和《课程实验与评价规范》为准。
+          学生需要知道的流程与规范都在这里。判分口径以《课程实验与评价规范》为准。
         </p>
       </section>
 

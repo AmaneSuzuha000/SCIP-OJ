@@ -50,12 +50,9 @@ assert(events.every((j, i) => j.arrival >= 0 &&
 const single = core.simulate(events, 1, 60, 480);
 assert(single.avgWait >= 0 && single.meanQueue >= 0 && single.meanWip >= single.meanQueue);
 
-const page = fs.readFileSync("site/case-studio.html", "utf8");
-assert(page.includes("js/simulation-core.js"));
-assert(page.includes("js/case-studio.js"));
-assert(page.includes("export-json-button"), "Verifiable JSON must be exposed in the course UI");
-assert(page.includes("python -m judge.ie_des01_reference"), "Teacher replay instructions missing");
-assert(page.includes("本地计算"));
-assert(page.includes("不是正式课程成绩"));
-assert(!page.includes("service_role"));
-console.log("IE simulation case statistical, reproducibility, and page contracts passed");
+// The page contracts that used to be checked here -- that case-studio.html
+// loaded this core, exposed export-json-button and printed the replay command --
+// went with the page. The statistics above are the part that still has a
+// subject: simulation-core.js is what the Python reference implementation is
+// checked against, so it keeps its tests even though nothing renders it now.
+console.log("IE simulation case statistical and reproducibility contracts passed");

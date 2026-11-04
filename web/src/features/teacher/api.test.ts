@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseRosterCsv } from '@/features/teacher/api';
+import { parseRosterCsv, readAllPages } from '@/features/teacher/api';
 
 /**
  * The roster import is the one place a teacher pastes text they did not
@@ -35,5 +35,41 @@ describe('roster CSV', () => {
   it('returns nothing for empty input', () => {
     expect(parseRosterCsv('')).toEqual([]);
     expect(parseRosterCsv('\n\n')).toEqual([]);
+  });
+});
+
+/**
+ * PostgREST caps a select at 1000 rows and says nothing about it. The roster
+ * feeds the gradebook export, so a class larger than the cap must not lose its
+ * tail silently.
+ */
+describe('roster paging', () => {
+  it('keeps reading until a short page comes back', async () => {
+    const all = Array.from({ length: 1251 }, (_, id) => ({ id }));
+    const seen: [number, number][] = [];
+    const rows = await readAllPages(async (from, to) => {
+      seen.push([from, to]);
+      return all.slice(from, to + 1);
+    }, 500);
+    expect(rows).toHaveLength(1251);
+    expect(seen).toEqual([
+      [0, 499],
+      [500, 999],
+      [1000, 1499],
+    ]);
+  });
+
+  it('stops on the first short page instead of asking for another', async () => {
+    let calls = 0;
+    const rows = await readAllPages(async () => {
+      calls += 1;
+      return [{ id: 1 }];
+    }, 500);
+    expect(rows).toEqual([{ id: 1 }]);
+    expect(calls).toBe(1);
+  });
+
+  it('returns empty for an empty roster', async () => {
+    expect(await readAllPages(async () => [])).toEqual([]);
   });
 });

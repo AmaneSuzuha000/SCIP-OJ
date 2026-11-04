@@ -31,7 +31,13 @@ function AuthBootstrap() {
         return;
       }
 
+      // Sign-out and switching accounts both fire onAuthStateChange. Two syncs
+      // can then be in flight at once, and the earlier one can resolve last --
+      // writing the previous account's profile and admission verdict over the
+      // new session. Each sync takes a ticket and only the newest may write.
+      let generation = 0;
       const sync = async (session: Awaited<ReturnType<typeof client.auth.getSession>>['data']['session']) => {
+        const ticket = ++generation;
         if (cancelled) return;
         setSession(session);
         if (!session) {
@@ -48,7 +54,7 @@ function AuthBootstrap() {
             .eq('user_id', session.user.id)
             .maybeSingle(),
         ]);
-        if (cancelled) return;
+        if (cancelled || ticket !== generation) return;
         setProfile((profile as Profile | null) ?? null);
         setAccess(allowed === true ? 'granted' : 'denied');
       };

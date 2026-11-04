@@ -23,24 +23,22 @@ jobs:
       - run: npm ci
       - name: Complete Python and JavaScript unit regressions
         run: npm test
-      - name: Check frontend JavaScript syntax
+      - name: Check the models the grader still uses
         run: |
-          node --check .portal-build/js/app.js
-          node --check site/js/spaces.js
+          # Only the pure-logic cores survive the portal removal: the judge's
+          # Python reference is checked against simulation-core, and the two
+          # lab models are still asserted by test_ie_case_extensions.
           node --check site/js/simulation-core.js
           node --check site/js/inventory-core.js
           node --check site/js/flow-core.js
-          node --check site/js/teaching-labs.js
-          node --check site/js/case-studio.js
-          node --check site/js/python_runtime.js
-          node --check .portal-build/js/teacher.js
-          node --check .portal-build/js/platform.js
           node --check site/js/grading-state.js
           node --check site/js/grading-api.js
           node --check site/js/request-keys.js
-          node --check site/js/editor.js
-          node --check site/js/exam-integrity.js
-          node --check .portal-build/js/teacher.js
+      - name: Type-check and test the frontend
+        run: |
+          npm --prefix web ci
+          npm --prefix web run typecheck
+          npm --prefix web run test
 
   grading-database:
     runs-on: ubuntu-latest

@@ -85,23 +85,17 @@ assert(Math.abs(qr.alternative.avgWait/theoryB-1)<.20,"M/M/3 Monte Carlo and ana
 assert(Math.abs(qr.baseline.meanWip-qr.baseline.meanQueue-qr.baseline.utilization*2)<1e-8,
   "Time-average WIP must equal queue plus in-service jobs");
 
-for(const [name,js,html,app] of [
- ["inventory","site/js/inventory-core.js","site/inventory-lab.html","root.IEInventory"],
- ["flow","site/js/flow-core.js","site/flow-lab.html","root.IEFlow"]
-]){
- const doc=fs.readFileSync(html,"utf8");
- assert(doc.includes(js.replace("site/","")),name+" model script missing");
- assert(doc.includes('data-lab="'+name+'"'));
- assert(doc.includes("js/teaching-labs.js"));
- assert(doc.includes("非正式课程成绩"));
- assert(!doc.includes("service_role"));
- const script=fs.readFileSync(js,"utf8");assert(script.includes(app));
+// The lab pages these models used to power (inventory-lab, flow-lab,
+// case-studio, official-examples) are retired, so their DOM contracts are gone
+// with them. The models themselves remain: judge/ie_des01_reference.py checks
+// its Python reimplementation against these exact files, which is why the
+// statistical assertions above stay.
+for (const [name, js, app] of [
+  ["inventory", "site/js/inventory-core.js", "root.IEInventory"],
+  ["flow", "site/js/flow-core.js", "root.IEFlow"],
+]) {
+  const script = fs.readFileSync(js, "utf8");
+  assert(script.includes(app), name + " model must still export its namespace");
+  assert(!script.includes("service_role"), name + " model must not carry credentials");
 }
-const external=fs.readFileSync("site/official-examples.html","utf8");
-assert(external.includes("scipopt/PySCIPOpt"));
-assert(external.includes("Gurobi/modeling-examples"));
-assert(external.includes("noopener noreferrer"));
-assert(fs.readFileSync("site/case-studio.html","utf8").includes("inventory-lab.html"));
-assert(fs.readFileSync("site/case-studio.html","utf8").includes("flow-lab.html"));
-assert(fs.readFileSync("site/index.html","utf8").includes("official-examples.html"));
-console.log("IE inventory, flow-line, Erlang-C, invariants, references and page contracts passed");
+console.log("IE inventory, flow-line, Erlang-C and invariant contracts passed");

@@ -15,16 +15,18 @@ const OUT = resolve(ROOT, 'web/src/features/docs/documents.ts');
 
 // Same list the deploy uses, so the reader never shows something the build
 // would refuse to publish, and never hides something it does.
+//
+// Four documents were removed: the teacher guide, the exam-roster handbook and
+// the authoring guide all described the retired portal (its /teacher.html, its
+// tabs, its buttons), and the grading protocol still said "L1 only, L2 later"
+// long after container grading shipped. Publishing instructions for screens
+// that no longer exist is worse than publishing nothing.
 const DOCUMENTS = [
   { id: 'student-guide', file: '学生指南.md', group: 'student' },
   { id: 'learning-path', file: '课程学习路径.md', group: 'student' },
   { id: 'extended-guide', file: '拓展学习指南.md', group: 'student' },
   { id: 'grading-rules', file: '课程实验与评价规范.md', group: 'student' },
-  { id: 'teacher-guide', file: '教师指南.md', group: 'teacher' },
-  { id: 'roster-verification', file: '教师手册-考试花名册核验.md', group: 'teacher' },
-  { id: 'authoring-guide', file: '出题指南.md', group: 'teacher' },
   { id: 'ie-des-01', file: 'IE_DES_01_精品案例实验指导书.md', group: 'case' },
-  { id: 'grading-protocol', file: '判分协议-已冻结.md', group: 'case' },
 ];
 
 /** The card shows plain text, so inline markdown must not leak into it. */

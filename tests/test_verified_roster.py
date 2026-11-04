@@ -1,4 +1,3 @@
-from source_files import component_source
 """Supervised submission requires teacher-verified, not self-claimed, identity."""
 from pathlib import Path
 import unittest
@@ -19,11 +18,17 @@ class VerifiedRosterTests(unittest.TestCase):
         self.assertNotIn('.from("submissions").insert',edge)
         self.assertLess(sql.index('public.is_verified_course_student(a.course_id,p_user_id)'),
                         sql.index('INSERT INTO public.submissions'))
-    def test_teacher_button_not_auto_verified(self):
-        teacher=component_source('teacher')
-        self.assertIn("学号已匹配（未必已核验）",teacher)
-        self.assertIn("confirmRosterIdentity",teacher)
-        self.assertIn("教师已核验",teacher)
+    def test_teacher_console_keeps_matched_and_verified_apart(self):
+        # Claiming a roster row and being verified by a teacher are different
+        # states, and collapsing them would let a student who typed a matching
+        # number past the exam gate. The assertion follows the React console
+        # now that site/src/teacher is gone.
+        ts = (ROOT / "web/src/routes/TeacherPage.tsx").read_text()
+        self.assertIn("已认领", ts)
+        self.assertIn("待绑定", ts)
+        self.assertIn("已核验", ts)
+        self.assertIn("未核验", ts)
+        self.assertIn("confirmIdentity", ts)
 
 if __name__ == "__main__":
     unittest.main()
