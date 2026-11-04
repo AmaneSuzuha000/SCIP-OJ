@@ -67,11 +67,26 @@ export function HomePage() {
         )}
       </section>
 
+      {/* What the site actually contains. A visitor who is not logged in --
+          a prospective student, or someone checking the course exists -- was
+          otherwise shown a login prompt and nothing else. */}
       <section className="grid gap-4 sm:grid-cols-3">
         {[
-          { to: '/submissions', title: '提交记录', desc: '每次评测的状态与得分' },
-          { to: '/learn', title: '拓展学习', desc: '离散事件仿真与 SCIP 示例' },
-          { to: '/teacher', title: '教师控制台', desc: '花名册、作业发布与复判' },
+          {
+            to: '/learn',
+            title: '拓展学习',
+            desc: 'PySCIPOpt 建模案例，浏览器内直接运行，无需安装环境',
+          },
+          {
+            to: '/docs',
+            title: '课程文档',
+            desc: '学生、教师与判分口径的指南和规范',
+          },
+          {
+            to: session ? '/submissions' : '/login',
+            title: '提交记录',
+            desc: '每次评测的状态与得分',
+          },
         ].map((item) => (
           <Link key={item.to} to={item.to} className="group">
             <Card className="h-full p-5 transition-shadow group-hover:shadow-[var(--shadow-md)]">
