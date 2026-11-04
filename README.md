@@ -1,19 +1,27 @@
 # SCIP-OJ
 
-工业工程《系统建模与仿真》平台，按用途分为 **课程教学** 与 **拓展学习** 两个独立区域。默认进入课程教学。
+工业工程《系统建模与仿真》平台。前端是一个单页应用，按用途分为 **课程教学** 与 **拓展学习** 两个区域，默认进入课程教学。
 
-- **课程教学**：班级、P001/P002 配套建模实验、编程作业、正式提交、成绩记录和教师管理。入口：`index.html#course`。
-- **拓展学习**：开放仿真案例、SCIP/Gurobi 官方示例与进阶 Notebook。入口：`index.html#learn`。
-- **课程学习路径**：[docs/课程学习路径.md](docs/课程学习路径.md)。登录后从 `doc.html?path=docs/课程学习路径.md` 打开。
+https://amanesuzuha000.github.io/SCIP-OJ/
 
-- **精品案例总览 / 排队仿真**：https://AmaneSuzuha000.github.io/SCIP-OJ/case-studio.html
-- **随机库存仿真**：https://AmaneSuzuha000.github.io/SCIP-OJ/inventory-lab.html
-- **双工序生产线仿真**：https://AmaneSuzuha000.github.io/SCIP-OJ/flow-lab.html
-- **Gurobi / SCIP 官方示例导航**：https://AmaneSuzuha000.github.io/SCIP-OJ/official-examples.html
-- **OJ 站点（力扣壳）**：https://AmaneSuzuha000.github.io/SCIP-OJ/
-- **教师控制台**：https://AmaneSuzuha000.github.io/SCIP-OJ/teacher.html
-- **JupyterLab (PySCIPOpt)**：https://AmaneSuzuha000.github.io/SCIP-OJ/lab/index.html
-- **REPL 入口**：https://AmaneSuzuha000.github.io/SCIP-OJ/repl/index.html
+- **课程教学**：班级、作业、正式提交、成绩记录和教师管理。
+- **拓展学习**：11 个 PySCIPOpt 建模案例，浏览器内直接运行，无需安装环境。
+- **课程学习路径**：[docs/课程学习路径.md](docs/课程学习路径.md)。
+
+## 运行
+
+```bash
+npm --prefix web ci
+npm --prefix web run dev
+```
+
+构建产物由 `scripts/assemble_site.py` 拼装成 Pages 静态站点：应用外壳、`docs/` 白名单、`problems/` 和 Pyodide 运行时。
+
+## 浏览器内核
+
+拓展学习里的 Python 直接在页面内运行：Pyodide 启动 CPython，通过 SciPy 的 HiGHS 求解；`pyscipopt` 由 `web/public/runtime/pyscipopt.py` 提供兼容层。
+
+**浏览器里的求解只用于练习，不计成绩。**正式评测在隔离容器中用原生 PySCIPOpt 重新求解。
 
 ---
 

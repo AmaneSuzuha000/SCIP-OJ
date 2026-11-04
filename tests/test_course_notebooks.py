@@ -84,9 +84,15 @@ class CourseNotebookTests(unittest.TestCase):
         self.assertEqual(banned, [])
 
     def test_all_case_links_exist(self):
-        for name in ["case-studio.html", "inventory-lab.html",
-                     "flow-lab.html", "official-examples.html"]:
-            self.assertTrue((ROOT / "site" / name).is_file())
+        # The simulation labs were retired; the notebooks now carry that material
+        # themselves, so what remains to guard is that no notebook still links to
+        # a page that is gone.
+        retired = ("case-studio.html", "inventory-lab.html", "flow-lab.html")
+        for path in (ROOT / "content").glob("*.ipynb"):
+            text = path.read_text(encoding="utf-8")
+            for name in retired:
+                self.assertNotIn(name, text, path.name + " still links to " + name)
+        self.assertTrue((ROOT / "site" / "official-examples.html").is_file())
         self.assertTrue((ROOT / "docs/课程实验与评价规范.md").is_file())
 
 

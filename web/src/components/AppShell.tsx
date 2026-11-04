@@ -8,6 +8,7 @@ const NAV = [
   { to: '/', label: '课程教学', end: true },
   { to: '/learn', label: '拓展学习', end: false },
   { to: '/submissions', label: '提交记录', end: false },
+  { to: '/docs', label: '课程文档', end: false },
   { to: '/teacher', label: '教师控制台', end: false },
 ];
 

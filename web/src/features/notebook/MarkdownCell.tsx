@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react';
 
 /**
- * Renders one markdown cell.
+ * Renders course markdown.
  *
- * The course notebooks use a narrow subset -- headings, lists, bold, inline
- * code, links, paragraphs -- and are authored by us, so this handles exactly
- * that rather than pulling in a parser and its sanitiser. Anything it does not
- * recognise is shown as plain text, never interpreted as HTML.
+ * The course material uses a narrow subset: headings, bullet and numbered
+ * lists, bold, inline code, links, block quotes, fenced code and tables. This
+ * handles exactly that rather than pulling in a parser and its sanitiser;
+ * anything it does not recognise is shown as text, never interpreted as HTML.
  */
 
 type Token =
@@ -19,9 +19,9 @@ type Token =
  * Link targets are authored by us, but an href is still a script-injection
  * surface, so only absolute http(s) URLs and relative paths survive.
  *
- * Relative paths matter: the notebooks link to the simulation labs as
- * ../case-studio.html, which resolves correctly against /learn/<id> and keeps
- * working under the /<repo>/ deployment prefix.
+ * Relative paths matter: the notebooks link to docs as ../case-studio.html,
+ * which resolves correctly against /learn/<id> and keeps working under the
+ * /<repo>/ deployment prefix.
  */
 function safeHref(href: string): string | null {
   if (/^https?:\/\/[^\s]+$/.test(href)) return href;
@@ -65,7 +65,7 @@ function inline(text: string, keyPrefix: string): ReactNode[] {
     const key = keyPrefix + '-' + index;
     switch (token.kind) {
       case 'bold':
-        return <strong key={key}>{token.text}</strong>;
+        return <strong key={key} className="font-semibold text-primary">{token.text}</strong>;
       case 'code':
         return (
           <code key={key} className="rounded bg-muted px-1 py-0.5 font-mono text-[0.9em] text-secondary">
@@ -88,6 +88,44 @@ function inline(text: string, keyPrefix: string): ReactNode[] {
         return token.text;
     }
   });
+}
+
+/** A run of table rows, kept together so the header can be separated. */
+function renderTable(rows: string[], key: string) {
+  const cells = (line: string) =>
+    line
+      .replace(/^\s*\|/, '')
+      .replace(/\|\s*$/, '')
+      .split('|')
+      .map((cell) => cell.trim());
+  const header = cells(rows[0] ?? '');
+  const body = rows.slice(1).filter((line) => !/^\s*\|?[\s:|-]+\|?\s*$/.test(line));
+  return (
+    <div key={key} className="overflow-x-auto rounded-md border border-subtle">
+      <table className="w-full border-collapse text-sm">
+        <thead>
+          <tr className="bg-muted">
+            {header.map((cell, index) => (
+              <th key={index} className="border-b border-subtle px-3 py-2 text-left font-medium text-primary">
+                {inline(cell, key + '-h-' + index)}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {body.map((line, rowIndex) => (
+            <tr key={rowIndex} className="border-b border-subtle last:border-0">
+              {cells(line).map((cell, cellIndex) => (
+                <td key={cellIndex} className="px-3 py-2 align-top text-secondary">
+                  {inline(cell, key + '-' + rowIndex + '-' + cellIndex)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 export function MarkdownCell({ source }: { source: string }) {
@@ -113,27 +151,71 @@ export function MarkdownCell({ source }: { source: string }) {
     list = [];
   };
 
-  source.split('\n').forEach((raw, index) => {
-    const line = raw.replace(/\s+$/, '');
+  const lines = source.split('\n');
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = (lines[index] ?? '').replace(/\s+$/, '');
+
+    // A fenced block swallows everything up to its closing fence, so the
+    // content inside is never treated as markdown.
+    const fence = /^\s*\`\`\`/.exec(line);
+    if (fence) {
+      flushList();
+      const body: string[] = [];
+      index += 1;
+      while (index < lines.length && !/^\s*\`\`\`/.test(lines[index] ?? '')) {
+        body.push(lines[index] ?? '');
+        index += 1;
+      }
+      blocks.push(
+        <pre key={'pre-' + index} className="overflow-x-auto rounded-md bg-muted p-3 text-xs leading-relaxed text-secondary">
+          <code className="font-mono">{body.join('\n')}</code>
+        </pre>,
+      );
+      continue;
+    }
+
+    // Consecutive pipe rows form one table.
+    if (/^\s*\|.*\|\s*$/.test(line)) {
+      flushList();
+      const rows: string[] = [];
+      while (index < lines.length && /^\s*\|.*\|\s*$/.test(lines[index] ?? '')) {
+        rows.push(lines[index] ?? '');
+        index += 1;
+      }
+      index -= 1;
+      blocks.push(renderTable(rows, 'tbl-' + index));
+      continue;
+    }
+
     if (!line.trim()) {
       flushList();
-      return;
+      continue;
     }
     const heading = /^(#{1,4})\s+(.*)$/.exec(line);
     if (heading) {
       flushList();
       const level = (heading[1] ?? '#').length;
-      const sizes = ['text-lg', 'text-base', 'text-sm', 'text-sm'] as const;
+      const sizes = ['text-xl', 'text-base', 'text-sm', 'text-sm'] as const;
       const size = sizes[Math.min(level, 4) - 1] ?? 'text-sm';
       blocks.push(
         <p
           key={'h-' + index}
-          className={size + ' font-semibold text-primary ' + (level <= 2 ? 'mt-1' : 'mt-2')}
+          className={size + ' font-semibold text-primary ' + (level <= 2 ? 'mt-2' : 'mt-3')}
         >
           {inline(heading[2] ?? '', 'h-' + index)}
         </p>,
       );
-      return;
+      continue;
+    }
+    const quote = /^\s*>\s?(.*)$/.exec(line);
+    if (quote) {
+      flushList();
+      blocks.push(
+        <blockquote key={'q-' + index} className="border-l-2 border-brand pl-3 text-sm text-secondary">
+          {inline(quote[1] ?? '', 'q-' + index)}
+        </blockquote>,
+      );
+      continue;
     }
     const bullet = /^\s*[-*]\s+(.*)$/.exec(line);
     const numbered = /^\s*\d+[.)]\s+(.*)$/.exec(line);
@@ -142,7 +224,7 @@ export function MarkdownCell({ source }: { source: string }) {
       if (list.length > 0 && ordered !== isOrdered) flushList();
       ordered = isOrdered;
       list.push((numbered ?? bullet)?.[1] ?? '');
-      return;
+      continue;
     }
     flushList();
     blocks.push(
@@ -150,7 +232,7 @@ export function MarkdownCell({ source }: { source: string }) {
         {inline(line, 'p-' + index)}
       </p>,
     );
-  });
+  }
   flushList();
 
   return <div className="flex flex-col gap-2">{blocks}</div>;

@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Badge, Button, Card, EmptyState, Spinner } from '@/components/ui';
 import { CodeEditor } from '@/features/editor/CodeEditor';
 import { latestGrading, newRequestKey, submitCode } from '@/features/grading/api';
+import { findStatement } from '@/features/problems/statements';
+import { MarkdownCell } from '@/features/notebook/MarkdownCell';
 
 const TEMPLATE = [
   'def solve(instance):',
@@ -12,13 +14,22 @@ const TEMPLATE = [
   '    raise NotImplementedError',
 ].join('\n');
 
+type Tab = 'statement' | 'code';
+
 export function WorkbenchPage() {
   const { assignmentId } = useParams<{ assignmentId: string }>();
+  // The statement is keyed by problem id, which travels in the query string:
+  // the route only carries the assignment, and a refresh must keep the pair.
+  const [search] = useSearchParams();
+  const problemId = search.get('problem') ?? undefined;
   const [code, setCode] = useState(TEMPLATE);
   const [submissionId, setSubmissionId] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>('statement');
 
   // One request key per attempt: retrying the same attempt must stay idempotent.
   const requestKey = useMemo(() => newRequestKey(), []);
+
+  const statement = useMemo(() => findStatement(problemId), [problemId]);
 
   const submit = useMutation({
     mutationFn: () =>
@@ -41,18 +52,46 @@ export function WorkbenchPage() {
   const verdict = grading.data;
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-primary">作答</h2>
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="flex min-w-0 flex-col gap-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex gap-1">
+            {(['statement', 'code'] as const).map((name) => (
+              <button
+                key={name}
+                type="button"
+                onClick={() => setTab(name)}
+                className={
+                  'rounded-[var(--radius-md)] px-3 py-1.5 text-sm transition-colors ' +
+                  (tab === name ? 'bg-muted font-medium text-primary' : 'text-secondary hover:bg-hover')
+                }
+              >
+                {name === 'statement' ? '题目' : '代码'}
+              </button>
+            ))}
+          </div>
           <Button onClick={() => submit.mutate()} disabled={submit.isPending}>
             {submit.isPending ? '提交中…' : '提交作业'}
           </Button>
         </div>
-        <CodeEditor value={code} onChange={setCode} ariaLabel="作业代码编辑器" />
+
+        {tab === 'statement' ? (
+          statement ? (
+            <Card className="flex flex-col gap-3 p-6">
+              <MarkdownCell source={statement.source} />
+            </Card>
+          ) : (
+            <EmptyState
+              title="这道题没有内置题面"
+              hint="以教师发布的作业说明为准；代码仍可在「代码」页编写并提交"
+            />
+          )
+        ) : (
+          <CodeEditor value={code} onChange={setCode} ariaLabel="作业代码编辑器" />
+        )}
       </div>
 
-      <Card className="flex flex-col gap-3 p-4">
+      <Card className="flex h-fit flex-col gap-3 p-4">
         <p className="text-sm font-medium text-primary">评测状态</p>
         {submit.isError ? (
           <p className="text-xs leading-relaxed text-danger">{(submit.error as Error).message}</p>

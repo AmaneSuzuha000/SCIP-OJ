@@ -26,7 +26,7 @@ export function CoursePage() {
       <h2 className="text-lg font-semibold text-primary">课程作业</h2>
       <div className="flex flex-col gap-3">
         {assignments.data.map((a) => (
-          <Link key={a.id} to={'/workbench/' + a.id}>
+          <Link key={a.id} to={'/workbench/' + a.id + '?problem=' + encodeURIComponent(a.problem_id)}>
             <Card className="flex items-center justify-between p-4 transition-shadow hover:shadow-[var(--shadow-md)]">
               <div>
                 <p className="text-sm font-medium text-primary">{a.problem_id}</p>

@@ -2,12 +2,8 @@
 
 此目录存放课程案例，案例数据均为合成教学示例，直接编译进课程前端。
 
-- [案例总览 / 检修排队](https://AmaneSuzuha000.github.io/SCIP-OJ/case-studio.html)
-- [随机库存](https://AmaneSuzuha000.github.io/SCIP-OJ/inventory-lab.html)
-- [双工序生产线](https://AmaneSuzuha000.github.io/SCIP-OJ/flow-lab.html)
-- [SCIP/Gurobi 官方示例导航](https://AmaneSuzuha000.github.io/SCIP-OJ/official-examples.html)
-- [算法 OJ 主站](https://AmaneSuzuha000.github.io/SCIP-OJ/)
-- [教师控制台](https://AmaneSuzuha000.github.io/SCIP-OJ/teacher.html)
+- [课程主站](https://amanesuzuha000.github.io/SCIP-OJ/)
+- [拓展学习：11 个建模案例](https://amanesuzuha000.github.io/SCIP-OJ/learn)
 
 ## 课程案例
 

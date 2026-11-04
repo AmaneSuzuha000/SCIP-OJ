@@ -5,7 +5,6 @@ as a second frontend just to host a Python kernel; that kernel now runs inside
 the page (Pyodide), so there is nothing left for JupyterLite to do.
 """
 import argparse
-import re
 import shutil
 from pathlib import Path
 
@@ -16,48 +15,6 @@ PUBLIC_DOCS = (
     '教师手册-考试花名册核验.md', 'IE_DES_01_精品案例实验指导书.md',
     '课程实验与评价规范.md', '判分协议-已冻结.md', '课程学习路径.md',
 )
-
-
-# The three simulation labs are self-contained pages that the course notebooks
-# link to by relative path. They are not part of the app bundle, so they are
-# copied alongside it -- dropping them silently breaks those links.
-LAB_PAGES = ('case-studio.html', 'inventory-lab.html', 'flow-lab.html')
-# Shared page chrome plus the simulation cores each lab loads by plain <script>.
-LAB_ASSETS = ('assets', 'styles', 'js')
-
-
-def stage_labs(output):
-    """Publish the simulation labs the lesson text links to.
-
-    The notebooks link to these pages, so a build that omits them leaves dead
-    links in the course material. They are standalone documents that load their
-    scripts from js/ and their styles from styles/, therefore the directories
-    travel with them.
-    """
-    source = ROOT / 'site'
-    if not source.is_dir():
-        return
-    copied = []
-    for name in LAB_PAGES:
-        page = source / name
-        if page.is_file():
-            shutil.copyfile(page, output / name)
-            copied.append(name)
-    for name in LAB_ASSETS:
-        assets = source / name
-        if assets.is_dir():
-            shutil.copytree(assets, output / name, dirs_exist_ok=True)
-    # The labs share a few stylesheets that sit next to the HTML rather than in
-    # styles/, so they have to be found from the references and copied too.
-    for page in copied:
-        html = (source / page).read_text(encoding='utf-8')
-        for href in re.findall(r'href="([^":?#]+\.css)(?:\?[^"]*)?"', html):
-            sheet = source / href
-            if sheet.is_file():
-                (output / href).parent.mkdir(parents=True, exist_ok=True)
-                shutil.copyfile(sheet, output / href)
-    if copied:
-        print('已发布实验页: ' + ', '.join(copied))
 
 
 def assemble(web_dist, output):
@@ -98,7 +55,6 @@ def assemble(web_dist, output):
     # against, and the graders read the same files.
     shutil.copytree(ROOT / 'problems', output / 'problems')
     shutil.copyfile(ROOT / 'README.md', output / 'README.md')
-    stage_labs(output)
     (output / '.nojekyll').touch()
 
 
