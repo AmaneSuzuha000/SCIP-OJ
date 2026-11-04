@@ -32,8 +32,10 @@ def assemble(web_dist, output):
         raise ValueError('App build has no Python runtime: run web/scripts/stage-runtime.mjs')
     if not (web_dist / 'runtime/pyscipopt.py').is_file():
         raise ValueError('App build has no pyscipopt shim at runtime/pyscipopt.py')
-    if output == ROOT or output in ROOT.parents or ROOT in output.parents:
-        raise ValueError('Output must live inside the repository but not be the repository')
+    # dist/ lives inside the repository by design; copying the build into it
+    # must not be mistaken for copying the repository into itself.
+    if output == ROOT or output in ROOT.parents:
+        raise ValueError('Output must not be the repository root or contain it')
     if output.exists():
         raise ValueError('Output must be a fresh directory')
 
