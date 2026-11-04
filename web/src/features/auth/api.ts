@@ -6,7 +6,12 @@ import { supabase } from '@/lib/supabase';
  * admitted by the server.
  */
 export function redirectTarget(): string {
-  return window.location.origin + '/auth/callback';
+  // Must include the deployment prefix. On a project page the app lives at
+  // /<repo>/, so origin + '/auth/callback' points at the user's root site,
+  // which is a different deployment entirely -- GitHub sends the student
+  // there, and they land back on whatever else is published under the origin.
+  const base = import.meta.env.BASE_URL || '/';
+  return new URL(base + 'auth/callback', window.location.origin).href;
 }
 
 export async function signInWithGitHub(): Promise<void> {
