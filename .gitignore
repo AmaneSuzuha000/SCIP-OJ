@@ -29,3 +29,6 @@ node_modules/
 ui-artifacts/
 lite-build/
 ui-preview/
+
+# Local screenshots from web/scripts/screenshot.mjs
+web/shots/
