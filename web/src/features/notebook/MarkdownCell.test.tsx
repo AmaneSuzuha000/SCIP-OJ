@@ -3,18 +3,41 @@ import { describe, expect, it } from 'vitest';
 import { MarkdownCell } from '@/features/notebook/MarkdownCell';
 
 /**
- * The problem statements carry TeX. A renderer that shows the dollar signs
- * instead looks fine in a screenshot of prose and wrong to the student reading
- * the actual question, so the delimiters are pinned here.
+ * The course material writes TeX two ways: the notebooks and problem
+ * statements use `$...$`, the hand-written guides use `\\(...\\)` and
+ * `\\[...\\]`. Both have to render, because half the formulas in the course
+ * use the second convention and would otherwise appear as their source.
  */
 describe('markdown formulas', () => {
-  it('renders inline TeX through KaTeX instead of showing the source', async () => {
+  it('renders inline ${} through KaTeX instead of showing the source', async () => {
     const { container } = render(<MarkdownCell source={'到达服从参数为 $\\lambda$ 的泊松过程。'} />);
-    // KaTeX is a lazy chunk; wait for the formula to replace the fallback.
     const katex = await screen.findByText('λ', {}, { timeout: 5000 });
     expect(katex).toBeInTheDocument();
     expect(container.textContent).not.toContain('$');
     expect(container.textContent).not.toContain('\\lambda');
+  });
+
+  it('renders inline \\(\\) the same way', async () => {
+    const { container } = render(
+      <MarkdownCell source={'每列车需要 \\(n\\) 个工位，变量 \\(x_{ij} \\in \\{0,1\\}\\)。'} />,
+    );
+    expect(await screen.findByText('n', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(container.querySelector('.katex')).not.toBeNull();
+    expect(container.textContent).not.toContain('\\(');
+    expect(container.textContent).toContain('个工位');
+  });
+
+  it('renders display math written as \\[..\\] on its own lines', async () => {
+    const { container } = render(
+      <MarkdownCell
+        source={'利用率定义为\n\\[\n\\rho_c=\\frac{\\text{serviceMean}}{\\text{arrivalMean}\\cdot c}.\n\\]\n其余照常。'}
+      />,
+    );
+    expect(await screen.findByText('ρ', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(container.querySelector('.katex-display')).not.toBeNull();
+    expect(container.textContent).not.toContain('\\[');
+    expect(container.textContent).not.toContain('\\frac');
+    expect(container.textContent).toContain('其余照常');
   });
 
   it('handles \\text{}, relations and braces in one formula', async () => {
@@ -26,7 +49,7 @@ describe('markdown formulas', () => {
     expect(container.querySelector('.katex')).not.toBeNull();
   });
 
-  it('renders display math on its own', async () => {
+  it('renders display math written as $$ on one line', async () => {
     const { container } = render(<MarkdownCell source={'$$x^2 + y^2$$'} />);
     expect(await screen.findByText('x', {}, { timeout: 5000 })).toBeInTheDocument();
     expect(container.querySelector('.katex-display')).not.toBeNull();

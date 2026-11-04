@@ -8,9 +8,15 @@ const MathSpan = lazy(() => import('./MathSpan'));
  * Renders course markdown.
  *
  * The course material uses a narrow subset: headings, bullet and numbered
- * lists, bold, inline code, links, block quotes, fenced code and tables. This
- * handles exactly that rather than pulling in a parser and its sanitiser;
- * anything it does not recognise is shown as text, never interpreted as HTML.
+ * lists, bold, inline code, links, block quotes, fenced code, tables and TeX.
+ * This handles exactly that rather than pulling in a full parser and its
+ * sanitiser; anything it does not recognise is shown as text, never
+ * interpreted as HTML.
+ *
+ * TeX arrives in two conventions because the material comes from two places:
+ * the notebooks and problem statements use `$...$`, while the hand-written
+ * guides use `\\(...\\)` and `\\[...\\]`. Both are supported -- half the
+ * formulas in the course would otherwise render as their source.
  */
 
 type Token =
@@ -36,23 +42,38 @@ function safeHref(href: string): string | null {
   return href;
 }
 
+/**
+ * Display math may span lines, so it is pulled out before the source is split
+ * into lines -- a line-at-a-time parser would see half a formula on each side.
+ */
+const DISPLAY_MATH = /(\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\])/;
+
+function unwrap(raw: string): string {
+  // Both `$$..$$` and `\\[..\\]` are two characters at each end.
+  return raw.slice(2, -2);
+}
+
 function tokenize(text: string): Token[] {
   // Display math first: otherwise `$$x$$` would match the single-$ branch and
-  // leave the extra dollars as literal text.
-  const pattern = /(\$\$[\s\S]+?\$\$|\$[^$\n]+\$|\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)\s]+\))/g;
+  // leave the extra dollars as literal text. Same for the bracketed form.
+  const pattern =
+    /(\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\\\([\s\S]+?\\\)|\$[^$\n]+\$|\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)\s]+\))/g;
   const tokens: Token[] = [];
   let cursor = 0;
   for (const match of text.matchAll(pattern)) {
     const start = match.index ?? 0;
     if (start > cursor) tokens.push({ kind: 'text', text: text.slice(cursor, start) });
     const raw = match[0];
-    if (raw.startsWith('$')) {
-      const display = raw.startsWith('$$');
-      const inner = display ? raw.slice(2, -2) : raw.slice(1, -1);
+    if (raw.startsWith('$$') || raw.startsWith('\\[')) {
+      tokens.push({ kind: 'math', tex: unwrap(raw), display: true });
+    } else if (raw.startsWith('\\(')) {
+      tokens.push({ kind: 'math', tex: raw.slice(2, -2), display: false });
+    } else if (raw.startsWith('$')) {
+      const inner = raw.slice(1, -1);
       // A lone `$5` in prose is not math. Requiring non-space at both ends
       // keeps prices and stray dollars out of the renderer.
       if (/^\S(?:[\s\S]*\S)?$/.test(inner)) {
-        tokens.push({ kind: 'math', tex: inner, display });
+        tokens.push({ kind: 'math', tex: inner, display: false });
       } else {
         tokens.push({ kind: 'text', text: raw });
       }
@@ -154,7 +175,8 @@ function renderTable(rows: string[], key: string) {
   );
 }
 
-export function MarkdownCell({ source }: { source: string }) {
+/** Everything except display math: one pass over the lines of a text run. */
+function renderProse(source: string, keyPrefix: string): ReactNode[] {
   const blocks: ReactNode[] = [];
   let list: string[] = [];
   // Ordered and unordered runs must not merge: in the course material a
@@ -165,13 +187,13 @@ export function MarkdownCell({ source }: { source: string }) {
     if (list.length === 0) return;
     const className = 'ml-5 space-y-1 text-sm text-secondary ' + (ordered ? 'list-decimal' : 'list-disc');
     const items = list.map((item, index) => (
-      <li key={index}>{inline(item, 'li-' + blocks.length + '-' + index)}</li>
+      <li key={index}>{inline(item, keyPrefix + '-li-' + blocks.length + '-' + index)}</li>
     ));
     blocks.push(
       ordered ? (
-        <ol key={'ol-' + blocks.length} className={className}>{items}</ol>
+        <ol key={keyPrefix + '-ol-' + blocks.length} className={className}>{items}</ol>
       ) : (
-        <ul key={'ul-' + blocks.length} className={className}>{items}</ul>
+        <ul key={keyPrefix + '-ul-' + blocks.length} className={className}>{items}</ul>
       ),
     );
     list = [];
@@ -183,17 +205,16 @@ export function MarkdownCell({ source }: { source: string }) {
 
     // A fenced block swallows everything up to its closing fence, so the
     // content inside is never treated as markdown.
-    const fence = /^\s*\`\`\`/.exec(line);
-    if (fence) {
+    if (/^\s*```/.test(line)) {
       flushList();
       const body: string[] = [];
       index += 1;
-      while (index < lines.length && !/^\s*\`\`\`/.test(lines[index] ?? '')) {
+      while (index < lines.length && !/^\s*```/.test(lines[index] ?? '')) {
         body.push(lines[index] ?? '');
         index += 1;
       }
       blocks.push(
-        <pre key={'pre-' + index} className="overflow-x-auto rounded-md bg-muted p-3 text-xs leading-relaxed text-secondary">
+        <pre key={keyPrefix + '-pre-' + index} className="overflow-x-auto rounded-md bg-muted p-3 text-xs leading-relaxed text-secondary">
           <code className="font-mono">{body.join('\n')}</code>
         </pre>,
       );
@@ -209,7 +230,7 @@ export function MarkdownCell({ source }: { source: string }) {
         index += 1;
       }
       index -= 1;
-      blocks.push(renderTable(rows, 'tbl-' + index));
+      blocks.push(renderTable(rows, keyPrefix + '-tbl-' + index));
       continue;
     }
 
@@ -225,10 +246,10 @@ export function MarkdownCell({ source }: { source: string }) {
       const size = sizes[Math.min(level, 4) - 1] ?? 'text-sm';
       blocks.push(
         <p
-          key={'h-' + index}
+          key={keyPrefix + '-h-' + index}
           className={size + ' font-semibold text-primary ' + (level <= 2 ? 'mt-2' : 'mt-3')}
         >
-          {inline(heading[2] ?? '', 'h-' + index)}
+          {inline(heading[2] ?? '', keyPrefix + '-h-' + index)}
         </p>,
       );
       continue;
@@ -237,8 +258,8 @@ export function MarkdownCell({ source }: { source: string }) {
     if (quote) {
       flushList();
       blocks.push(
-        <blockquote key={'q-' + index} className="border-l-2 border-brand pl-3 text-sm text-secondary">
-          {inline(quote[1] ?? '', 'q-' + index)}
+        <blockquote key={keyPrefix + '-q-' + index} className="border-l-2 border-brand pl-3 text-sm text-secondary">
+          {inline(quote[1] ?? '', keyPrefix + '-q-' + index)}
         </blockquote>,
       );
       continue;
@@ -254,12 +275,33 @@ export function MarkdownCell({ source }: { source: string }) {
     }
     flushList();
     blocks.push(
-      <p key={'p-' + index} className="text-sm leading-relaxed text-secondary">
-        {inline(line, 'p-' + index)}
+      <p key={keyPrefix + '-p-' + index} className="text-sm leading-relaxed text-secondary">
+        {inline(line, keyPrefix + '-p-' + index)}
       </p>,
     );
   }
   flushList();
+  return blocks;
+}
+
+export function MarkdownCell({ source }: { source: string }) {
+  const parts = source.split(DISPLAY_MATH);
+  const blocks: ReactNode[] = [];
+
+  parts.forEach((part, index) => {
+    // split() with a capture group keeps the delimiters, so odd entries are
+    // the display-math runs themselves.
+    if (index % 2 === 1) {
+      const tex = unwrap(part);
+      blocks.push(
+        <Suspense key={index} fallback={<pre className="font-mono text-xs text-tertiary">{tex}</pre>}>
+          <MathSpan tex={tex} display />
+        </Suspense>,
+      );
+      return;
+    }
+    blocks.push(...renderProse(part, 'b' + index));
+  });
 
   return <div className="flex flex-col gap-2">{blocks}</div>;
 }
