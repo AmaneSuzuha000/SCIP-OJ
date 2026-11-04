@@ -1,4 +1,8 @@
-import type { ReactNode } from 'react';
+import { Suspense, lazy, type ReactNode } from 'react';
+
+// KaTeX is ~280 kB and ships fonts, so it is fetched only by pages whose
+// material actually contains a formula. Everything else never pays for it.
+const MathSpan = lazy(() => import('./MathSpan'));
 
 /**
  * Renders course markdown.
@@ -13,6 +17,7 @@ type Token =
   | { kind: 'bold'; text: string }
   | { kind: 'code'; text: string }
   | { kind: 'link'; text: string; href: string }
+  | { kind: 'math'; tex: string; display: boolean }
   | { kind: 'text'; text: string };
 
 /**
@@ -32,14 +37,26 @@ function safeHref(href: string): string | null {
 }
 
 function tokenize(text: string): Token[] {
-  const pattern = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)\s]+\))/g;
+  // Display math first: otherwise `$$x$$` would match the single-$ branch and
+  // leave the extra dollars as literal text.
+  const pattern = /(\$\$[\s\S]+?\$\$|\$[^$\n]+\$|\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)\s]+\))/g;
   const tokens: Token[] = [];
   let cursor = 0;
   for (const match of text.matchAll(pattern)) {
     const start = match.index ?? 0;
     if (start > cursor) tokens.push({ kind: 'text', text: text.slice(cursor, start) });
     const raw = match[0];
-    if (raw.startsWith('**')) {
+    if (raw.startsWith('$')) {
+      const display = raw.startsWith('$$');
+      const inner = display ? raw.slice(2, -2) : raw.slice(1, -1);
+      // A lone `$5` in prose is not math. Requiring non-space at both ends
+      // keeps prices and stray dollars out of the renderer.
+      if (/^\S(?:[\s\S]*\S)?$/.test(inner)) {
+        tokens.push({ kind: 'math', tex: inner, display });
+      } else {
+        tokens.push({ kind: 'text', text: raw });
+      }
+    } else if (raw.startsWith('**')) {
       tokens.push({ kind: 'bold', text: raw.slice(2, -2) });
     } else if (raw.startsWith('`')) {
       tokens.push({ kind: 'code', text: raw.slice(1, -1) });
@@ -83,6 +100,15 @@ function inline(text: string, keyPrefix: string): ReactNode[] {
           >
             {token.text}
           </a>
+        );
+      case 'math':
+        // Until the chunk arrives the formula shows as its TeX source, which is
+        // still readable -- and if the chunk never loads it stays that way
+        // rather than leaving a hole in the sentence.
+        return (
+          <Suspense key={key} fallback={<span className="font-mono text-[0.9em]">{token.tex}</span>}>
+            <MathSpan tex={token.tex} display={token.display} />
+          </Suspense>
         );
       default:
         return token.text;
