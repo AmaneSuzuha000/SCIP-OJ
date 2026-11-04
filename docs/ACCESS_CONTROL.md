@@ -6,6 +6,9 @@
 | --- | --- |
 | AmaneSuzuha000 | 177200341 |
 | pengguo318 | 30373542 |
+| lvliyu7 | 346142220 |
+
+名单只有一处实现：`private.site_identity_allowed` 里硬编码的 provider ID 集合。加人要新建一个 `CREATE OR REPLACE FUNCTION` 的 migration，改旧文件没有用——它已经执行过了，不会重跑。
 
 用户首次使用 GitHub 登录时自动关联身份，不需要预建用户。准入不依据可编辑的用户名或 `user_metadata`。白名单不额外授予管理员或课程教师角色。
 
