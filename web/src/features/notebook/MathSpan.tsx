@@ -1,5 +1,6 @@
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
+import './math.css';
 
 /**
  * One formula, rendered by KaTeX.
@@ -20,9 +21,12 @@ export function MathSpan({ tex, display }: { tex: string; display: boolean }) {
   });
 
   if (display) {
+    // leading-none matters: the block inherits the prose line-height, and a
+    // 45px formula in a 77px box reads as a gap above and below the formula
+    // rather than as spacing around it.
     return (
       <span
-        className="my-2 block overflow-x-auto text-center"
+        className="my-3 block overflow-x-auto text-center leading-none"
         dangerouslySetInnerHTML={{ __html: html }}
       />
     );

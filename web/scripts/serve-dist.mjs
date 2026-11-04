@@ -70,13 +70,19 @@ const server = createServer(async (request, response) => {
     return;
   }
 
-  const direct = await fileAt(target);
+  // "/" and "/docs/" are directories, and Pages answers those with the
+  // index.html inside -- serving the 404 shell for the site root would hide
+  // every problem behind a page that looks like a working SPA.
+  const indexTarget = join(target, 'index.html');
+  const asIndex = await fileAt(indexTarget);
+  const direct = asIndex ?? (await fileAt(target));
+  const servedPath = asIndex ? indexTarget : target;
   if (direct) {
     response.writeHead(200, {
-      'content-type': TYPES[extname(target)] ?? 'application/octet-stream',
+      'content-type': TYPES[extname(servedPath)] ?? 'application/octet-stream',
       'content-length': direct.size,
     });
-    createReadStream(target).pipe(response);
+    createReadStream(servedPath).pipe(response);
     return;
   }
 

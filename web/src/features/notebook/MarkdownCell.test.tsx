@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { MarkdownCell } from '@/features/notebook/MarkdownCell';
 
@@ -59,5 +59,30 @@ describe('markdown formulas', () => {
     const { container } = render(<MarkdownCell source={'单价 $ 5 元，没有闭合。'} />);
     expect(container.textContent).toContain('$');
     expect(container.querySelector('.katex')).toBeNull();
+  });
+
+  // The stock model writes its objective on its own line. A line-at-a-time
+  // parser would render half a formula on each side of the split.
+  it('renders a display formula spanning several lines', async () => {
+    const source =
+      '最小化期望持有与缺货成本：\n\n$$\n\\min \\sum_{s} p_s \\left[ c_h h_s + c_u u_s \\right]\n$$\n\n两项成本均为正。';
+    const { container } = render(<MarkdownCell source={source} />);
+    await waitFor(() => expect(container.querySelector('.katex-display')).not.toBeNull(), {
+      timeout: 5000,
+    });
+    expect(container.textContent).not.toContain('$$');
+    expect(container.textContent).not.toContain('\\sum_');
+    expect(container.textContent).toContain('两项成本均为正');
+  });
+
+  it('renders subscripts that were typed as plain characters', async () => {
+    // Before: "最小化 Σ_s p_s [c_h h_s+c_u u_s]" -- a subscript that is not a
+    // subscript. The rendering has to be a real formula, not that string.
+    const source = '最小化 $\\sum_{s} p_s \\left[ c_h h_s + c_u u_s \\right]$。';
+    const { container } = render(<MarkdownCell source={source} />);
+    await waitFor(() => expect(container.querySelector('.katex')).not.toBeNull(), {
+      timeout: 5000,
+    });
+    expect(container.textContent).not.toContain('Σ_s');
   });
 });

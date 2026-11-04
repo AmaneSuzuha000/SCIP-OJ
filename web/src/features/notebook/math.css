@@ -1,0 +1,19 @@
+/*
+ * Inline math at body size, display math larger.
+ *
+ * KaTeX ships .katex{font:normal 1.21em/1.2 ...}. In a 14px paragraph that
+ * makes an inline formula 16.9px: visibly larger than the sentence it sits in,
+ * and tall enough to push the line box apart. Papers set inline math at the
+ * body size, so the 1.21em is undone for inline and kept for display.
+ *
+ * This file is imported right after katex.min.css, from the lazy MathSpan
+ * chunk, because that CSS is itself only loaded when a formula renders. A rule
+ * in global.css loads earlier and loses to it no matter how specific it is.
+ */
+.katex {
+  font-size: 1em;
+}
+
+.katex-display .katex {
+  font-size: 1.21em;
+}
