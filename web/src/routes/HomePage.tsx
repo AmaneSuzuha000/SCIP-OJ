@@ -8,6 +8,7 @@ export function HomePage() {
   const bootError = useSession((s) => s.bootError);
   const access = useSession((s) => s.access);
   const session = useSession((s) => s.session);
+  const profile = useSession((s) => s.profile);
 
   const courses = useQuery({
     queryKey: ['my-courses'],
@@ -39,6 +40,15 @@ export function HomePage() {
         </Card>
       ) : null}
 
+      {/* A student without a student number is invisible to the roster, so
+          their grades have nothing to attach to. Say so here rather than
+          waiting for them to open a menu they have no reason to open. */}
+      {profile && profile.role === 'student' && !profile.student_no ? (
+        <Card className="border-warning bg-warning-soft p-4 text-sm text-warning">
+          还没有绑定学号。成绩按学号归档，请从头像菜单的「个人资料」填写。
+        </Card>
+      ) : null}
+
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold text-primary">我的课程</h2>
         {!session ? (
@@ -48,7 +58,7 @@ export function HomePage() {
         ) : courses.isError ? (
           <EmptyState title="无法读取课程" hint={(courses.error as Error).message} />
         ) : !courses.data?.length ? (
-          <EmptyState title="还没有选课记录" hint="任课教师把你加入课程后会出现在这里" />
+          <EmptyState title="还没有选课记录" hint="向任课教师索取邀请码，从头像菜单的「加入课程」输入" />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {courses.data.map((course) => (

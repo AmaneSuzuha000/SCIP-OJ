@@ -1,15 +1,19 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { Badge, Button } from '@/components/ui';
+import { AccountMenu } from '@/components/AccountMenu';
+import { Button } from '@/components/ui';
 import { signOut } from '@/features/auth/api';
 import { useSession } from '@/store/session';
 import { useTheme } from '@/store/theme';
 
+// The teacher console is teacher/admin only. Hiding the link is not the
+// boundary -- the route guard and the database both check again -- but a
+// student who clicks it gets a dead end that reads like a site error.
 const NAV = [
-  { to: '/', label: '课程教学', end: true },
-  { to: '/learn', label: '拓展学习', end: false },
-  { to: '/submissions', label: '提交记录', end: false },
-  { to: '/docs', label: '课程文档', end: false },
-  { to: '/teacher', label: '教师控制台', end: false },
+  { to: '/', label: '课程教学', end: true, staff: false },
+  { to: '/learn', label: '拓展学习', end: false, staff: false },
+  { to: '/submissions', label: '提交记录', end: false, staff: false },
+  { to: '/docs', label: '课程文档', end: false, staff: false },
+  { to: '/teacher', label: '教师控制台', end: false, staff: true },
 ];
 
 export function AppShell() {
@@ -32,11 +36,7 @@ export function AppShell() {
             </NavLink>
 
             <div className="ml-auto flex shrink-0 items-center gap-2 sm:hidden">
-              {profile ? (
-                <Badge tone={profile.role === 'student' ? 'neutral' : 'brand'}>
-                  {profile.display_name ?? profile.role}
-                </Badge>
-              ) : null}
+              <AccountMenu />
               <Button variant="ghost" size="sm" onClick={cycle} aria-label="切换配色">
                 {theme === 'dark' ? '深色' : theme === 'light' ? '浅色' : '跟随系统'}
               </Button>
@@ -56,7 +56,7 @@ export function AppShell() {
             className="-mx-4 flex items-center gap-1 overflow-x-auto px-4 sm:mx-0 sm:px-0"
             aria-label="主导航"
           >
-            {NAV.map((item) => (
+            {NAV.filter((item) => !item.staff || (profile && profile.role !== 'student')).map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -74,11 +74,7 @@ export function AppShell() {
           </nav>
 
           <div className="ml-auto hidden shrink-0 items-center gap-2 sm:flex">
-            {profile ? (
-              <Badge tone={profile.role === 'student' ? 'neutral' : 'brand'}>
-                {profile.display_name ?? profile.role}
-              </Badge>
-            ) : null}
+            <AccountMenu />
             <Button variant="ghost" size="sm" onClick={cycle} aria-label="切换配色">
               {theme === 'dark' ? '深色' : theme === 'light' ? '浅色' : '跟随系统'}
             </Button>
