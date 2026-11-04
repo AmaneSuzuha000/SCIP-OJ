@@ -18,11 +18,11 @@ export const lessons: Lesson[] = [
     "id": "01_P001_knapsack_PySCIPOpt",
     "file": "01_P001_knapsack_PySCIPOpt.ipynb",
     "title": "P001 0-1 背包问题 · PySCIPOpt 建模与评测演示",
-    "summary": "本 Notebook 运行在 JupyterLite (WebAssembly + PySCIPOpt) 环境中。",
+    "summary": "本 Notebook 在浏览器内直接运行（WebAssembly + Python），无需安装环境。",
     "cells": [
       {
         "kind": "markdown",
-        "source": "# P001 0-1 背包问题 · PySCIPOpt 建模与评测演示\n\n本 Notebook 运行在 JupyterLite (WebAssembly + PySCIPOpt) 环境中。\n在浏览器内核中可以直接 `from pyscipopt import Model` 求解混合整数线性规划 (MIP)。"
+        "source": "# P001 0-1 背包问题 · PySCIPOpt 建模与评测演示\n\n本 Notebook 在浏览器内直接运行（WebAssembly + Python），无需安装环境。\n在浏览器内核中可以直接 `from pyscipopt import Model` 求解混合整数线性规划 (MIP)。"
       },
       {
         "kind": "code",
@@ -46,11 +46,11 @@ export const lessons: Lesson[] = [
     "id": "02_P002_assignment_PySCIPOpt",
     "file": "02_P002_assignment_PySCIPOpt.ipynb",
     "title": "P002 指派问题 · PySCIPOpt 建模与评测演示",
-    "summary": "本 Notebook 运行在 JupyterLite (WebAssembly + PySCIPOpt) 环境中。",
+    "summary": "本 Notebook 在浏览器内直接运行（WebAssembly + Python），无需安装环境。",
     "cells": [
       {
         "kind": "markdown",
-        "source": "# P002 指派问题 · PySCIPOpt 建模与评测演示\n\n本 Notebook 运行在 JupyterLite (WebAssembly + PySCIPOpt) 环境中。\n示范使用 PySCIPOpt 建立 0-1 整数线性规划模型求解标准指派问题。"
+        "source": "# P002 指派问题 · PySCIPOpt 建模与评测演示\n\n本 Notebook 在浏览器内直接运行（WebAssembly + Python），无需安装环境。\n示范使用 PySCIPOpt 建立 0-1 整数线性规划模型求解标准指派问题。"
       },
       {
         "kind": "code",
@@ -74,7 +74,7 @@ export const lessons: Lesson[] = [
     "id": "03_IE_Facility_Location_PySCIPOpt",
     "file": "03_IE_Facility_Location_PySCIPOpt.ipynb",
     "title": "IE-OPT-03 · 设施选址与产能分配",
-    "summary": "**场景**：三个候选区域维修中心服务四个需求区。决定启用哪些维修中心以及每个区域由谁服务，在产能限制下最小化固定运营与运输费用。",
+    "summary": "场景：三个候选区域维修中心服务四个需求区。决定启用哪些维修中心以及每个区域由谁服务，在产能限制下最小化固定运营与运输费用。",
     "cells": [
       {
         "kind": "markdown",
@@ -114,7 +114,7 @@ export const lessons: Lesson[] = [
     "id": "04_IE_Bin_Packing_PySCIPOpt",
     "file": "04_IE_Bin_Packing_PySCIPOpt.ipynb",
     "title": "IE-OPT-04 · 仓储装箱与车次配置",
-    "summary": "**工业情境**：一组不同体积的零部件待装载到相同容量的物流箱中，目标是使用尽可能少的箱子。课堂数据是假设性教学案例。",
+    "summary": "工业情境：一组不同体积的零部件待装载到相同容量的物流箱中，目标是使用尽可能少的箱子。课堂数据是假设性教学案例。",
     "cells": [
       {
         "kind": "markdown",
@@ -222,7 +222,7 @@ export const lessons: Lesson[] = [
     "id": "07_IE_Transportation_PySCIPOpt",
     "file": "07_IE_Transportation_PySCIPOpt.ipynb",
     "title": "IE-OPT-07 · 两仓三店辅料运输",
-    "summary": "**场景**：澄湾辅料仓和石桥辅料仓本周要给三家门店补周转箱。箱子不能拆开，运费按箱计算。问每个仓往每家店发多少箱，总运费最小。",
+    "summary": "场景：澄湾辅料仓和石桥辅料仓本周要给三家门店补周转箱。箱子不能拆开，运费按箱计算。问每个仓往每家店发多少箱，总运费最小。",
     "cells": [
       {
         "kind": "markdown",
@@ -262,7 +262,7 @@ export const lessons: Lesson[] = [
     "id": "08_IE_Cutting_Stock_PySCIPOpt",
     "file": "08_IE_Cutting_Stock_PySCIPOpt.ipynb",
     "title": "IE-OPT-08 · 铝材下料",
-    "summary": "**场景**：北麓门窗厂把长度 16 分米的标准铝材锯成三种窗料。本周订单是立挺 6 分米 6 根、横档 5 分米 5 根、压条 4 分米 7 根。一根母材只能按一种裁法切开，问至少要用多少根母材。",
+    "summary": "场景：北麓门窗厂把长度 16 分米的标准铝材锯成三种窗料。本周订单是立挺 6 分米 6 根、横档 5 分米 5 根、压条 4 分米 7 根。一根母材只能按一种裁法切开，问至少要用多少根母材。",
     "cells": [
       {
         "kind": "markdown",
@@ -302,7 +302,7 @@ export const lessons: Lesson[] = [
     "id": "09_IE_TSP_MTZ_PySCIPOpt",
     "file": "09_IE_TSP_MTZ_PySCIPOpt.ipynb",
     "title": "IE-OPT-09 · 巡检回路（MTZ 公式）",
-    "summary": "**场景**：工程师从澄口调度室出发，要到柳塘泵站、青岗变电所、沙湾备件库和枫桥冷却塔各检查一次，最后回到调度室。路程按给定的车程分钟数计算，求总时间最短的巡回路线。",
+    "summary": "场景：工程师从澄口调度室出发，要到柳塘泵站、青岗变电所、沙湾备件库和枫桥冷却塔各检查一次，最后回到调度室。路程按给定的车程分钟数计算，求总时间最短的巡回路线。",
     "cells": [
       {
         "kind": "markdown",
@@ -342,7 +342,7 @@ export const lessons: Lesson[] = [
     "id": "10_IE_CVRP_PySCIPOpt",
     "file": "10_IE_CVRP_PySCIPOpt.ipynb",
     "title": "IE-OPT-10 · 带容量的社区店配送",
-    "summary": "**场景**：河西冷链从配送中心给四家社区店送箱装货物。杏园店 4 箱、柏溪店 3 箱、桂巷店 5 箱、榆湾店 4 箱。每辆车最多装 10 箱，从中心出发并回到中心。两辆车足够覆盖 16 箱需求。目标是总行驶距离最短。",
+    "summary": "场景：河西冷链从配送中心给四家社区店送箱装货物。杏园店 4 箱、柏溪店 3 箱、桂巷店 5 箱、榆湾店 4 箱。每辆车最多装 10 箱，从中心出发并回到中心。两辆车足够覆盖 16 箱需求。目标是总行驶距离最短。",
     "cells": [
       {
         "kind": "markdown",
@@ -382,7 +382,7 @@ export const lessons: Lesson[] = [
     "id": "11_IE_Single_Machine_PySCIPOpt",
     "file": "11_IE_Single_Machine_PySCIPOpt.ipynb",
     "title": "IE-OPT-11 · 单机总延误（位置表示）",
-    "summary": "**场景**：青禾电器只有一台检测台。四台返修样机必须一台接一台检测，不能并行，也不能中途换下一台。每台有检测工时和承诺完成时刻，完成时刻晚于承诺的部分记为延误。目标是四台延误之和最小。",
+    "summary": "场景：青禾电器只有一台检测台。四台返修样机必须一台接一台检测，不能并行，也不能中途换下一台。每台有检测工时和承诺完成时刻，完成时刻晚于承诺的部分记为延误。目标是四台延误之和最小。",
     "cells": [
       {
         "kind": "markdown",

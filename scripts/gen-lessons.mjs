@@ -13,6 +13,15 @@ const ROOT = resolve(import.meta.dirname, '..');
 const CONTENT = join(ROOT, 'content');
 const TARGET = join(ROOT, 'web', 'src', 'features', 'notebook', 'lessons.ts');
 
+/** Summaries are shown as plain text, so inline markdown must not leak through. */
+function plain(text) {
+  return text
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .trim();
+}
+
 /** Pull the first heading and the first paragraph of prose out of a notebook. */
 function describe(cells) {
   let title = '';
@@ -22,12 +31,12 @@ function describe(cells) {
     for (const line of cell.source.split('\n')) {
       const heading = /^#\s+(.+)$/.exec(line);
       if (heading && !title) {
-        title = heading[1].trim();
+        title = plain(heading[1]);
         continue;
       }
       const text = line.trim();
       if (title && text && !text.startsWith('#') && !text.startsWith('-') && !summary) {
-        summary = text;
+        summary = plain(text);
       }
     }
     if (title && summary) break;
