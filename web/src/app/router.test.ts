@@ -23,6 +23,16 @@ describe('router', () => {
     ]);
   });
 
+  it('strips the deployment prefix from every route', async () => {
+    // The site is deployed under /<repo>/. Without a basename the app renders
+    // on the root page only and every link reports "no such page" while the
+    // address bar looks correct.
+    const { router } = await import('@/app/router');
+    const base = import.meta.env.BASE_URL;
+    expect(base.endsWith('/')).toBe(true);
+    expect(router.basename).toBe(base === '/' ? '/' : base.replace(/\/$/, ''));
+  });
+
   it('keeps student work behind the access guard', async () => {
     const { router } = await import('@/app/router');
     const children = router.routes[0]?.children ?? [];

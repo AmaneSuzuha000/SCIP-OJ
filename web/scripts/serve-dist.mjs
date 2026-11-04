@@ -6,15 +6,23 @@
  * http.server both return their own error page instead, which would hide a
  * broken deploy, so this replicates the real behaviour.
  *
- * Usage: node scripts/serve-dist.mjs [directory] [port]
+ * A project page is served under /<repo>/, so --base strips that prefix before
+ * resolving a file. Testing without it only exercises the root deployment and
+ * misses exactly the bugs a project page produces.
+ *
+ * Usage: node scripts/serve-dist.mjs [--base=/SCIP-OJ/] [directory] [port]
  */
 import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { extname, join, normalize, resolve } from 'node:path';
 
-const ROOT = resolve(process.argv[2] ?? 'dist');
-const PORT = Number(process.argv[3] ?? 4180);
+const args = process.argv.slice(2);
+const baseArg = args.find((arg) => arg.startsWith('--base='));
+const BASE = normalize(baseArg ? baseArg.slice('--base='.length) : '/').replace(/\\/g, '/');
+const positional = args.filter((arg) => !arg.startsWith('--'));
+const ROOT = resolve(positional[0] ?? 'dist');
+const PORT = Number(positional[1] ?? 4180);
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -42,7 +50,18 @@ async function fileAt(path) {
 
 const server = createServer(async (request, response) => {
   const url = new URL(request.url ?? '/', 'http://localhost');
-  const relative = normalize(decodeURIComponent(url.pathname)).replace(/^([/\\])+/, '');
+  let pathname = decodeURIComponent(url.pathname);
+
+  // Mirror the project-page prefix: it belongs to the deployment, not the tree.
+  if (BASE !== '/') {
+    if (!pathname.startsWith(BASE)) {
+      response.writeHead(404).end('Not found');
+      return;
+    }
+    pathname = pathname.slice(BASE.length - 1);
+  }
+
+  const relative = normalize(pathname).replace(/^([/\\])+/, '');
   const target = join(ROOT, relative);
 
   // Refuse traversal outside the served directory.
@@ -61,6 +80,7 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+  // A missing path is answered with the shell, exactly as Pages does.
   const fallback = await fileAt(join(ROOT, '404.html'));
   if (fallback) {
     response.writeHead(404, { 'content-type': TYPES['.html'] });
@@ -71,5 +91,5 @@ const server = createServer(async (request, response) => {
 });
 
 server.listen(PORT, '127.0.0.1', () => {
-  console.log('serving ' + ROOT + ' on http://127.0.0.1:' + PORT);
+  console.log('serving ' + ROOT + ' at http://127.0.0.1:' + PORT + BASE);
 });

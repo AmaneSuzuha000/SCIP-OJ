@@ -41,21 +41,33 @@ function guarded(node: ReactNode, staff = false) {
   return defer(<RequireAccess staff={staff}>{node}</RequireAccess>);
 }
 
-export const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <AppShell />,
-    children: [
-      { index: true, element: defer(<HomePage />) },
-      { path: 'login', element: defer(<LoginPage />) },
-      { path: 'auth/callback', element: defer(<AuthCallbackPage />) },
-      { path: 'course/:courseId', element: guarded(<CoursePage />) },
-      { path: 'workbench/:assignmentId', element: guarded(<WorkbenchPage />) },
-      { path: 'learn', element: defer(<LearnPage />) },
-      { path: 'learn/:lessonId', element: defer(<LessonPage />) },
-      { path: 'submissions', element: guarded(<SubmissionsPage />) },
-      { path: 'teacher', element: guarded(<TeacherPage />, true) },
-      { path: '*', element: defer(<NotFoundPage />) },
-    ],
-  },
-]);
+/**
+ * GitHub Pages serves a project page from /<repo>/, so the browser path carries
+ * a prefix the route table must not see. Without a basename the app renders on
+ * the root page only and every deep link lands on the catch-all: the address is
+ * correct while the page insists it does not exist.
+ *
+ * Vite inlines BASE_URL at build time, so this is the same prefix the asset
+ * URLs and the injected config.js already use -- one source, not two.
+ */
+export const router = createBrowserRouter(
+  [
+    {
+      path: '/',
+      element: <AppShell />,
+      children: [
+        { index: true, element: defer(<HomePage />) },
+        { path: 'login', element: defer(<LoginPage />) },
+        { path: 'auth/callback', element: defer(<AuthCallbackPage />) },
+        { path: 'course/:courseId', element: guarded(<CoursePage />) },
+        { path: 'workbench/:assignmentId', element: guarded(<WorkbenchPage />) },
+        { path: 'learn', element: defer(<LearnPage />) },
+        { path: 'learn/:lessonId', element: defer(<LessonPage />) },
+        { path: 'submissions', element: guarded(<SubmissionsPage />) },
+        { path: 'teacher', element: guarded(<TeacherPage />, true) },
+        { path: '*', element: defer(<NotFoundPage />) },
+      ],
+    },
+  ],
+  { basename: import.meta.env.BASE_URL.replace(/\/$/, '') || '/' },
+);
