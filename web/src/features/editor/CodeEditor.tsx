@@ -10,23 +10,25 @@ import {
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { python } from '@codemirror/lang-python';
 import { oneDark } from '@codemirror/theme-one-dark';
+import { useTheme } from '@/store/theme';
 
 interface CodeEditorProps {
   value: string;
   onChange: (next: string) => void;
-  dark: boolean;
   readOnly?: boolean;
   ariaLabel?: string;
 }
 
 /** CodeMirror 6 wrapper. Created once; external value changes are reconciled
  *  without recreating the view so cursor and undo history survive re-renders. */
-export function CodeEditor({ value, onChange, dark, readOnly = false, ariaLabel }: CodeEditorProps) {
+export function CodeEditor({ value, onChange, readOnly = false, ariaLabel }: CodeEditorProps) {
   const host = useRef<HTMLDivElement | null>(null);
   const view = useRef<EditorView | null>(null);
   const themeSlot = useRef(new Compartment());
   const readOnlySlot = useRef(new Compartment());
   const onChangeRef = useRef(onChange);
+  // Read at mount only; later changes are pushed through the theme compartment.
+  const theme = useTheme((state) => state.theme);
 
   onChangeRef.current = onChange;
 
@@ -42,7 +44,7 @@ export function CodeEditor({ value, onChange, dark, readOnly = false, ariaLabel 
         keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
         python(),
         EditorView.lineWrapping,
-        themeSlot.current.of(dark ? oneDark : []),
+        themeSlot.current.of(theme === 'dark' ? oneDark : []),
         readOnlySlot.current.of(EditorState.readOnly.of(readOnly)),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) onChangeRef.current(update.state.doc.toString());
@@ -65,9 +67,9 @@ export function CodeEditor({ value, onChange, dark, readOnly = false, ariaLabel 
 
   useEffect(() => {
     view.current?.dispatch({
-      effects: themeSlot.current.reconfigure(dark ? oneDark : []),
+      effects: themeSlot.current.reconfigure(theme === 'dark' ? oneDark : []),
     });
-  }, [dark]);
+  }, [theme]);
 
   useEffect(() => {
     view.current?.dispatch({

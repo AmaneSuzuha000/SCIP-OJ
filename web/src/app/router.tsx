@@ -12,6 +12,9 @@ const WorkbenchPage = lazy(() =>
   import('@/routes/WorkbenchPage').then((m) => ({ default: m.WorkbenchPage })),
 );
 const LearnPage = lazy(() => import('@/routes/LearnPage').then((m) => ({ default: m.LearnPage })));
+const LessonPage = lazy(() =>
+  import('@/routes/LessonPage').then((m) => ({ default: m.LessonPage })),
+);
 const SubmissionsPage = lazy(() =>
   import('@/routes/SubmissionsPage').then((m) => ({ default: m.SubmissionsPage })),
 );
@@ -49,6 +52,7 @@ export const router = createBrowserRouter([
       { path: 'course/:courseId', element: guarded(<CoursePage />) },
       { path: 'workbench/:assignmentId', element: guarded(<WorkbenchPage />) },
       { path: 'learn', element: defer(<LearnPage />) },
+      { path: 'learn/:lessonId', element: defer(<LessonPage />) },
       { path: 'submissions', element: guarded(<SubmissionsPage />) },
       { path: 'teacher', element: guarded(<TeacherPage />, true) },
       { path: '*', element: defer(<NotFoundPage />) },

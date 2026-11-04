@@ -1,24 +1,46 @@
+import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui';
+import { lessons } from '@/features/notebook/lessons';
 
+/**
+ * The course index. Every entry is a notebook the graders also read, so what a
+ * student practises here and what gets graded cannot drift apart.
+ */
 export function LearnPage() {
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-lg font-semibold text-primary">拓展学习</h2>
-      <p className="text-sm text-secondary">
-        开放案例不进入正式成绩，可以自由改参数、导出实验记录。
-      </p>
-      <div className="grid gap-4 sm:grid-cols-2">
-        {[
-          { title: 'IE-DES-01 检修排队', desc: '多工位 FCFS 离散事件仿真与配对置信区间' },
-          { title: 'IE-MC-02 随机库存', desc: '周期检查补货、丢失销售与服务水平' },
-          { title: 'IE-DES-03 双工序产线', desc: '有限缓冲与加工后阻塞' },
-          { title: 'SCIP 官方示例', desc: '背包、EOQ、设施选址、流水车间' },
-        ].map((item) => (
-          <Card key={item.title} className="p-5">
-            <p className="text-sm font-medium text-primary">{item.title}</p>
-            <p className="mt-1 text-xs text-tertiary">{item.desc}</p>
-          </Card>
-        ))}
+      <div>
+        <h2 className="text-lg font-semibold text-primary">建模实验</h2>
+        <p className="mt-1 text-sm text-secondary">
+          11 个 PySCIPOpt 案例，直接在浏览器里运行，无需安装任何环境。
+        </p>
+      </div>
+
+      <Card className="border-warning/40 bg-warning-soft/40 p-4">
+        <p className="text-xs leading-relaxed text-secondary">
+          <span className="font-medium text-primary">练习不等于成绩。</span>
+          这里的求解在浏览器内核中完成，只用于学习；提交作业后由隔离容器里的原生 PySCIPOpt
+          重新求解，那一份结果才是成绩。
+        </p>
+      </Card>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        {lessons.map((lesson) => {
+          const codeCells = lesson.cells.filter((cell) => cell.kind === 'code').length;
+          return (
+            <Link key={lesson.id} to={'/learn/' + lesson.id} className="group">
+              <Card className="h-full p-5 transition-colors duration-[var(--duration-fast)] group-hover:bg-hover">
+                <p className="text-sm font-medium text-primary">{lesson.title}</p>
+                {lesson.summary ? (
+                  <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-tertiary">
+                    {lesson.summary}
+                  </p>
+                ) : null}
+                <p className="mt-2 text-xs text-tertiary">{codeCells} 个可运行单元</p>
+              </Card>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

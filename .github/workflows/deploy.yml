@@ -28,43 +28,25 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      - name: Build portal components
-        run: npm ci && npm run build
-      - name: Install micromamba & build environment
-        uses: mamba-org/setup-micromamba@v1
-        with:
-          micromamba-version: "1.5.8-0"
-          environment-file: .github/build-environment.yml
-          cache-environment: true
 
-      - name: Build JupyterLite site
-        shell: bash -l {0}
-        run: |
-          jupyter lite build --contents content --output-dir lite-build
-
-      - name: Build React shell (optional cutover)
-        if: vars.WEB_SHELL == 'react'
+      - name: Build the course app
         env:
           # A project page is served from /<repo>/, so the bundle and the
           # injected config.js must be requested under that prefix.
           VITE_BASE: ${{ format('/{0}/', github.event.repository.name) }}
+        # build also stages runtime/: Pyodide plus the numpy/scipy wheels.
         run: npm --prefix web ci && npm --prefix web run build
 
-      - name: Assemble course portal and notebook runtime
+      - name: Assemble course site
         shell: bash
         env:
           SCIP_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SCIP_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          WEB_SHELL: ${{ vars.WEB_SHELL }}
         run: |
-          # Reversible cutover: set repository variable WEB_SHELL=react to
-          # serve the React app; unset it to serve the legacy portal. The
-          # notebook runtime, docs and problems are staged in either case.
-          SHELL_FLAG=""
-          if [ "$WEB_SHELL" = "react" ]; then
-            SHELL_FLAG="--web-dist web/dist"
-          fi
-          python3 scripts/assemble_site.py --lite lite-build --output dist $SHELL_FLAG
+          # The React app is the site. JupyterLite is no longer shipped: the
+          # lessons run on the in-page Pyodide kernel instead, so there is no
+          # notebook server and no second frontend to keep in sync.
+          python3 scripts/assemble_site.py --web-dist web/dist --output dist
           if [ -n "$SCIP_SUPABASE_URL" ] && [ -n "$SCIP_SUPABASE_ANON_KEY" ]; then
             python3 -c 'import json,os,pathlib; pathlib.Path("dist/config.js").write_text("window.SCIP_OJ_CONFIG = " + json.dumps({"SUPABASE_URL": os.environ["SCIP_SUPABASE_URL"], "SUPABASE_ANON_KEY": os.environ["SCIP_SUPABASE_ANON_KEY"], "MOCK_MODE": False}, indent=2) + ";\n")'
           fi

@@ -16,6 +16,7 @@ describe('router', () => {
       'course/:courseId',
       'workbench/:assignmentId',
       'learn',
+      'learn/:lessonId',
       'submissions',
       'teacher',
       '*',

@@ -4,7 +4,6 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { Badge, Button, Card, EmptyState, Spinner } from '@/components/ui';
 import { CodeEditor } from '@/features/editor/CodeEditor';
 import { latestGrading, newRequestKey, submitCode } from '@/features/grading/api';
-import { useTheme } from '@/store/theme';
 
 const TEMPLATE = [
   'def solve(instance):',
@@ -15,13 +14,11 @@ const TEMPLATE = [
 
 export function WorkbenchPage() {
   const { assignmentId } = useParams<{ assignmentId: string }>();
-  const theme = useTheme((s) => s.theme);
   const [code, setCode] = useState(TEMPLATE);
   const [submissionId, setSubmissionId] = useState<string | null>(null);
 
   // One request key per attempt: retrying the same attempt must stay idempotent.
   const requestKey = useMemo(() => newRequestKey(), []);
-  const dark = theme === 'dark';
 
   const submit = useMutation({
     mutationFn: () =>
@@ -52,7 +49,7 @@ export function WorkbenchPage() {
             {submit.isPending ? '提交中…' : '提交作业'}
           </Button>
         </div>
-        <CodeEditor value={code} onChange={setCode} dark={dark} ariaLabel="作业代码编辑器" />
+        <CodeEditor value={code} onChange={setCode} ariaLabel="作业代码编辑器" />
       </div>
 
       <Card className="flex flex-col gap-3 p-4">
