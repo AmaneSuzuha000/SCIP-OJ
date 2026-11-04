@@ -41,16 +41,37 @@ function indexUrl(): string {
   return new URL(base + 'runtime/pyodide/', window.location.href).href;
 }
 
+/**
+ * Load numpy and scipy, then prove scipy actually imports.
+ *
+ * loadPackage resolves once the wheels are installed, but a dropped or
+ * truncated download has been observed to leave scipy absent anyway -- the
+ * first cell then dies with "scipy is not available" although boot reported
+ * success. Verifying the import turns that silent half-loaded state into a
+ * retry, which is what a student on a flaky connection needs.
+ */
+async function loadPackages(pyodide: PyodideLike): Promise<void> {
+  const attempt = async () => {
+    await pyodide.loadPackage(['numpy', 'scipy']);
+    await pyodide.runPythonAsync('import scipy.optimize');
+  };
+  try {
+    await attempt();
+  } catch {
+    await attempt();
+  }
+}
+
 let kernelPromise: Promise<PyodideLike> | null = null;
 
 async function boot(onProgress?: ProgressFn): Promise<PyodideLike> {
-  onProgress?.({ stage: 'loading', message: '正在加载 Python 运行时，首次使用需要下载约 10 MB…' });
+  onProgress?.({ stage: 'loading', message: '正在加载 Python 运行时，首次使用需要下载约 29 MB…' });
 
   const mod = await import(/* @vite-ignore */ indexUrl() + 'pyodide.mjs');
   const pyodide = (await mod.loadPyodide({ indexURL: indexUrl() })) as PyodideLike;
 
   onProgress?.({ stage: 'packages', message: '正在加载 numpy 与 scipy…' });
-  await pyodide.loadPackage(['numpy', 'scipy']);
+  await loadPackages(pyodide);
 
   // Install the compat layer where 'import pyscipopt' will find it.
   //

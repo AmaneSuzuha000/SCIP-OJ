@@ -54,8 +54,12 @@ let failures = 0;
 for (const lesson of lessons) {
   await page.goto(BASE + '/learn/' + lesson.id, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: '全部运行' }).click();
-  // The kernel is cached after the first lesson; later ones finish quickly.
-  await page.waitForFunction(() => !document.body.innerText.includes('运行中…'), {
+  // Each lesson is a full page load, so each one boots its own kernel and pays
+  // the runtime download (served from the HTTP cache after the first).
+  // waitForFunction takes (fn, arg, options) -- passing the options second made
+  // them the arg, so the 300s budget below never applied and a cold first
+  // lesson died on the 30s default instead.
+  await page.waitForFunction(() => !document.body.innerText.includes('运行中…'), null, {
     timeout: 300000,
   });
 

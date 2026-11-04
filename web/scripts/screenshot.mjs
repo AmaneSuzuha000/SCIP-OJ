@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
-const BASE = process.env.BASE_URL ?? 'http://127.0.0.1:4192/SCIP-OJ';
+const BASE = 'https://amanesuzuha000.github.io/SCIP-OJ';
 const OUT = join(import.meta.dirname, '..', 'shots');
 const cache = join(homedir(), 'AppData', 'Local', 'ms-playwright');
 let executablePath = null;
@@ -21,15 +21,13 @@ page.on('response', (r) => {
   if (r.status() >= 400 && /\.[a-z0-9]+$/i.test(p)) problems.push(r.status() + ' ' + p);
 });
 
-await page.goto(BASE + '/docs', { waitUntil: 'networkidle' });
-await page.waitForTimeout(1000);
-await page.screenshot({ path: join(OUT, 'docs-index.png') });
-console.log('docs-index.png');
-
-await page.goto(BASE + '/docs/student-guide', { waitUntil: 'networkidle' });
-await page.waitForTimeout(800);
-await page.screenshot({ path: join(OUT, 'docs-article.png') });
-console.log('docs-article.png');
+for (const [path, shotName] of [['/docs', 'live-docs.png'], ['/docs/student-guide', 'live-doc.png']]) {
+  await page.goto(BASE + path, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(1200);
+  const text = (await page.locator('body').innerText()).slice(0, 160).replace(/\n/g, ' | ');
+  console.log(path, '->', text);
+  await page.screenshot({ path: join(OUT, shotName) });
+}
 
 console.log('资源错误:', problems.length ? problems.join(' | ') : '无');
 await browser.close();
