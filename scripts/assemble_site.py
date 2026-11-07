@@ -53,9 +53,15 @@ def assemble(web_dist, output):
     if lessons.is_dir():
         shutil.copytree(lessons, docs_out / 'lessons')
 
-    # Problem definitions stay published: they are the contract students code
-    # against, and the graders read the same files.
-    shutil.copytree(ROOT / 'problems', output / 'problems')
+    # Nothing from problems/ is published. The app reads no file from there:
+    # /learn and /workbench render statements embedded at build time by
+    # scripts/gen-problems.mjs, and the grader runs from the repository, not
+    # from the site. Copying the directory shipped reference_pyscipopt.py and
+    # reference_simulation.py -- the full-mark answers -- to anyone who guessed
+    # the URL, along with judge.py and a stray __pycache__.
+    #
+    # If a future page does need a problem asset at runtime, publish that one
+    # file explicitly rather than restoring the directory copy.
     shutil.copyfile(ROOT / 'README.md', output / 'README.md')
     (output / '.nojekyll').touch()
 

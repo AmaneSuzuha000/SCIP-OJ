@@ -82,6 +82,24 @@ class SiteAssemblyTests(unittest.TestCase):
         self.assertFalse((self.out / "docs" / "ACCESS_CONTROL.md").exists())
         self.assertFalse((self.out / "docs" / "design-evidence").exists())
 
+    def test_no_problem_answer_reaches_the_public_site(self):
+        # A directory copy shipped reference_pyscipopt.py and
+        # reference_simulation.py to anyone who requested the URL. The
+        # statements the app renders are embedded at build time, so nothing in
+        # problems/ is needed at runtime and nothing from it may ship.
+        assemble(self.web, self.out)
+        self.assertFalse((self.out / "problems").exists())
+
+    def test_answering_files_are_named_and_kept_in_the_repository(self):
+        # Guard the guard: if the answer files disappeared from the repository,
+        # the test above would pass for the wrong reason.
+        for relative in (
+            "problems/P001_knapsack/reference_pyscipopt.py",
+            "problems/IE_DES01_queueing/reference_simulation.py",
+            "problems/P001_knapsack/judge.py",
+        ):
+            self.assertTrue((ROOT / relative).is_file(), relative)
+
     def test_output_must_be_a_fresh_directory(self):
         self.out.mkdir()
         with self.assertRaises(ValueError):
