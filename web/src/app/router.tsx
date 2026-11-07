@@ -1,6 +1,7 @@
 import { lazy, Suspense, type ReactNode } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import { AppShell } from '@/components/AppShell';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RequireAccess } from '@/components/RequireAccess';
 import { Spinner } from '@/components/ui';
 
@@ -31,11 +32,19 @@ const NotFoundPage = lazy(() =>
   import('@/routes/NotFoundPage').then((m) => ({ default: m.NotFoundPage })),
 );
 
+/**
+ * Every route goes through here, so one boundary covers the whole app: a page
+ * that throws during render shows what failed instead of unmounting the shell
+ * and leaving a blank document. It sits inside AppShell, so the navigation stays
+ * usable and a student can click somewhere else rather than reload.
+ */
 function defer(node: ReactNode) {
   return (
-    <Suspense fallback={<div className="py-10"><Spinner label="加载页面" /></div>}>
-      {node}
-    </Suspense>
+    <ErrorBoundary>
+      <Suspense fallback={<div className="py-10"><Spinner label="加载页面" /></div>}>
+        {node}
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 
