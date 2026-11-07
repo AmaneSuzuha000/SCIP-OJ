@@ -1,0 +1,5 @@
+Remove the commit-message files that were committed by mistake
+
+_msg3.txt and _msg4.txt were scratch files written to hold a commit message and
+then picked up by `git add -A` in the same command that was meant to delete
+them. Neither is referenced by anything.
