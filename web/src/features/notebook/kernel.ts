@@ -1,136 +1,191 @@
 /**
- * The in-browser Python practice kernel.
+ * The in-browser Python practice kernel: a handle onto a worker.
  *
  * The course notebooks are written against PySCIPOpt, which is a binding to a
  * C++ solver and therefore cannot run in a browser. Rather than ship a second
- * full JupyterLab just to host a kernel, this module boots Pyodide directly and
+ * full JupyterLab just to host a kernel, this drives Pyodide directly and
  * installs a PySCIPOpt-compatible shim (web/runtime/pyscipopt.py) backed by
  * SciPy's HiGHS. The notebooks run unmodified.
+ *
+ * The interpreter lives in kernel-worker.ts. It cannot live here: a cell that
+ * never returns blocks the thread it runs on, and on the main thread that freezes
+ * the tab -- no repaint, no button, no way out but force-quitting. A worker can
+ * be terminated, so a runaway cell costs a runtime restart instead of the page.
+ * Pyodide's own interrupt buffer would be lighter but needs COOP/COEP headers,
+ * which GitHub Pages will not serve.
  *
  * This is the PRACTICE path only. Formal grades are produced by real PySCIPOpt
  * inside the isolated container, so nothing here can influence a score.
  */
+import type { CellResult, KernelProgress } from './kernel-protocol';
 
-export interface KernelProgress {
-  stage: 'loading' | 'packages' | 'ready' | 'running';
-  message: string;
-}
-
-export interface CellResult {
-  ok: boolean;
-  stdout: string;
-  error: string | null;
-  errorType: string | null;
-}
+export type { CellResult, KernelProgress };
 
 type ProgressFn = (progress: KernelProgress) => void;
 
-interface PyodideLike {
-  runPythonAsync(code: string): Promise<unknown>;
-  runPython(code: string): unknown;
-  loadPackage(names: string | string[]): Promise<void>;
-  FS: { writeFile(path: string, data: Uint8Array): void; mkdir(path: string): void };
-  setStdout(options: { batched: (text: string) => void }): void;
-  setStderr(options: { batched: (text: string) => void }): void;
-  globals: { get(name: string): unknown };
+/**
+ * Generous on purpose. Course notebooks solve small MILPs that finish in
+ * seconds; this only has to catch code that will never finish at all.
+ */
+const RUN_TIMEOUT_MS = 60_000;
+
+const TIMEOUT_MESSAGE =
+  '运行超过 60 秒，已停止并重置 Python 环境（之前定义的变量需要重新运行）。' +
+  '如果这是死循环，检查循环条件；如果只是求解规模大，试着减小实例。';
+
+export class Kernel {
+  private worker: Worker | null = null;
+  private booting: Promise<void> | null = null;
+  private booted = false;
+  private seq = 0;
+  private pending = new Map<number, (result: CellResult) => void>();
+  private progress: ProgressFn | undefined;
+
+  constructor(onProgress?: ProgressFn) {
+    this.progress = onProgress;
+  }
+
+  private spawn(): Worker {
+    const worker = new Worker(new URL('./kernel-worker.ts', import.meta.url), { type: 'module' });
+    worker.onmessage = (event: MessageEvent<Record<string, unknown>>) => this.receive(event.data);
+    worker.onerror = (event: ErrorEvent) => {
+      this.abort('Python 运行时崩溃：' + (event.message || '未知错误'));
+    };
+    return worker;
+  }
+
+  /** Long-lived handler: progress, results, and a crash mid-run. */
+  private receive(data: Record<string, unknown>) {
+    if (data.type === 'progress') {
+      this.progress?.(data.progress as KernelProgress);
+      return;
+    }
+    if (data.type === 'result') {
+      const deliver = this.pending.get(data.id as number);
+      if (!deliver) return;
+      this.pending.delete(data.id as number);
+      deliver(data.result as CellResult);
+      return;
+    }
+    if (data.type === 'boot-failed') {
+      this.abort(String(data.message ?? '无法启动 Python 环境'));
+    }
+  }
+
+  /**
+   * Throw away the worker and everything in it.
+   *
+   * Called on timeout, on a crash, and by resetKernel. Every caller still
+   * waiting gets a failure rather than a promise that never settles.
+   */
+  private abort(reason: string) {
+    const waiting = [...this.pending.values()];
+    this.pending.clear();
+    this.worker?.terminate();
+    this.worker = null;
+    this.booting = null;
+    this.booted = false;
+    for (const deliver of waiting) {
+      deliver({ ok: false, stdout: '', error: reason, errorType: 'KernelError' });
+    }
+  }
+
+  /**
+   * Boot the interpreter. Idempotent, and a terminated worker reboots here.
+   *
+   * The one-shot listener cleans itself up; receive() stays attached for the
+   * life of the worker to carry progress and results.
+   */
+  ready(): Promise<void> {
+    if (this.booted && this.worker) return Promise.resolve();
+    if (this.booting) return this.booting;
+    if (!this.worker) this.worker = this.spawn();
+
+    const worker = this.worker;
+    this.booting = new Promise<void>((resolve, reject) => {
+      const settle = (event: MessageEvent<Record<string, unknown>>) => {
+        if (event.data.type === 'ready') {
+          worker.removeEventListener('message', settle);
+          this.booted = true;
+          this.booting = null;
+          resolve();
+        } else if (event.data.type === 'boot-failed') {
+          worker.removeEventListener('message', settle);
+          reject(new Error(String(event.data.message ?? '无法启动 Python 环境')));
+        }
+      };
+      worker.addEventListener('message', settle);
+      worker.postMessage({ type: 'boot' });
+    }).catch((cause) => {
+      this.abort(cause instanceof Error ? cause.message : String(cause));
+      throw cause;
+    });
+    return this.booting;
+  }
+
+  async run(code: string): Promise<CellResult> {
+    await this.ready();
+    const worker = this.worker;
+    if (!worker) {
+      return { ok: false, stdout: '', error: 'Python 环境不可用', errorType: 'KernelError' };
+    }
+
+    return new Promise<CellResult>((resolve) => {
+      const id = ++this.seq;
+      const timer = setTimeout(() => {
+        this.pending.delete(id);
+        this.abort(TIMEOUT_MESSAGE);
+        resolve({ ok: false, stdout: '', error: TIMEOUT_MESSAGE, errorType: 'TimeoutError' });
+      }, RUN_TIMEOUT_MS);
+
+      this.pending.set(id, (result) => {
+        clearTimeout(timer);
+        resolve(result);
+      });
+      worker.postMessage({ type: 'run', id, code });
+    });
+  }
+
+  dispose() {
+    this.abort('内核已关闭');
+  }
 }
 
-/** Where the Pyodide distribution lives. The deploy places it under runtime/. */
-function indexUrl(): string {
-  const base = import.meta.env.BASE_URL || '/';
-  return new URL(base + 'runtime/pyodide/', window.location.href).href;
-}
+let singleton: Kernel | null = null;
+let bootPromise: Promise<Kernel> | null = null;
 
 /**
- * Load numpy and scipy, then prove scipy actually imports.
+ * Boot once per page; concurrent callers share the same promise.
  *
- * loadPackage resolves once the wheels are installed, but a dropped or
- * truncated download has been observed to leave scipy absent anyway -- the
- * first cell then dies with "scipy is not available" although boot reported
- * success. Verifying the import turns that silent half-loaded state into a
- * retry, which is what a student on a flaky connection needs.
+ * A failed boot clears the cache so a retry starts clean. Once booted the
+ * handle outlives a terminated worker: it starts a fresh one on next use.
  */
-async function loadPackages(pyodide: PyodideLike): Promise<void> {
-  const attempt = async () => {
-    await pyodide.loadPackage(['numpy', 'scipy']);
-    await pyodide.runPythonAsync('import scipy.optimize');
-  };
-  try {
-    await attempt();
-  } catch {
-    await attempt();
-  }
-}
+export function loadKernel(onProgress?: ProgressFn): Promise<Kernel> {
+  if (singleton) return Promise.resolve(singleton);
+  if (bootPromise) return bootPromise;
 
-let kernelPromise: Promise<PyodideLike> | null = null;
-
-async function boot(onProgress?: ProgressFn): Promise<PyodideLike> {
-  onProgress?.({ stage: 'loading', message: '正在加载 Python 运行时，首次使用需要下载约 29 MB…' });
-
-  const mod = await import(/* @vite-ignore */ indexUrl() + 'pyodide.mjs');
-  const pyodide = (await mod.loadPyodide({ indexURL: indexUrl() })) as PyodideLike;
-
-  onProgress?.({ stage: 'packages', message: '正在加载 numpy 与 scipy…' });
-  await loadPackages(pyodide);
-
-  // Install the compat layer where 'import pyscipopt' will find it.
-  //
-  // Pages serves 404.html for anything missing, so a wrong URL here still
-  // returns 200 with HTML in the body. Check the content, not just the status,
-  // or the failure resurfaces later as a bizarre SyntaxError inside CPython.
-  const shimUrl = new URL(import.meta.env.BASE_URL + 'runtime/pyscipopt.py', window.location.href);
-  const shim = await fetch(shimUrl);
-  if (!shim.ok) throw new Error('无法加载建模兼容层（pyscipopt.py）：HTTP ' + shim.status);
-  const source = await shim.text();
-  if (!source.startsWith('"""')) {
-    throw new Error(
-      '建模兼容层内容不对（收到 ' + source.slice(0, 40).replace(/\s+/g, ' ') + '…），' +
-        '多半是部署里缺少 runtime/pyscipopt.py',
-    );
-  }
-  pyodide.FS.writeFile(
-    '/lib/python3.13/site-packages/pyscipopt.py',
-    new TextEncoder().encode(source),
-  );
-
-  onProgress?.({ stage: 'ready', message: '建模环境已就绪' });
-  return pyodide;
-}
-
-/** Boot once per page; concurrent callers share the same promise. */
-export function loadKernel(onProgress?: ProgressFn): Promise<PyodideLike> {
-  kernelPromise ??= boot(onProgress).catch((cause) => {
-    kernelPromise = null; // let a retry start cleanly
-    throw cause;
-  });
-  return kernelPromise;
+  const kernel = new Kernel(onProgress);
+  bootPromise = kernel
+    .ready()
+    .then(() => {
+      singleton = kernel;
+      return kernel;
+    })
+    .catch((cause) => {
+      kernel.dispose();
+      bootPromise = null;
+      throw cause;
+    });
+  return bootPromise;
 }
 
 export function resetKernel(): void {
-  kernelPromise = null;
+  singleton?.dispose();
+  singleton = null;
+  bootPromise = null;
 }
 
-/**
- * Run one notebook cell. Output is captured rather than streamed so a cell's
- * result stays attached to that cell in the UI.
- */
-export async function runCell(pyodide: PyodideLike, code: string): Promise<CellResult> {
-  let stdout = '';
-  let stderr = '';
-  pyodide.setStdout({ batched: (text) => { stdout += text + '\n'; } });
-  pyodide.setStderr({ batched: (text) => { stderr += text + '\n'; } });
-
-  try {
-    await pyodide.runPythonAsync(code);
-    return { ok: true, stdout: stdout + stderr, error: null, errorType: null };
-  } catch (cause) {
-    const message = cause instanceof Error ? cause.message : String(cause);
-    const typeMatch = /^([A-Za-z_][A-Za-z0-9_.]*Error|[A-Za-z_][A-Za-z0-9_.]*Exception)/.exec(message);
-    return {
-      ok: false,
-      stdout: stdout + stderr,
-      error: message,
-      errorType: typeMatch?.[1] ?? null,
-    };
-  }
+/** Run one cell. Output is captured whole so it stays attached to that cell. */
+export function runCell(kernel: Kernel, code: string): Promise<CellResult> {
+  return kernel.run(code);
 }
