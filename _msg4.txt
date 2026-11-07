@@ -1,0 +1,18 @@
+Describe the access control that exists, not the portal that doesn't
+
+The document still explained how seven portal pages were wrapped around an
+inert template, mounted only after an RPC returned true. That portal was deleted
+in 4c7a432, so every reader was being told how a system that no longer exists
+works.
+
+Rewritten around the three places access is actually enforced now: restrictive
+RLS policies layered on the existing course and ownership rules, the two access
+RPCs, and the whitelist check inside each user-facing Edge Function. It also
+records why RequireAccess is guidance rather than a boundary -- bypassing it in
+the browser still hits the data layer.
+
+Adds the one thing the audit turned up that a reader of this file most needs to
+know: static assets are public by design, so anything that must not be public
+has to stay out of the build, and problems/ now does.
+
+Still not published -- it names the whitelist's provider IDs.
