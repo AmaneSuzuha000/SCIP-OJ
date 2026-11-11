@@ -195,10 +195,17 @@ class Model:
         self._status = "unknown"
         self._objval = None
         self._verbose = True
+        self._params: dict[str, object] = {}
 
     # ---- building ---------------------------------------------------
     def hideOutput(self, flag=True):
         self._verbose = not flag
+
+    def setParam(self, name, value):
+        if name == "display/verblevel":
+            self._verbose = bool(value)
+        else:
+            self._params[str(name)] = value
 
     def addVar(self, name="", vtype="C", lb=0.0, ub=None, obj=0.0):
         if vtype not in ("C", "B", "I"):
@@ -235,8 +242,15 @@ class Model:
 
         count = len(self._vars)
         c = np.zeros(count)
-        for idx, value in self._objective.coeffs.items():
-            c[idx] = value
+        if self._objective.coeffs or self._objective.const != 0.0:
+            for idx, value in self._objective.coeffs.items():
+                c[idx] = value
+            obj_const = float(self._objective.const)
+        else:
+            obj_const = 0.0
+            for var in self._vars:
+                if var.obj:
+                    c[var.index] = var.obj
         # HiGHS minimizes; negate for a maximization model.
         if self._sense == "maximize":
             c = -c
@@ -271,7 +285,8 @@ class Model:
         self._status = _SCIP_STATUS_BY_MILP.get(result.status, "unknown")
         if self._status == OPTIMAL:
             self._solution = {i: float(result.x[i]) for i in range(count)}
-            self._objval = float(-result.fun) if self._sense == "maximize" else float(result.fun)
+            raw_obj = float(-result.fun) if self._sense == "maximize" else float(result.fun)
+            self._objval = raw_obj + obj_const
         else:
             self._solution = {}
             self._objval = None
@@ -279,6 +294,28 @@ class Model:
     # ---- querying ---------------------------------------------------
     def getStatus(self):
         return _Status(self._status)
+
+    def getNSols(self):
+        return 1 if self._solution else 0
+
+    def getBestSol(self):
+        if not self._solution:
+            return None
+        return dict(self._solution)
+
+    def getSols(self):
+        return [dict(self._solution)] if self._solution else []
+
+    def getSolVal(self, sol, expr):
+        if not sol:
+            raise ConstraintError("模型尚未得到可行解，无法读取取值")
+        if isinstance(expr, Variable):
+            return sol[expr.index]
+        if isinstance(expr, _Expr):
+            return sum(coef * sol[i] for i, coef in expr.coeffs.items()) + expr.const
+        if isinstance(expr, (int, float, np.integer, np.floating)):
+            return float(expr)
+        raise TypeError("getSolVal 需要变量或线性表达式")
 
     def getVal(self, expr):
         if not self._solution:

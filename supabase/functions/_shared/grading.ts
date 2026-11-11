@@ -60,6 +60,7 @@ export function gradingError(error: { message?: string }): Response {
     ["TEACHER_ROLE_REQUIRED",403,"仅本课程教师或助教可发起复判"],
     ["ASSIGNMENT_NOT_FOUND",404,"作业不存在"],
     ["SUBMISSION_NOT_FOUND",404,"提交记录不存在"],
+    ["INVALID_GRADER_REF",503,"评分器版本校验失败，请重试或联系教师"],
     ["INVALID_GRADING_CONFIG",400,"作业评分配置无效"],
   ] as const) if (message.includes(code)) return errorResponse(text,status,code);
   console.error("[Grading] transaction failed");

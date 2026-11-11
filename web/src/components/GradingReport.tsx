@@ -1,0 +1,118 @@
+import { Badge } from '@/components/ui';
+
+interface InstanceReport {
+  score?: number;
+  passed?: boolean;
+  breakdown?: Record<string, number>;
+  messages?: string[];
+}
+
+export interface GradingReportData {
+  score?: number | null;
+  passed?: boolean;
+  breakdown?: Record<string, number>;
+  messages?: string[];
+  error?: string;
+  instances?: InstanceReport[];
+  execution?: {
+    grader_ref?: string;
+    pass_score?: number;
+    n_instances?: number;
+    image_digest?: string | null;
+  };
+}
+
+const BREAKDOWN_LABELS: Record<string, string> = {
+  F: '格式 F',
+  C: '约束 C',
+  I: '整数性 I',
+  O: '目标 O',
+};
+
+export function GradingReport({
+  report,
+  errorMessage,
+}: {
+  report: Record<string, unknown> | null | undefined;
+  errorMessage?: string | null;
+}) {
+  const data = (report ?? null) as GradingReportData | null;
+  const diag = errorMessage || (typeof data?.error === 'string' ? data.error : null);
+  const breakdown = data?.breakdown;
+  const messages = Array.isArray(data?.messages) ? data.messages : [];
+  const instances = Array.isArray(data?.instances) ? data.instances : [];
+  const execMeta = data?.execution;
+
+  if (!diag && !breakdown && messages.length === 0 && instances.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-col gap-3 text-xs">
+      {diag ? (
+        <div className="rounded-[var(--radius-md)] border border-danger bg-danger-soft p-2.5 text-danger">
+          {diag}
+        </div>
+      ) : null}
+
+      {breakdown && Object.keys(breakdown).length > 0 ? (
+        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+          {Object.entries(breakdown)
+            .filter(([key]) => key !== 'R')
+            .map(([key, value]) => (
+              <div
+                key={key}
+                className="flex items-center justify-between rounded-[var(--radius-sm)] bg-muted px-2 py-1"
+              >
+                <span className="text-tertiary">{BREAKDOWN_LABELS[key] ?? key}</span>
+                <span className="font-mono font-medium text-primary">{value}</span>
+              </div>
+            ))}
+        </div>
+      ) : null}
+
+      {messages.length > 0 ? (
+        <ul className="space-y-1 text-secondary">
+          {messages.map((msg, idx) => (
+            <li key={idx}>• {String(msg)}</li>
+          ))}
+        </ul>
+      ) : null}
+
+      {instances.length > 0 ? (
+        <div className="flex flex-col gap-1.5">
+          <p className="font-medium text-primary">私有实例明细（{instances.length} 组）</p>
+          <div className="divide-y divide-subtle rounded-[var(--radius-md)] border border-subtle">
+            {instances.map((inst, index) => (
+              <div key={index} className="flex flex-col gap-1 p-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-secondary">实例 #{index + 1}</span>
+                  <div className="flex items-center gap-2">
+                    {typeof inst.passed === 'boolean' ? (
+                      <Badge tone={inst.passed ? 'success' : 'warning'}>
+                        {inst.passed ? '通过' : '未达标'}
+                      </Badge>
+                    ) : null}
+                    <span className="font-mono font-semibold text-primary">
+                      {inst.score ?? '—'} 分
+                    </span>
+                  </div>
+                </div>
+                {Array.isArray(inst.messages) && inst.messages.length > 0 ? (
+                  <p className="text-tertiary">{inst.messages.join('；')}</p>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {execMeta?.grader_ref ? (
+        <p className="font-mono text-[11px] text-tertiary">
+          评分器版本 {execMeta.grader_ref.slice(0, 8)}
+          {execMeta.image_digest ? ' · 容器校验已记录' : ''}
+        </p>
+      ) : null}
+    </div>
+  );
+}

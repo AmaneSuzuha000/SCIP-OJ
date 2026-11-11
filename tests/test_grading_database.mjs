@@ -118,6 +118,61 @@ try {
   await exec('SET ROLE service_role');
   assert.equal((await enqueue()).submission_id,accepted.submission_id);
   await exec('RESET ROLE');
+  // Audit fixes: unsupported problem rejected, leaderboard excludes staff trials,
+  // bidirectional roster sync & stale verification invalidation.
+  const badAssignment=randomUUID();
+  await query(`INSERT INTO public.assignments(id,course_id,problem_id,n_instances,pass_score) VALUES($1,$2,'IE-DES-01',2,90)`,[badAssignment,course]);
+  await assert.rejects(query(`SELECT public.enqueue_grading($1,$2,NULL,$3,$4,$5,'{}',NULL)`,[student,badAssignment,source,randomUUID(),ref]),/INVALID_GRADING_CONFIG/);
+
+  // Teacher trial submission must stay visible in teacher gradebook, NOT leaderboard.
+  const teacherTrial=await enqueue(teacher,randomUUID(),null,source,ref);
+  await scalar(`SELECT claim_grading($1,$2,'run_7_1')`,[teacherTrial.grading_id,teacherTrial.submission_id]);
+  await scalar(`SELECT complete_grading($1,$2,'run_7_1','done',100,true,'{}',NULL)`,[teacherTrial.grading_id,teacherTrial.submission_id]);
+  await query("SELECT set_config('request.jwt.claim.sub',$1,false),set_config('request.jwt.claims',$2,false)",[student,JSON.stringify({sub:student,role:'authenticated'})]);
+  await exec('SET ROLE authenticated');
+  const lbAll=(await query('SELECT * FROM get_course_leaderboard($1,NULL)',[course])).rows;
+  const lbProblem=(await query("SELECT * FROM get_course_leaderboard($1,'P001')",[course])).rows;
+  assert.equal(lbAll.length,1);
+  assert.equal(lbAll[0].student_no_masked,'TEST****NT');
+  assert.equal(lbProblem.length,1);
+  await exec('RESET ROLE');
+
+  // Bidirectional roster sync: set student_no -> join by code -> auto-match;
+  // verify -> change/clear student_no -> unmatch + invalidate verification;
+  // late CSV import after join -> auto-match on insert (still unverified).
+  const rosterCourse=randomUUID(), lateStudent=randomUUID();
+  await query(`INSERT INTO public.courses(id,name,code,invite_code) VALUES($1,'Roster Audit','ROST','ROST-2026')`,[rosterCourse]);
+  await query(`INSERT INTO public.enrollments(course_id,user_id,role) VALUES($1,$2,'teacher')`,[rosterCourse,teacher]);
+  await query(`INSERT INTO auth.users(id,email) VALUES($1,'late@test.invalid')`,[lateStudent]);
+  await query(`INSERT INTO auth.identities(user_id,provider,provider_id) VALUES($1,'github','177200341')`,[lateStudent]);
+  await query(`UPDATE public.profiles SET student_no='20260099',display_name='Late Joiner' WHERE user_id=$1`,[lateStudent]);
+  const rosterRowId=await scalar(`INSERT INTO public.roster_pending(course_id,student_no,display_name) VALUES($1,'20260099','Late Joiner') RETURNING id`,[rosterCourse]);
+  await query("SELECT set_config('request.jwt.claim.sub',$1,false),set_config('request.jwt.claims',$2,false)",[lateStudent,JSON.stringify({sub:lateStudent,role:'authenticated'})]);
+  await exec('SET ROLE authenticated');
+  const joined=(await query("SELECT join_course_by_code('rost-2026') AS res")).rows[0].res;
+  assert.equal(joined.ok,true);
+  await exec('RESET ROLE');
+  assert.equal(await scalar('SELECT status FROM roster_pending WHERE id=$1',[rosterRowId]),'matched');
+  assert.equal(await scalar('SELECT matched_user_id FROM roster_pending WHERE id=$1',[rosterRowId]),lateStudent);
+
+  // Teacher verifies, then student changes student_no -> verification must drop.
+  await query("SELECT set_config('request.jwt.claim.sub',$1,false),set_config('request.jwt.claims',$2,false)",[teacher,JSON.stringify({sub:teacher,role:'authenticated'})]);
+  await exec('SET ROLE authenticated');
+  await query('SELECT confirm_student_identity($1,$2)',[rosterRowId,lateStudent]);
+  await exec('RESET ROLE');
+  assert.equal(await scalar('SELECT is_verified_course_student($1,$2)',[rosterCourse,lateStudent]),true);
+
+  await query(`UPDATE public.profiles SET student_no='20260100' WHERE user_id=$1`,[lateStudent]);
+  assert.equal(await scalar('SELECT status FROM roster_pending WHERE id=$1',[rosterRowId]),'pending');
+  assert.equal(await scalar('SELECT matched_user_id FROM roster_pending WHERE id=$1',[rosterRowId]),null);
+  assert.equal(await scalar('SELECT is_verified_course_student($1,$2)',[rosterCourse,lateStudent]),false);
+
+  const postJoinRowId=await scalar(`INSERT INTO public.roster_pending(course_id,student_no,display_name) VALUES($1,'20260100','Late Joiner') RETURNING id`,[rosterCourse]);
+  assert.equal(await scalar('SELECT status FROM roster_pending WHERE id=$1',[postJoinRowId]),'matched');
+  assert.equal(await scalar('SELECT matched_user_id FROM roster_pending WHERE id=$1',[postJoinRowId]),lateStudent);
+  assert.equal(await scalar('SELECT is_verified_course_student($1,$2)',[rosterCourse,lateStudent]),false);
+
+  await query("SELECT set_config('request.jwt.claim.sub',NULL,false),set_config('request.jwt.claims','',false)");
   // Native PostgreSQL CI uses independent sessions to prove the lock/lease races.
   if (native) {
     const clients=await Promise.all(Array.from({length:8},async()=>{const c=new pg.Client({connectionString:process.env.TEST_DATABASE_URL});await c.connect();return c;}));

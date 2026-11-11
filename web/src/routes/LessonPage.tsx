@@ -6,6 +6,8 @@ import { MarkdownCell } from '@/features/notebook/MarkdownCell';
 import { lessons, type LessonCell } from '@/features/notebook/lessons';
 import {
   loadKernel,
+  resetKernel,
+  resetKernelNamespace,
   runCell,
   type CellResult,
   type KernelProgress,
@@ -38,9 +40,10 @@ export function LessonPage() {
   const [runningAll, setRunningAll] = useState(false);
   const kernel = useRef<Awaited<ReturnType<typeof loadKernel>> | null>(null);
 
-  // A new lesson means a new namespace: variables from the previous lesson must
-  // not leak into this one.
+  // A new lesson means a clean namespace: variables from the previous lesson
+  // are cleared without discarding the already-downloaded runtime unless busy.
   useEffect(() => {
+    void resetKernelNamespace();
     kernel.current = null;
     setStates({});
     setEdits({});
@@ -92,6 +95,21 @@ export function LessonPage() {
     }
   }, [lesson, runningAll, edits, execute]);
 
+  const resetEnv = useCallback(async () => {
+    const wasBusy =
+      runningAll || Object.values(states).some((state) => state.kind === 'running');
+    setRunningAll(false);
+    setStates({});
+    setKernelError(null);
+    if (wasBusy) {
+      resetKernel();
+      kernel.current = null;
+      setProgress(null);
+      return;
+    }
+    await resetKernelNamespace();
+  }, [runningAll, states]);
+
   if (!lesson) {
     return (
       <Card className="p-6">
@@ -111,6 +129,9 @@ export function LessonPage() {
         </div>
         <div className="flex items-center gap-2">
           <Badge tone="brand">浏览器内运行</Badge>
+          <Button variant="secondary" onClick={() => void resetEnv()} size="sm">
+            重置环境
+          </Button>
           <Button onClick={runAll} disabled={busy} size="sm">
             {runningAll ? '运行中…' : '全部运行'}
           </Button>
@@ -162,7 +183,7 @@ function KernelStatus({
         <p className="text-sm font-medium text-danger">建模环境未能启动</p>
         <p className="mt-1 text-xs text-secondary">{error}</p>
         <p className="mt-2 text-xs text-tertiary">
-          首次使用需要下载约 10 MB 的 Python 运行时；如果网络受限，这里会一直失败。
+          首次使用需要下载约 29 MB 的 Python 运行时；如果网络受限，这里会一直失败。
         </p>
       </Card>
     );

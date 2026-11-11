@@ -1,4 +1,5 @@
-import { supabase } from '@/lib/supabase';
+import { supabase, type Assignment, type Grading, type Submission } from '@/lib/supabase';
+import { invokeEdge } from '@/features/grading/api';
 
 /**
  * Teacher operations.
@@ -19,6 +20,28 @@ export interface RosterEntry {
   verifiedAt: string | null;
 }
 
+export interface GradebookRow {
+  course_id: string;
+  user_id: string;
+  student_no: string | null;
+  display_name: string | null;
+  assignment_id: string;
+  problem_id: string;
+  pass_score: number;
+  best_submission_id: string | null;
+  best_score: number | null;
+  passed: boolean | null;
+  submission_count: number;
+  attempt_count: number;
+  latest_submission_at: string | null;
+  last_submitted_at: string | null;
+}
+
+export interface TeacherSubmissionRow extends Submission {
+  code_text: string;
+  gradings: Grading[];
+}
+
 interface RosterRow {
   id: string;
   student_no: string;
@@ -28,15 +51,13 @@ interface RosterRow {
   matched_user_id: string | null;
 }
 
-/** The invitation code for a course. Teachers only; RLS hides other courses. */
+/** The invitation code for a course. Uses SECURITY DEFINER RPC (direct column SELECT on invite_code is revoked). */
 export async function getInviteCode(courseId: string): Promise<string | null> {
-  const { data, error } = await supabase()
-    .from('courses')
-    .select('invite_code')
-    .eq('id', courseId)
-    .maybeSingle();
+  const { data, error } = await supabase().rpc('get_course_invite_code', {
+    p_course_id: courseId,
+  });
   if (error) throw new Error(error.message);
-  return (data as { invite_code: string | null } | null)?.invite_code ?? null;
+  return data ? String(data) : null;
 }
 
 /** Returns the new code. Passing null lets the database generate one. */
@@ -152,18 +173,105 @@ export async function importRoster(
   return { inserted, skipped: rows.length - inserted };
 }
 
-/** Parse the CSV the guide documents: 学号,真实姓名[,GitHub用户名], optional header. */
+function unquoteCell(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed.length >= 2 && trimmed.startsWith('"') && trimmed.endsWith('"')) {
+    return trimmed.slice(1, -1).replace(/""/g, '"').trim();
+  }
+  return trimmed;
+}
+
+/** Parse the CSV the guide documents: 学号,真实姓名[,GitHub用户名], optional BOM/header. */
 export function parseRosterCsv(text: string): { studentNo: string; displayName: string; githubLogin?: string }[] {
-  return text
+  const clean = text.replace(/^\uFEFF/, '');
+  return clean
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean)
-    .map((line) => line.split(/[,;\t]/).map((cell) => cell.trim()))
-    // A header row is any first cell that is not a number.
-    .filter((cells) => cells.length >= 2 && /^\d+$/.test(cells[0] ?? ''))
+    .map((line) => line.split(/[,;\t]/).map(unquoteCell))
+    // Accept numeric and alphanumeric student IDs (with at least one digit) while dropping headers/prose.
+    .filter((cells) => cells.length >= 2 && /^(?=.*\d)[A-Za-z0-9_-]{4,32}$/.test(cells[0] ?? ''))
     .map((cells) => ({
       studentNo: cells[0] as string,
       displayName: cells[1] ?? '',
       githubLogin: cells[2] || undefined,
     }));
+}
+
+export async function publishAssignment(input: {
+  courseId: string;
+  problemId: string;
+  dueAt?: string | null;
+  passScore?: number;
+  nInstances?: number;
+  scorePolicy?: 'highest_before_due' | 'latest' | 'highest';
+  integrityPolicy?: 'standard' | 'exam_warn' | 'exam_block';
+}): Promise<{ ok: boolean; message: string; assignment: Assignment }> {
+  return invokeEdge<{ ok: boolean; message: string; assignment: Assignment }>(
+    'publish-assignment',
+    {
+      course_id: input.courseId,
+      problem_id: input.problemId,
+      due_at: input.dueAt || null,
+      pass_score: input.passScore ?? 90,
+      n_instances: input.nInstances ?? 3,
+      score_policy: input.scorePolicy ?? 'highest_before_due',
+      integrity_policy: input.integrityPolicy ?? 'standard',
+    },
+  );
+}
+
+export async function getTeacherGradebook(courseId: string): Promise<GradebookRow[]> {
+  const { data, error } = await supabase().rpc('get_teacher_gradebook', {
+    p_course_id: courseId,
+  });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as GradebookRow[];
+}
+
+export async function listTeacherAssignmentSubmissions(
+  assignmentId: string,
+): Promise<TeacherSubmissionRow[]> {
+  const { data, error } = await supabase()
+    .from('submissions')
+    .select(
+      'id,assignment_id,attempt_no,created_at,public_code,metadata,code_text,' +
+        'gradings(id,submission_id,status,score,passed,report_json,error_message,created_at)',
+    )
+    .eq('assignment_id', assignmentId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as TeacherSubmissionRow[];
+}
+
+function escapeCsvCell(raw: string | number | boolean | null | undefined): string {
+  const str = raw === null || raw === undefined ? '' : String(raw);
+  // Mitigate Excel/Sheets CSV formula injection on user-supplied names/numbers.
+  const neutralized = /^[=+\-@\t\r]/.test(str) ? "'" + str : str;
+  if (/[",\r\n]/.test(neutralized)) {
+    return '"' + neutralized.replace(/"/g, '""') + '"';
+  }
+  return neutralized;
+}
+
+export function exportGradebookCsv(rows: GradebookRow[]): string {
+  const header = ['学号', '姓名', '题目', '最佳得分', '是否通过', '及格线', '提交次数', '最近提交时间'];
+  const lines = [
+    header.map(escapeCsvCell).join(','),
+    ...rows.map((row) =>
+      [
+        row.student_no ?? '未绑定',
+        row.display_name ?? '',
+        row.problem_id,
+        row.best_score ?? '',
+        row.passed === null ? '' : row.passed ? '是' : '否',
+        row.pass_score,
+        row.submission_count,
+        row.last_submitted_at ?? '',
+      ]
+        .map(escapeCsvCell)
+        .join(','),
+    ),
+  ];
+  return '\uFEFF' + lines.join('\r\n');
 }

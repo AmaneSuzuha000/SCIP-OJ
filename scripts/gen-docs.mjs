@@ -25,8 +25,7 @@ const DOCUMENTS = [
   { id: 'student-guide', file: '学生指南.md', group: 'student' },
   { id: 'learning-path', file: '课程学习路径.md', group: 'student' },
   { id: 'extended-guide', file: '拓展学习指南.md', group: 'student' },
-  { id: 'grading-rules', file: '课程实验与评价规范.md', group: 'student' },
-  { id: 'ie-des-01', file: 'IE_DES_01_精品案例实验指导书.md', group: 'case' },
+  { id: 'grading-rules', file: '课程实验与评价规范.md', group: 'case' },
 ];
 
 /** The card shows plain text, so inline markdown must not leak into it. */

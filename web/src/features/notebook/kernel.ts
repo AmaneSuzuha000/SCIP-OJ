@@ -39,9 +39,14 @@ export class Kernel {
   private booted = false;
   private seq = 0;
   private pending = new Map<number, (result: CellResult) => void>();
+  private resetPending = new Map<number, () => void>();
   private progress: ProgressFn | undefined;
 
   constructor(onProgress?: ProgressFn) {
+    this.progress = onProgress;
+  }
+
+  setProgress(onProgress?: ProgressFn) {
     this.progress = onProgress;
   }
 
@@ -67,6 +72,13 @@ export class Kernel {
       deliver(data.result as CellResult);
       return;
     }
+    if (data.type === 'reset-done') {
+      const done = this.resetPending.get(data.id as number);
+      if (!done) return;
+      this.resetPending.delete(data.id as number);
+      done();
+      return;
+    }
     if (data.type === 'boot-failed') {
       this.abort(String(data.message ?? '无法启动 Python 环境'));
     }
@@ -81,6 +93,8 @@ export class Kernel {
   private abort(reason: string) {
     const waiting = [...this.pending.values()];
     this.pending.clear();
+    const resets = [...this.resetPending.values()];
+    this.resetPending.clear();
     this.worker?.terminate();
     this.worker = null;
     this.booting = null;
@@ -88,6 +102,7 @@ export class Kernel {
     for (const deliver of waiting) {
       deliver({ ok: false, stdout: '', error: reason, errorType: 'KernelError' });
     }
+    for (const done of resets) done();
   }
 
   /**
@@ -146,12 +161,41 @@ export class Kernel {
     });
   }
 
+  /**
+   * Clear user Python variables cleanly while keeping the booted runtime loaded.
+   * If a cell is stuck mid-run, terminating the worker ensures the next lesson
+   * or action never waits behind a runaway loop.
+   */
+  async resetNamespace(): Promise<void> {
+    if (!this.worker || !this.booted || this.pending.size > 0) {
+      if (this.worker || this.booting || this.pending.size > 0) {
+        this.abort('已重置 Python 环境');
+      }
+      return;
+    }
+    const worker = this.worker;
+    return new Promise<void>((resolve) => {
+      const id = ++this.seq;
+      const timer = setTimeout(() => {
+        this.resetPending.delete(id);
+        this.abort('重置超时，已重启 Python 环境');
+        resolve();
+      }, 5000);
+      this.resetPending.set(id, () => {
+        clearTimeout(timer);
+        resolve();
+      });
+      worker.postMessage({ type: 'reset', id });
+    });
+  }
+
   dispose() {
     this.abort('内核已关闭');
   }
 }
 
 let singleton: Kernel | null = null;
+let bootingKernel: Kernel | null = null;
 let bootPromise: Promise<Kernel> | null = null;
 
 /**
@@ -161,18 +205,27 @@ let bootPromise: Promise<Kernel> | null = null;
  * handle outlives a terminated worker: it starts a fresh one on next use.
  */
 export function loadKernel(onProgress?: ProgressFn): Promise<Kernel> {
-  if (singleton) return Promise.resolve(singleton);
-  if (bootPromise) return bootPromise;
+  if (singleton) {
+    singleton.setProgress(onProgress);
+    return Promise.resolve(singleton);
+  }
+  if (bootPromise) {
+    bootingKernel?.setProgress(onProgress);
+    return bootPromise;
+  }
 
   const kernel = new Kernel(onProgress);
+  bootingKernel = kernel;
   bootPromise = kernel
     .ready()
     .then(() => {
       singleton = kernel;
+      bootingKernel = null;
       return kernel;
     })
     .catch((cause) => {
       kernel.dispose();
+      bootingKernel = null;
       bootPromise = null;
       throw cause;
     });
@@ -181,8 +234,15 @@ export function loadKernel(onProgress?: ProgressFn): Promise<Kernel> {
 
 export function resetKernel(): void {
   singleton?.dispose();
+  bootingKernel?.dispose();
   singleton = null;
+  bootingKernel = null;
   bootPromise = null;
+}
+
+export function resetKernelNamespace(): Promise<void> {
+  if (!singleton) return Promise.resolve();
+  return singleton.resetNamespace();
 }
 
 /** Run one cell. Output is captured whole so it stays attached to that cell. */

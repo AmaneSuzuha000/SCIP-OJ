@@ -4,27 +4,34 @@ import json
 import os
 import subprocess
 import tempfile
+import threading
 from pathlib import Path
 from typing import Any
 from judge.errors import SystemJudgeError
-
-try:  # POSIX only; grading actually runs on Linux containers.
-    import resource
-except ImportError:  # pragma: no cover - Windows development hosts
-    resource = None  # type: ignore[assignment]
 
 IMAGE = os.environ.get("SCIP_OJ_SANDBOX_IMAGE", "scip-oj-student:ci")
 RESULT_PREFIX = "SCIP_OJ_RESULT="
 ERROR_PREFIX = "SCIP_OJ_ERROR="
 OUTPUT_LIMIT = 1 << 20
+STDERR_LIMIT = 16 << 10
 
 
-def _limit_cli_output() -> None:
-    # Limit file writes by the docker CLI (attached stdout/stderr), not only
-    # the Python student process inside the container.
-    if resource is None:  # non-POSIX host: nothing to cap here
-        return
-    resource.setrlimit(resource.RLIMIT_FSIZE, (OUTPUT_LIMIT, OUTPUT_LIMIT))
+def _drain_pipe(pipe, buf: bytearray, limit: int, truncated: list[bool]) -> None:
+    try:
+        while True:
+            chunk = pipe.read(8192)
+            if not chunk:
+                break
+            remaining = limit - len(buf)
+            if remaining > 0:
+                buf.extend(chunk[:remaining])
+            if len(chunk) > remaining:
+                truncated[0] = True
+    finally:
+        try:
+            pipe.close()
+        except OSError:
+            pass
 
 
 def _run_isolated(code_path: Path, instance: dict[str, Any], timeout_sec: int) -> tuple[dict | None, str | None]:
@@ -43,31 +50,64 @@ def _run_isolated(code_path: Path, instance: dict[str, Any], timeout_sec: int) -
             "-e", "PYTHONDONTWRITEBYTECODE=1", IMAGE,
         ]
         try:
-            with tempfile.TemporaryFile(mode="w+t", encoding="utf-8") as out, \
-                    tempfile.TemporaryFile(mode="w+t", encoding="utf-8") as err:
+            try:
+                proc = subprocess.Popen(
+                    docker_args,
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=False,
+                )
+            except FileNotFoundError as exc:
+                raise SystemJudgeError("Docker runtime unavailable") from exc
+
+            out_buf = bytearray()
+            err_buf = bytearray()
+            out_truncated = [False]
+            err_truncated = [False]
+            t_out = threading.Thread(target=_drain_pipe, args=(proc.stdout, out_buf, OUTPUT_LIMIT, out_truncated), daemon=True)
+            t_err = threading.Thread(target=_drain_pipe, args=(proc.stderr, err_buf, STDERR_LIMIT, err_truncated), daemon=True)
+            t_out.start()
+            t_err.start()
+
+            try:
+                payload = (json.dumps(instance, ensure_ascii=False) + "\n").encode("utf-8")
+                if proc.stdin is not None:
+                    try:
+                        proc.stdin.write(payload)
+                        proc.stdin.flush()
+                    except BrokenPipeError:
+                        pass
+                    finally:
+                        try:
+                            proc.stdin.close()
+                        except OSError:
+                            pass
+                returncode = proc.wait(timeout=timeout_sec + 5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
                 try:
-                    run = subprocess.run(
-                        docker_args,
-                        input=json.dumps(instance, ensure_ascii=False) + "\n",
-                        text=True, stdout=out, stderr=err,
-                        timeout=timeout_sec + 5, preexec_fn=_limit_cli_output,
-                        check=False,
-                    )
+                    proc.wait(timeout=2)
                 except subprocess.TimeoutExpired:
-                    return None, f"超过 {timeout_sec}s 时间限制"
-                except FileNotFoundError as exc:
-                    raise SystemJudgeError("Docker runtime unavailable") from exc
-                out.seek(0)
-                err.seek(0)
-                stdout = out.read(OUTPUT_LIMIT)
-                stderr = err.read(1200)
-            if run.returncode == 125:
+                    pass
+                t_out.join(timeout=1)
+                t_err.join(timeout=1)
+                return None, f"超过 {timeout_sec}s 时间限制"
+
+            t_out.join(timeout=2)
+            t_err.join(timeout=2)
+            stdout = out_buf.decode("utf-8", errors="replace")
+            stderr = err_buf.decode("utf-8", errors="replace")
+
+            if returncode == 125:
                 raise SystemJudgeError("Sandbox container failed to start: " + stderr[:400])
-            if run.returncode < 0:
+            if returncode < 0:
                 return None, "评测容器因资源限制退出"
+            if out_truncated[0]:
+                return None, "代码标准输出超过 1 MiB 限制"
             lines = stdout.splitlines()
             result_lines = [x[len(RESULT_PREFIX):] for x in lines if x.startswith(RESULT_PREFIX)]
-            if run.returncode == 0 and result_lines:
+            if returncode == 0 and result_lines:
                 try:
                     value = json.loads(result_lines[-1])
                     if isinstance(value, dict):

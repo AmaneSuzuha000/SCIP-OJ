@@ -19,7 +19,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { supabase, supabaseUrl } = createServiceClient();
+    const { supabase } = createServiceClient();
 
     // 1. 身份认证
     const auth = await getAuthenticatedUser(req, supabase);
@@ -32,7 +32,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const body = await req.json().catch(() => ({}));
     const reason = String(body.reason || "教师批量复判").slice(0, 500);
 
-    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     let targetSubmissionIds: string[] = [];
 
     if (Array.isArray(body.submission_ids) && body.submission_ids.length > 0) {
@@ -43,6 +42,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
         return errorResponse("submission_ids 中没有合法的提交记录 ID", 400, "INVALID_SUBMISSION_IDS");
       }
     } else if (body.course_id && body.problem_id) {
+      if (typeof body.course_id !== "string" || !UUID_RE.test(body.course_id)) {
+        return errorResponse("course_id 格式不正确", 400, "INVALID_COURSE_ID");
+      }
       // 整题重判模式
       const isTeacher = await isTeacherOrAdmin(supabase, user.id, body.course_id);
       if (!isTeacher) {

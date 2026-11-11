@@ -121,6 +121,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
     if (status !== "done" && status !== "system_error") {
       return errorResponse("status 必须为 'done' 或 'system_error'", 400, "INVALID_STATUS");
     }
+    if (report !== null && (typeof report !== "object" || Array.isArray(report))) {
+      return errorResponse("report 必须是 JSON 对象或 null", 400, "INVALID_REPORT");
+    }
 
     // done 必须有合法分数：绝不允许把“已完成但无分数”写进成绩表
     if (status === "done") {

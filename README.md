@@ -1,167 +1,89 @@
 # SCIP-OJ
 
-工业工程《系统建模与仿真》平台。前端是一个单页应用，按用途分为 **课程教学** 与 **拓展学习** 两个区域，默认进入课程教学。
+工业工程《系统建模与仿真》在线编程与建模实验平台（React 19 单页应用 + Supabase/PostgreSQL + GitHub Actions 无网络 Docker 隔离判题）。
 
-https://amanesuzuha000.github.io/SCIP-OJ/
+线上站点：https://amanesuzuha000.github.io/SCIP-OJ/
 
-- **课程教学**：班级、作业、正式提交、成绩记录和教师管理。
-- **拓展学习**：11 个 PySCIPOpt 建模案例，浏览器内直接运行，无需安装环境。
-- **课程学习路径**：[docs/课程学习路径.md](docs/课程学习路径.md)。
+- **课程教学**：班级管理、作业工作台（题目阅读 / CodeMirror 编辑器 / 本地自测 / 正式提交）、实时评测报告（`F/C/I/O` 与私有实例明细）、提交记录回放与班级排行榜。
+- **拓展学习**：11 个内置交互式 PySCIPOpt 建模 Notebook 课程（`P001`、`P002`、`IE-OPT-03` 至 `IE-OPT-11`），浏览器本地直接执行，无需安装配置。
+- **课程指南与规范**：[课程学习路径](docs/课程学习路径.md) · [学生使用指南](docs/学生指南.md) · [拓展学习指南](docs/拓展学习指南.md) · [课程实验与评价规范](docs/课程实验与评价规范.md)。
 
-## 运行
+---
+
+## 快速启动与构建
 
 ```bash
+# 前端开发与测试
 npm --prefix web ci
 npm --prefix web run dev
+npm --prefix web run typecheck
+npm --prefix web test
+
+# 前端生产构建（同时缓存并注入 Pyodide + SciPy/NumPy WASM 运行时）
+npm --prefix web run build
+
+# 拼装 GitHub Pages 发布产物（只含应用、runtime 与 docs 白名单，严格剔除 problems/）
+python scripts/assemble_site.py --web-dist web/dist --output dist
 ```
 
-构建产物由 `scripts/assemble_site.py` 拼装成 Pages 静态站点：应用外壳、`docs/` 白名单、`problems/` 和 Pyodide 运行时。
-
-## 浏览器内核
-
-拓展学习里的 Python 直接在页面内运行：Pyodide 启动 CPython，通过 SciPy 的 HiGHS 求解；`pyscipopt` 由 `web/public/runtime/pyscipopt.py` 提供兼容层。
-
-**浏览器里的求解只用于练习，不计成绩。**正式评测在隔离容器中用原生 PySCIPOpt 重新求解。
-
 ---
 
+## 双轨运行架构：浏览器本地练习 vs. 服务端可信评测
 
-## 拓展学习：开放案例与建模资源
+平台严格分离**浏览器练习路径**与**服务端正式评分路径**：
 
-拓展案例按 **情境 → 系统抽象 → 模型假设 → 仿真 → 实验设计与统计 → 工程决策** 组织。它们拥有独立的导航与学习入口，不并入课程作业、提交记录或教师成绩管理。
-
-**已实现三套独立可运行的仿真案例：IE-DES-01 / IE-MC-02 / IE-DES-03**
-
-- 使用合成数据搭建多工位 FCFS 离散事件模型，控制随机到达间隔、检修工时、工位数、预热时间和仿真时长；
-- 固定随机种子、共用随机数与多次配对独立重复，对比平均等待、完成率、工位利用率、队列长度及 WIP；
-- 展示配对等待差值的 95% 正态近似置信区间、负荷率警示、CSV 复现实验导出；
-- **IE-DES-01 可核验实验记录**：另可导出按重复编号的 JSON；独立 Python 参考实现逐条复算原始随机流、FCFS 事件与置信区间。详见 [IE-DES-01 教师实验指导书](docs/IE_DES_01_精品案例实验指导书.md)。重放核验不证明作者身份，也不作为 正式成绩；
-- **仅供课堂学习，不上传个人数据、不写入正式成绩**；这里的检修数据是教学假设，不是企业实测。
-
-- **IE-MC-02《随机库存与服务水平》**：Poisson 日需求、周期检查补货、确定提前期、丢失销售、运营成本/填补率，配对 Monte Carlo 与导出。
-- **IE-DES-03《双工序生产线与缓冲阻塞》**：Poisson 到达、指数工时、有限缓冲与加工后阻塞 BAS、产出/WIP/阻塞率，配对 DES 与导出。
-- **IE-OPT-03《容量约束设施选址》Notebook**：3 设施×4 客户，独立穷举 81 个分配对照。
-- **IE-OPT-04《仓储装箱》Notebook**：物品—容器 MILP 与独立回溯装箱真值。
-- **IE-OPT-05《排列流水车间》Notebook**：位置索引调度模型与 4! 排列枚举真值。
-- **IE-OPT-06《单周期随机库存优化》Notebook**：随机需求场景 MILP 与 0～10 件订货量穷举。
-- **IE-OPT-07～11**：辅料运输、铝材下料、巡检回路（MTZ）、带容量配送、单机总延误。数据为合成示例，不进入现有 L2 判分。阅读顺序见 [课程学习路径](docs/课程学习路径.md)。
-- **官方 Examples 资源页**：直接链接 PySCIPOpt 官方背包、EOQ、设施选址、排列流水车间、装箱与资源受限调度，以及 Gurobi Modeling Examples；只提供来源和自主课程模型。
-
-
-## 运行模式与判分双轨制
-
-SCIP-OJ 采用**双轨制**，兼顾轻量免配置练习与可信正式成绩：
-
-| 层次 | 适用场景 | 运行方式 | 成绩记录 |
+| 轨道 | 适用场景 | 执行引擎 | 成绩效力 |
 |---|---|---|---|
-| **浏览器练习** | 课堂即时自测、算法探索 | 浏览器内 JupyterLite / xeus-python / PySCIPOpt 运行学生 Python 代码；多实例**算术平均**；通过线 **90** | **仅本地练习反馈**，记录在浏览器缓存，**绝不作为正式课程成绩** |
-| **JupyterLab** | MIP 建模交互调试 | 浏览器 WASM 预装 `xeus-python` + `pyscipopt`，支持 `from pyscipopt import Model` | 用于交互式建模实验、画图与调试 |
-| **正式作业轨** | 课程正式作业提交与评定 | 学生在网页端使用 GitHub OAuth 登录并绑定学号，输入邀请码选课；服务端通过 **GitHub Actions 隔离 Docker / PySCIPOpt** 运行私有随机测试，可信主进程独立判分，按评分任务 UUID + Actions 运行引用 HMAC 签名回调入库 | **正式课程成绩**：持久化记录于数据库 `course_gradebook`，教师面板可查、支持证据核验、批量复判与 CSV 导出 |
+| **浏览器本地练习 / 拓展学习** | 11 课互动学习、作业工作台「本地自测」 | Web Worker 内加载 Pyodide（CPython WASM）+ SciPy HiGHS 兼容层 [`web/public/runtime/pyscipopt.py`](web/public/runtime/pyscipopt.py)，首屏按需懒加载 | **仅本地反馈，绝不计入正式成绩** |
+| **服务端 L2 正式评测** | `P001`（0-1 背包）、`P002`（指派优化） | `submit-assignment` Edge Function → PostgreSQL 原子入队 → GitHub Actions 调起无网络非 root Docker 沙箱 [`judge/Dockerfile.sandbox`](judge/Dockerfile.sandbox) 运行原生 PySCIPOpt，可信宿主进程计算精确真值与评分并 HMAC 签名回调入库 | **唯一正式成绩**，持久化于 `course_gradebook`，教师台支持审阅、单条/批量复判与导出 |
 
-> [!NOTE]
-> **上线前的必要验收**：现有正式评分流程仍需冻结每次提交对应的评分配置与测试协议、实现原子入队和失败恢复，并通过真实师生 E2E（追踪：[#20](https://github.com/AmaneSuzuha000/SCIP-OJ/issues/20)）。该说明不否定既有已验证的网页提交路径。
->
-> **学生零摩擦**：学生提交正式作业使用 **GitHub OAuth 身份识别**，但**绝不需要**自己开 PR、不需要 Fork 仓库、也不需要看 Actions 运行细节，所有操作直接在主站力扣壳完成。
-> 平台提供学号门禁、选课门禁与系统异常保护（`system_error` 绝不误判学生为 0 分）。
+> **系统故障保护机制**：当评测任务在 Runner 启动或回调阶段出现基础设施错误时，系统状态标记为 `system_error`（界面展示“系统异常，不计分”），**绝不误判为 0 分**；教师可在控制台执行单条或批量复判，也可由定时调度工作流 `recover-gradings.yml` 自动重租约调度恢复。
 
 ---
 
-## 教师核验考试身份 V5
+## 核心教学与安全能力
 
-普通作业继续支持网页登录后提交；**考试提示/限制模式**额外要求本课程教师先通过花名册人工核实学号和 GitHub OAuth 账户。自行填写学号只形成待核实匹配，不算已核验；修改匹配信息将自动作废原确认。教师在花名册页确认后，服务端才允许正式考试提交。
-
----
-
-## 数据库权限与邀请码安全 V4
-
-线上数据库已收紧匿名角色的表权限和 RLS 无法覆盖的 TRUNCATE 权限。选课邀请码现在可事务性轮换并撤销旧码，名额限制和选课入库由单个 PostgreSQL RPC 原子处理；学生/教师网页不再直接写邀请码表。
-
----
-
-## 评测安全与考试诚信
-
-正式作业在网络隔离、非 root Docker 容器中执行学生源码，不向其传递服务端测试种子、最优目标值、评分器和数据库凭据；教师可选择普通、监测提示、限制粘贴模式。浏览器禁粘贴和行为统计均可绕过，**不能直接认定作弊**。代码相似度审查为教师离线人工复核工具。
-
-- [正式判题隔离容器](judge/Dockerfile.sandbox) · [隔离判分器](judge/runner_l2_isolated.py)
-- **仅网页提交，旧 PR 判题工作流已停止使用。**
+1. **访问控制与身份对齐**：
+   - 白名单门禁控制站点登录入口（GitHub OAuth 授权 + `site_access_only` 数据库访问策略）；
+   - **选课与邀请码**：教师轮换/撤销班级邀请码与设置名额上限，学生通过原子 RPC [`join_course_by_code`](supabase/migrations/20261112000000_audit_fixes.sql) 加入班级；
+   - **花名册双向对齐与身份核验**：支持导入学生花名册 CSV（自动去 BOM、支持引号与字母数字混合学号），支持学生绑号后自动匹配以及教师在花名册中人工核验；修改学号或清空学号会自动失效旧核验记录，防止越权复用。
+2. **考试防作弊分层策略**：
+   - 教师可在发布或编辑作业时按题目设置 `standard`（常规）、`exam_warn`（编辑/粘贴/切屏行为采样监测）与 `exam_block`（禁用代码编辑器粘贴，并在服务端强制要求已绑定学号且经教师花名册核验方可提交）。
+   - 客户端行为统计与禁贴均可被本地绕过，仅作为教学监测与辅助复核依据，不单独作为违规自动裁决依据；代码相似度离线审查脚本位于 [`scripts/audit_similarity.py`](scripts/audit_similarity.py)。
+3. **教师控制台与成绩单**：
+   - 单页集成 4 个工作标签页：**邀请码**、**花名册与核验**、**作业发布**（支持配置题目、截止时间、及格分、实例数、计分规则与诚信策略，无需手写 SQL）与 **提交与成绩**（支持成绩簿聚合查看、不可变提交源码与评测明细弹窗审阅、单条复判、多选/整班批量复判 `regrade-batch`，以及带 UTF-8 BOM 与 CSV 公式注入防护的成绩单导出）。
+4. **班级脱敏排行榜**：
+   - `get_course_leaderboard` 仅汇总在籍学生有效正式成绩，教师/助教自测提交不混入学生排名，学号在服务端自动脱敏（如 `2026****01`）。
 
 ---
 
-## 功能与文档导航
+## 仓库目录结构
 
-- **学生使用指南**：[docs/学生指南.md](docs/学生指南.md)
-- **IE-DES-01 实验指导书**：[docs/IE_DES_01_精品案例实验指导书.md](docs/IE_DES_01_精品案例实验指导书.md)
-- **JupyterLab 示例 Notebook**：
-  - `content/01_P001_knapsack_PySCIPOpt.ipynb`（背包问题 MIP 建模）
-  - `content/02_P002_assignment_PySCIPOpt.ipynb`（指派问题 MIP 建模）
-  - `content/03_IE_Facility_Location_PySCIPOpt.ipynb`（单源设施选址）
-  - `content/04_IE_Bin_Packing_PySCIPOpt.ipynb`（装箱）
-  - `content/05_IE_Flow_Shop_PySCIPOpt.ipynb`（排列流水车间）
-  - `content/06_IE_Stochastic_Inventory_PySCIPOpt.ipynb`（单周期随机库存优化）
-  - `content/07_IE_Transportation_PySCIPOpt.ipynb`（辅料运输）
-  - `content/08_IE_Cutting_Stock_PySCIPOpt.ipynb`（铝材下料）
-  - `content/09_IE_TSP_MTZ_PySCIPOpt.ipynb`（巡检回路，MTZ）
-  - `content/10_IE_CVRP_PySCIPOpt.ipynb`（带容量配送）
-  - `content/11_IE_Single_Machine_PySCIPOpt.ipynb`（单机总延误）
+- `web/`：React 19 + TypeScript + Vite 前端单页应用与 Pyodide Web Worker。
+- `supabase/`：PostgreSQL 数据库迁移（含安全加固、RPC 与触发器）与 Deno Edge Functions（`submit-assignment`、`regrade`、`regrade-batch`、`grade-callback`、`join-course`、`publish-assignment`）。
+- `judge/` & `problems/`：无网络 Docker 沙箱容器定义、有限管道/超时隔离执行器（`judge/sandbox.py`）、可信评分器（`judge/common.py`、`judge/runner_l2_isolated.py`）以及 `P001`、`P002` 私密测试生成器与参考题解（构建发布时**严禁进入前端输出**）。
+- `content/`：11 套课堂交互式 PySCIPOpt Notebook 源定义（供前端构建脚本与 CI 容器真值回归共享）。
+- `docs/`：对外发布文档真源（由 `scripts/gen-docs.mjs` 同步打包进前端文档阅读器，[ACCESS_CONTROL.md](docs/ACCESS_CONTROL.md) 仅留存仓库内部不公开发布）。
+- `scripts/`：前端内容生成（`gen-docs.mjs`、`gen-problems.mjs`、`gen-lessons.mjs`）、站点组装（`assemble_site.py`）、Actions 签名传输（`grading_transport.py`）、Notebook WASM 兼容层自检（`check_notebooks_shim.py`）、评分基线校验（`parity_report.py`）及并发压测工具（`loadtest_submit.mjs`）。
 
 ---
 
-## 正式提交与可信评分
-
-- 正式提交由 PostgreSQL **事务级限制**：同题两次提交至少间隔 20 秒，每道作业每小时最多 12 次，每位用户每日最多 60 次；触发限制返回 HTTP 429，**不产生虚假成绩或提交记录**，本地练习不受影响。
-- 服务端使用加锁序号和数据库唯一索引保证并发提交不产生重复 `attempt_no`。
-- 正式 评测使用独立随机实例族：背包规模 16–30 个物品，指派规模 6–9 人，最优值只在可信主机计算。浏览器练习 继续使用小规模教学题。
-- 正式提交与教师复判不提供 Mock 虚拟评分；系统故障保持空分，不伪造通过成绩。
-- 提交、评测快照、幂等重试和故障恢复以当前数据库迁移与 Edge Function 为准。
-
----
-
-## 核心教学运营能力
-
-1. **选课与邀请码机制**：
-   - 课程支持由教师发放、轮换和撤销邀请码；
-   - 支持设置有效期与名额上限；学生在前端弹窗输入邀请码即可一键加入教学班。
-2. **学号绑定与花名册自动对齐**：
-   - 教师可直接在控制台导入学生 CSV 花名册（学号、姓名、可选 GitHub 账号）；
-   - 学生 GitHub 登录后绑定同学号，系统自动双向对齐，成绩自动归档到对应学号；
-   - 提交前学号与选课智能门禁拦截（教师账号免门禁）。
-3. **教师评测证据台与批量复判**：
-   - **评测证据台**：直接审阅不可变只读源码、结构化评测报告与评测流转时间线；
-   - **复判机制**：支持单条证据复判、多选批量复判与整题一键重判，完整记录 `grade_audits` 审计日志；
-   - **迟交标记**：超过截止时间的提交自动打上红色「迟交」标记；
-   - **导出 CSV**：前端生成包含 UTF-8 BOM 的标准化成绩单，Excel 打开无乱码。
-4. **作业发布与管理（免改代码）**：
-   - 教师直接在控制台表单中选择题目、截止时间、及格线（默认 90）、测试实例数（默认 3）与计分规则（默认截止前最高分）；
-   - 一键保存发布至 `assignments`，无需手写 SQL。
-5. **只读课程排行榜**：
-   - 提供班级题目最高分排行榜，学号自动脱敏处理（`2026****01`），兼顾教学激励与隐私合规。
-6. **课程工作台**：
-   - LeetCode 式题单列表/卡片、搜索筛选、双栏代码编辑器、JSON 自定义测试与深浅对比教学视觉系统；
-   - 模块化 Edge Functions 架构（`_shared/` 统一 CORS、JWT 鉴权、Secrets 解析与 GitHub 触发）；
-   - 数据库 005 安全防护（防止普通用户提权修改 `profiles.role`，补齐核心索引）。
-
----
-
-## 开发与验证
+## 全量测试与验证命令
 
 ```bash
-npm ci
+# Python 后端/判题单元测试 & JS 核心契约回归（含 pyscipopt 兼容层与传输单测）
 npm test
-npm run dev
+
+# PostgreSQL 真实迁移、权限、并发抢占、双向对齐与站点准入回归（本地嵌入式 PGlite / CI PostgreSQL 17）
 npm run test:database
-npm run test:grading
+node tests/test_site_access_database.mjs
+
+# P001 / P002 评分契约与分档得分基线一致性校验（56 组基线用例）
+npm run test:parity
+
+# 11 课 Notebook 与 P001/P002 解法在浏览器 PySCIPOpt 兼容层下的端到端自检
+python scripts/check_notebooks_shim.py
+
+# 前端严格类型检查 + Vitest + 构建打包
+npm --prefix web run typecheck && npm --prefix web test && npm --prefix web run build
 ```
-
-如需本地运行 Python/Notebook，先按构建环境运行 `jupyter lite build --contents content --output-dir lite-build`，再用 `npm run dev -- --lite lite-build`；未构建时预览会明确显示环境不可用。
-
-`npm test` 自动发现全部单元回归；浏览器测试依赖和公式渲染器版本由 lockfile 固定。数据库测试执行仓库的真实迁移、事务失败注入、权限与恢复场景。本地使用嵌入式 PostgreSQL；CI 使用 PostgreSQL 17 多个独立连接检查并发。隔离 Docker 和完整 JupyterLite / PySCIPOpt 浏览器测试在 CI 单独运行；这些检查不能替代隔离测试课程中的真实师生验收。
-
-`docs/` 只保留仍然准确的课程指南与实验规范。描述已下线界面的文档一律删除，而不是留着等人照做出错。相似度人工审查工具位于 `scripts/audit_similarity.py`。
-
-## 应用结构
-
-课程门户和 Notebook 运行环境独立构建，统一由 `scripts/assemble_site.py` 组装。运行环境位于 `notebooks/`；旧 `lab/` 和 `repl/` 链接继续重定向。发布站点只复制课程指南，不发布内部规划笔记。课程工作台的代码与 Notebook 视图同步作业代码，正式评测仍由课程服务独立完成。
-
-服务端的业务真源位于 `supabase/`，可信判题位于 `judge/`，构建与维护工具统一位于 `scripts/`。
-
-前端源码按职责位于 `site/src/student/`、`site/src/platform/` 、`site/src/teacher/` 和 `site/src/markdown/`。构建生成兼容现有页面的脚本到 `.portal-build/`，发布组装器将它们复制到站点；不维护另一份手写的 app/platform/teacher 大脚本。此处采用原生 ES 模块和明确的状态/组件接口，保留原有 DOM 与视觉。

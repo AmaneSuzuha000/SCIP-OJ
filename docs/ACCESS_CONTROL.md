@@ -26,13 +26,13 @@ React 应用没有页面级门禁，准入在三个地方生效：
 
 静态资源——HTML、JS、教材 Markdown、Notebook、Pyodide WASM——任何人都能直接下载。这是本方案选择的边界：门禁保护的是数据和接口，不是文件保密。
 
-因此凡是不能公开的内容都不进入构建产物。`scripts/assemble_site.py` 是唯一的发布决策点，它当前发布：应用构建、`runtime/`、五份公开文档、README。
+因此凡是不能公开的内容都不进入构建产物。`scripts/assemble_site.py` 是唯一的发布决策点，它当前发布：应用构建、`runtime/`、四份公开文档、README。
 
-**`problems/` 不再发布。** 曾经整目录复制，把 `reference_pyscipopt.py`、`reference_simulation.py`（判题 oracle）、`judge.py` 一并送到公网。前端运行时并不读取该目录——题目陈述由 `scripts/gen-problems.mjs` 在构建时内嵌进 `statements.ts`——所以整个目录都不需要发布。`tests/test_assemble_web.py` 锁定这条规则。
+**`problems/` 不再发布。** 曾经整目录复制，把 `reference_pyscipopt.py`（判题参考解答）、`judge.py` 一并送到公网。前端运行时并不读取该目录——题目陈述由 `scripts/gen-problems.mjs` 在构建时内嵌进 `statements.ts`——所以整个目录都不需要发布。`tests/test_assemble_web.py` 锁定这条规则。
 
 ## 验证与维护
 
-`npm test` 覆盖白名单单元测试与执行真实迁移的 SQL 测试：两账号、其他账号、伪造元数据、错误 OAuth provider、RLS、RPC 权限和服务角色。
+`npm test` 与 `node tests/test_site_access_database.mjs` 覆盖白名单单元测试与执行真实迁移的 SQL 测试：全部白名单账号、其他账号、伪造元数据、错误 OAuth provider、RLS、RPC 权限和服务角色。
 
 更新白名单时须新增数据库迁移并同步上表。新增公共表应同时添加准入策略；新增用户入口应复用统一认证助手。
 

@@ -14,8 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # exam-roster handbook and the authoring guide described the retired portal, and
 # the grading protocol contradicted the shipping grader.
 PUBLIC_DOCS = (
-    '学生指南.md', '拓展学习指南.md', 'IE_DES_01_精品案例实验指导书.md',
-    '课程实验与评价规范.md', '课程学习路径.md',
+    '学生指南.md', '拓展学习指南.md', '课程实验与评价规范.md', '课程学习路径.md',
 )
 
 
@@ -49,16 +48,13 @@ def assemble(web_dist, output):
         source = ROOT / 'docs' / name
         if source.is_file():
             shutil.copyfile(source, docs_out / name)
-    lessons = ROOT / 'docs' / 'lessons'
-    if lessons.is_dir():
-        shutil.copytree(lessons, docs_out / 'lessons')
 
     # Nothing from problems/ is published. The app reads no file from there:
     # /learn and /workbench render statements embedded at build time by
     # scripts/gen-problems.mjs, and the grader runs from the repository, not
-    # from the site. Copying the directory shipped reference_pyscipopt.py and
-    # reference_simulation.py -- the full-mark answers -- to anyone who guessed
-    # the URL, along with judge.py and a stray __pycache__.
+    # from the site. Copying the directory shipped reference_pyscipopt.py --
+    # the full-mark answers -- to anyone who guessed the URL, along with
+    # judge.py and a stray __pycache__.
     #
     # If a future page does need a problem asset at runtime, publish that one
     # file explicitly rather than restoring the directory copy.

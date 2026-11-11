@@ -1,5 +1,16 @@
-import { describe, expect, it } from 'vitest';
-import { parseRosterCsv, readAllPages } from '@/features/teacher/api';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const rpc = vi.fn();
+vi.mock('@/lib/supabase', () => ({
+  supabase: () => ({ rpc }),
+}));
+
+const {
+  exportGradebookCsv,
+  getInviteCode,
+  parseRosterCsv,
+  readAllPages,
+} = await import('@/features/teacher/api');
 
 /**
  * The roster import is the one place a teacher pastes text they did not
@@ -15,13 +26,21 @@ describe('roster CSV', () => {
     ]);
   });
 
+  it('strips UTF-8 BOM, unquotes cells, and supports alphanumeric student IDs', () => {
+    const rows = parseRosterCsv('\uFEFF"学号","姓名","GitHub"\r\n"U20260001","张 ""小"" 明","zxm"\r\n"IE-2026-02","陈同学"');
+    expect(rows).toEqual([
+      { studentNo: 'U20260001', displayName: '张 "小" 明', githubLogin: 'zxm' },
+      { studentNo: 'IE-2026-02', displayName: '陈同学', githubLogin: undefined },
+    ]);
+  });
+
   it('accepts semicolons and tabs as well as commas', () => {
     expect(parseRosterCsv('20260001;李同学')).toEqual([{ studentNo: '20260001', displayName: '李同学', githubLogin: undefined }]);
     expect(parseRosterCsv('20260001\t李同学')).toEqual([{ studentNo: '20260001', displayName: '李同学', githubLogin: undefined }]);
   });
 
-  it('drops rows with no numeric student number rather than guessing', () => {
-    const rows = parseRosterCsv('20260001,李同学\n说明文字,不是学号\n,没有学号');
+  it('drops rows with no student number rather than guessing', () => {
+    const rows = parseRosterCsv('20260001,李同学\n说明文字,不是学号\n,没有学号\nabcdef,纯字母不是学号');
     expect(rows).toHaveLength(1);
     expect(rows[0]?.studentNo).toBe('20260001');
   });
@@ -35,6 +54,40 @@ describe('roster CSV', () => {
   it('returns nothing for empty input', () => {
     expect(parseRosterCsv('')).toEqual([]);
     expect(parseRosterCsv('\n\n')).toEqual([]);
+  });
+});
+
+describe('teacher RPCs and CSV export', () => {
+  beforeEach(() => rpc.mockReset());
+
+  it('reads the course invite code via SECURITY DEFINER rpc instead of raw table select', async () => {
+    rpc.mockResolvedValue({ data: 'IE2026JOIN', error: null });
+    await expect(getInviteCode('course-uuid-1')).resolves.toBe('IE2026JOIN');
+    expect(rpc).toHaveBeenCalledWith('get_course_invite_code', { p_course_id: 'course-uuid-1' });
+  });
+
+  it('prepends UTF-8 BOM and neutralizes CSV formula injection cells on gradebook export', () => {
+    const csv = exportGradebookCsv([
+      {
+        course_id: 'c1',
+        user_id: 'u1',
+        student_no: '=cmd|"/c calc"!A0',
+        display_name: '+李同学',
+        assignment_id: 'a1',
+        problem_id: 'P001',
+        pass_score: 90,
+        best_submission_id: 's1',
+        best_score: 100,
+        passed: true,
+        submission_count: 1,
+        attempt_count: 1,
+        latest_submission_at: '2026-11-12T00:00:00Z',
+        last_submitted_at: '2026-11-12T00:00:00Z',
+      },
+    ]);
+    expect(csv.startsWith('\uFEFF')).toBe(true);
+    expect(csv).toContain('"\'=cmd|""/c calc""!A0"');
+    expect(csv).toContain("'+李同学");
   });
 });
 

@@ -69,16 +69,14 @@ export function AccountMenu() {
           >
             个人资料
           </MenuItem>
-          {isStudent ? (
-            <MenuItem
-              onClick={() => {
-                setOpen(false);
-                setJoinOpen(true);
-              }}
-            >
-              加入课程
-            </MenuItem>
-          ) : null}
+          <MenuItem
+            onClick={() => {
+              setOpen(false);
+              setJoinOpen(true);
+            }}
+          >
+            加入课程
+          </MenuItem>
         </div>
       ) : null}
 

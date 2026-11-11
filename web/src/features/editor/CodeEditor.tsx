@@ -17,20 +17,33 @@ interface CodeEditorProps {
   onChange: (next: string) => void;
   readOnly?: boolean;
   ariaLabel?: string;
+  blockPaste?: boolean;
+  onSignal?: (kind: 'input' | 'paste' | 'blocked_paste' | 'copy' | 'drop') => void;
 }
 
 /** CodeMirror 6 wrapper. Created once; external value changes are reconciled
  *  without recreating the view so cursor and undo history survive re-renders. */
-export function CodeEditor({ value, onChange, readOnly = false, ariaLabel }: CodeEditorProps) {
+export function CodeEditor({
+  value,
+  onChange,
+  readOnly = false,
+  ariaLabel,
+  blockPaste = false,
+  onSignal,
+}: CodeEditorProps) {
   const host = useRef<HTMLDivElement | null>(null);
   const view = useRef<EditorView | null>(null);
   const themeSlot = useRef(new Compartment());
   const readOnlySlot = useRef(new Compartment());
   const onChangeRef = useRef(onChange);
-  // Read at mount only; later changes are pushed through the theme compartment.
-  const theme = useTheme((state) => state.theme);
+  const onSignalRef = useRef(onSignal);
+  const blockPasteRef = useRef(blockPaste);
+  // Read resolved ('light' | 'dark') so system preference switches update CodeMirror cleanly.
+  const resolvedTheme = useTheme((state) => state.resolved);
 
   onChangeRef.current = onChange;
+  onSignalRef.current = onSignal;
+  blockPasteRef.current = blockPaste;
 
   useEffect(() => {
     if (!host.current) return;
@@ -44,10 +57,39 @@ export function CodeEditor({ value, onChange, readOnly = false, ariaLabel }: Cod
         keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
         python(),
         EditorView.lineWrapping,
-        themeSlot.current.of(theme === 'dark' ? oneDark : []),
+        themeSlot.current.of(resolvedTheme === 'dark' ? oneDark : []),
         readOnlySlot.current.of(EditorState.readOnly.of(readOnly)),
+        EditorView.domEventHandlers({
+          paste: (event) => {
+            if (blockPasteRef.current) {
+              event.preventDefault();
+              onSignalRef.current?.('blocked_paste');
+              return true;
+            }
+            onSignalRef.current?.('paste');
+            return false;
+          },
+          copy: () => {
+            onSignalRef.current?.('copy');
+            return false;
+          },
+          drop: (event) => {
+            if (blockPasteRef.current) {
+              event.preventDefault();
+              onSignalRef.current?.('blocked_paste');
+              return true;
+            }
+            onSignalRef.current?.('drop');
+            return false;
+          },
+        }),
         EditorView.updateListener.of((update) => {
-          if (update.docChanged) onChangeRef.current(update.state.doc.toString());
+          if (update.docChanged) {
+            onChangeRef.current(update.state.doc.toString());
+            if (update.transactions.some((tr) => tr.isUserEvent('input'))) {
+              onSignalRef.current?.('input');
+            }
+          }
         }),
         EditorView.theme({
           '&': { fontSize: '13px', minHeight: '320px' },
@@ -67,9 +109,9 @@ export function CodeEditor({ value, onChange, readOnly = false, ariaLabel }: Cod
 
   useEffect(() => {
     view.current?.dispatch({
-      effects: themeSlot.current.reconfigure(theme === 'dark' ? oneDark : []),
+      effects: themeSlot.current.reconfigure(resolvedTheme === 'dark' ? oneDark : []),
     });
-  }, [theme]);
+  }, [resolvedTheme]);
 
   useEffect(() => {
     view.current?.dispatch({

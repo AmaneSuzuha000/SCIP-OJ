@@ -23,17 +23,6 @@ jobs:
       - run: npm ci
       - name: Complete Python and JavaScript unit regressions
         run: npm test
-      - name: Check the models the grader still uses
-        run: |
-          # Only the pure-logic cores survive the portal removal: the judge's
-          # Python reference is checked against simulation-core, and the two
-          # lab models are still asserted by test_ie_case_extensions.
-          node --check site/js/simulation-core.js
-          node --check site/js/inventory-core.js
-          node --check site/js/flow-core.js
-          node --check site/js/grading-state.js
-          node --check site/js/grading-api.js
-          node --check site/js/request-keys.js
       - name: Type-check and test the frontend
         run: |
           npm --prefix web ci
@@ -68,6 +57,8 @@ jobs:
           supabase/functions/regrade/index.ts
           supabase/functions/regrade-batch/index.ts
           supabase/functions/grade-callback/index.ts
+          supabase/functions/join-course/index.ts
+          supabase/functions/publish-assignment/index.ts
       - name: Real PostgreSQL transactions, privileges and concurrent consumers
         env:
           TEST_DATABASE_URL: postgresql://postgres:test-only@localhost:5432/scip_test
@@ -90,14 +81,22 @@ jobs:
           from pathlib import Path
           from judge.runner_l2_isolated import grade_file
           for pid, source in [
-              ("P001", "problems/P001_knapsack/template.py"),
-              ("P002", "problems/P002_assignment/template.py"),
+              ("P001", "problems/P001_knapsack/reference_pyscipopt.py"),
+              ("P001", "tests/fixtures/p001_smoke_dp.py"),
+              ("P002", "tests/fixtures/p002_smoke_mip.py"),
           ]:
               report = grade_file(Path(source), pid, {"n_instances": 1, "pass_score": 90})
-              print(pid, report["status"], report["score"], report.get("messages"))
+              print(pid, source, report["status"], report["score"], report.get("messages"))
               assert report["status"] == "done" and report["score"] == 100
               assert report["sandbox"] == "isolated_container"
               assert report["test_set"] == "server_private_v2"
+          for pid, template in [
+              ("P001", "problems/P001_knapsack/template.py"),
+              ("P002", "problems/P002_assignment/template.py"),
+          ]:
+              report = grade_file(Path(template), pid, {"n_instances": 1, "pass_score": 90})
+              print(pid, "template", report["status"], report["score"])
+              assert report["status"] == "done" and not report["passed"] and report["score"] < 90
           PY
       - name: Execute IE PySCIPOpt Notebooks against independent oracles
         run: |

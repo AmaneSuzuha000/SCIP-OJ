@@ -12,18 +12,26 @@ function storage(): Storage | null {
   }
 }
 
-function apply(theme: Theme): void {
-  if (typeof document === 'undefined') return;
+export function resolveTheme(theme: Theme): 'light' | 'dark' {
+  if (theme === 'dark' || theme === 'light') return theme;
   const prefersDark =
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
     window.matchMedia('(prefers-color-scheme: dark)').matches;
-  document.documentElement.dataset.theme =
-    theme === 'system' ? (prefersDark ? 'dark' : 'light') : theme;
+  return prefersDark ? 'dark' : 'light';
+}
+
+function apply(theme: Theme): 'light' | 'dark' {
+  const resolved = resolveTheme(theme);
+  if (typeof document !== 'undefined') {
+    document.documentElement.dataset.theme = resolved;
+  }
+  return resolved;
 }
 
 interface ThemeStore {
   theme: Theme;
+  resolved: 'light' | 'dark';
   setTheme: (theme: Theme) => void;
   cycle: () => void;
 }
@@ -34,10 +42,11 @@ const initial: Theme = stored === 'light' || stored === 'dark' || stored === 'sy
 
 export const useTheme = create<ThemeStore>((set, get) => ({
   theme: initial,
+  resolved: resolveTheme(initial),
   setTheme: (theme) => {
     storage()?.setItem(KEY, theme);
-    apply(theme);
-    set({ theme });
+    const resolved = apply(theme);
+    set({ theme, resolved });
   },
   cycle: () => {
     const order: Theme[] = ['light', 'dark', 'system'];
@@ -47,6 +56,22 @@ export const useTheme = create<ThemeStore>((set, get) => ({
   },
 }));
 
+let systemListenerAttached = false;
+
 export function initTheme(): void {
-  apply(useTheme.getState().theme);
+  const current = useTheme.getState().theme;
+  const resolved = apply(current);
+  useTheme.setState({ resolved });
+
+  if (!systemListenerAttached && typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+    systemListenerAttached = true;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = () => {
+      if (useTheme.getState().theme === 'system') {
+        const nextResolved = apply('system');
+        useTheme.setState({ resolved: nextResolved });
+      }
+    };
+    mq.addEventListener?.('change', onChange);
+  }
 }

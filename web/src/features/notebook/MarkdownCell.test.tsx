@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { MarkdownCell } from '@/features/notebook/MarkdownCell';
 
@@ -84,5 +85,32 @@ describe('markdown formulas', () => {
       timeout: 5000,
     });
     expect(container.textContent).not.toContain('Σ_s');
+  });
+
+  it('renders semantic headings h1-h4 and router-aware internal links', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <MarkdownCell
+          source={'# 一级\n## 二级\n### 三级\n#### 四级\n\n查看 [学习路径](/docs/learning-path) 与 [外部](https://example.com)。'}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(container.querySelector('h1')).toHaveTextContent('一级');
+    expect(container.querySelector('h2')).toHaveTextContent('二级');
+    expect(container.querySelector('h3')).toHaveTextContent('三级');
+    expect(container.querySelector('h4')).toHaveTextContent('四级');
+
+    const internalLink = screen.getByRole('link', { name: '学习路径' });
+    expect(internalLink).toHaveAttribute('href', '/docs/learning-path');
+    expect(internalLink).not.toHaveAttribute('target');
+
+    const externalLink = screen.getByRole('link', { name: '外部' });
+    expect(externalLink).toHaveAttribute('href', 'https://example.com');
+    expect(externalLink).toHaveAttribute('target', '_blank');
+
+    // Fallback outside Router context must also render without crashing.
+    const standalone = render(<MarkdownCell source={'[指南](/docs/student-guide)'} />);
+    expect(standalone.getByRole('link', { name: '指南' })).toHaveAttribute('href', '/docs/student-guide');
   });
 });

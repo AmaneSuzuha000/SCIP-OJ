@@ -66,7 +66,13 @@ export function HomePage() {
                 <Card className="flex h-full flex-col gap-2 p-5 transition-shadow group-hover:shadow-[var(--shadow-md)]">
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-sm font-medium text-primary">{course.name}</p>
-                    {course.role === 'teacher' ? <Badge tone="brand">教师</Badge> : null}
+                    {course.role === 'teacher' ? (
+                      <Badge tone="brand">教师</Badge>
+                    ) : course.role === 'ta' ? (
+                      <Badge tone="brand">助教</Badge>
+                    ) : course.role === 'admin' ? (
+                      <Badge tone="brand">管理员</Badge>
+                    ) : null}
                   </div>
                   <p className="text-xs text-tertiary">{course.code ?? '未设置课程代码'}</p>
                   <span className="mt-auto pt-2 text-xs text-brand">进入课程 →</span>

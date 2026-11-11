@@ -16,6 +16,7 @@ export function Dialog({
   description,
   onClose,
   busy = false,
+  size = 'md',
   children,
 }: {
   open: boolean;
@@ -23,6 +24,7 @@ export function Dialog({
   description?: string;
   onClose: () => void;
   busy?: boolean;
+  size?: 'md' | 'lg';
   children: ReactNode;
 }) {
   useEffect(() => {
@@ -42,6 +44,7 @@ export function Dialog({
   }, [open, busy, onClose]);
 
   if (!open) return null;
+  const widthClass = size === 'lg' ? 'max-w-2xl' : 'max-w-md';
   return (
     <div
       className="fixed inset-0 z-[var(--z-overlay)] flex items-center justify-center bg-[rgb(16_24_40_/_45%)] p-4"
@@ -54,10 +57,21 @@ export function Dialog({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="w-full max-w-md rounded-[var(--radius-lg)] border border-subtle bg-surface p-6 shadow-[var(--shadow-md)]"
+        className={`max-h-[90dvh] w-full ${widthClass} overflow-y-auto rounded-[var(--radius-lg)] border border-subtle bg-surface p-6 shadow-[var(--shadow-md)]`}
         onClick={(event) => event.stopPropagation()}
       >
-        <h2 className="text-base font-semibold text-primary">{title}</h2>
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="text-base font-semibold text-primary">{title}</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={busy}
+            aria-label="关闭"
+            className="-mr-1 -mt-1 rounded-[var(--radius-sm)] px-2 py-1 text-sm text-tertiary hover:bg-hover hover:text-primary disabled:opacity-40"
+          >
+            ×
+          </button>
+        </div>
         {description ? (
           <p className="mt-1 text-sm leading-relaxed text-tertiary">{description}</p>
         ) : null}

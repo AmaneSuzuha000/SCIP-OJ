@@ -20,6 +20,8 @@ export function ProfileDialog({ open, onClose }: { open: boolean; onClose: () =>
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const isStudent = !profile || profile.role === 'student';
+
   // Seed from the current profile each time it opens, so a dismissed edit does
   // not leave half-typed values behind on the next open.
   useEffect(() => {
@@ -32,20 +34,22 @@ export function ProfileDialog({ open, onClose }: { open: boolean; onClose: () =>
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     const trimmed = studentNo.trim();
-    if (!trimmed) {
+    const cleanName = displayName.trim();
+    if (isStudent && !trimmed) {
       setError('请填写学号');
       return;
     }
-    if (!displayName.trim()) {
+    if (!cleanName) {
       setError('请填写真实姓名');
       return;
     }
     setBusy(true);
     setError(null);
     try {
-      await updateProfile({ display_name: displayName, student_no: trimmed });
+      const storedNo = trimmed || null;
+      await updateProfile({ display_name: cleanName, student_no: storedNo });
       if (profile) {
-        setProfile({ ...profile, student_no: trimmed, display_name: displayName.trim() });
+        setProfile({ ...profile, student_no: storedNo, display_name: cleanName });
       }
       onClose();
     } catch (cause) {
@@ -58,18 +62,25 @@ export function ProfileDialog({ open, onClose }: { open: boolean; onClose: () =>
   return (
     <Dialog
       open={open}
-      title="绑定学号与姓名"
-      description="成绩按学号归档。学号填写后不能和其他账号重复。"
+      title={isStudent ? '绑定学号与姓名' : '个人资料'}
+      description={
+        isStudent
+          ? '成绩按学号归档。学号填写后不能和其他账号重复。'
+          : '更新姓名设置；教师或管理员无需绑定学号。'
+      }
       onClose={onClose}
       busy={busy}
     >
       <form className="flex flex-col gap-3" onSubmit={submit}>
-        <Field label="学号" hint="例如 20260001" error={error ?? undefined}>
+        <Field
+          label="学号"
+          hint={isStudent ? '例如 20260001' : '教师或助教可留空'}
+          error={error ?? undefined}
+        >
           <TextInput
             value={studentNo}
             onChange={(event) => setStudentNo(event.target.value)}
-            placeholder="20260001"
-            inputMode="numeric"
+            placeholder={isStudent ? '20260001' : '可选'}
             autoComplete="off"
             disabled={busy}
           />

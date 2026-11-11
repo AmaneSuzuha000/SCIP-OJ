@@ -12,7 +12,6 @@ from judge.common import (
     average_scores,
     grade_assignment,
     grade_knapsack,
-    grade_ie_des01,
     validate_meta,
 )
 
@@ -71,11 +70,6 @@ def gen_assignment(seed: int) -> dict[str, Any]:
     return {"n": n, "costs": costs, "optimal_value": _assignment_opt(costs)}
 
 
-def gen_ie_des01(seed: int) -> dict[str, Any]:
-    from judge.private_instances import private_ie_des01
-    return private_ie_des01(seed)
-
-
 def run_l1(
     solve_fn: Callable[[dict], dict],
     meta: dict[str, Any],
@@ -86,9 +80,6 @@ def run_l1(
     if grader == "assignment":
         gen = gen_assignment
         grade = grade_assignment
-    elif grader == "ie_des01":
-        gen = gen_ie_des01
-        grade = grade_ie_des01
     else:
         gen = gen_knapsack
         grade = grade_knapsack

@@ -147,7 +147,7 @@ class JudgeConfigErrorTests(unittest.TestCase):
             with self.subTest(problem=meta.get("id")):
                 validate_meta(meta.get("grader"), meta)
             seen += 1
-        self.assertGreaterEqual(seen, 3)
+        self.assertEqual(seen, 2)
 
     def test_weights_must_sum_to_one_hundred(self):
         bad = {**self.good, "weights": {"F": 10, "C": 35, "I": 10, "O": 40}}

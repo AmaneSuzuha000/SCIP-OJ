@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { loadKernel, resetKernel, runCell } from '@/features/notebook/kernel';
+import { loadKernel, resetKernel, resetKernelNamespace, runCell } from '@/features/notebook/kernel';
 
 /**
  * The kernel runs Python in a worker so that a cell which never returns can be
@@ -133,5 +133,32 @@ describe('kernel worker bridge', () => {
     resetKernel();
 
     await expect(loadKernel()).rejects.toThrow('无法加载建模兼容层');
+  });
+
+  it('clears user namespace via reset message when idle and terminates worker if stuck', async () => {
+    const first = vi.fn();
+    const second = vi.fn();
+    const kernel = await loadKernel(first);
+    const worker = FakeWorker.all[0]!;
+
+    // Calling loadKernel again rebinds the active progress listener.
+    await loadKernel(second);
+    worker.emit({ type: 'progress', progress: { stage: 'running', message: '执行中' } });
+    expect(first).not.toHaveBeenCalled();
+    expect(second).toHaveBeenCalledWith({ stage: 'running', message: '执行中' });
+
+    const resetIdle = resetKernelNamespace();
+    const resetMsg = worker.posted.find((m) => m.type === 'reset');
+    expect(resetMsg).toBeDefined();
+    worker.emit({ type: 'reset-done', id: resetMsg?.id });
+    await resetIdle;
+    expect(worker.terminated).toBe(false);
+
+    // If a cell is stuck mid-run, resetKernelNamespace terminates the hung worker cleanly.
+    const stuck = runCell(kernel, 'while True: pass');
+    await vi.waitFor(() => expect(worker.lastRun()).toBeDefined());
+    await resetKernelNamespace();
+    expect(worker.terminated).toBe(true);
+    await expect(stuck).resolves.toMatchObject({ ok: false, errorType: 'KernelError' });
   });
 });

@@ -57,12 +57,16 @@ def runner_ref():
 
 def callback():
     report_file = Path("_grading_tmp/report.json")
-    report = json.loads(report_file.read_text()) if report_file.exists() else {}
+    report = json.loads(report_file.read_text(encoding="utf-8")) if report_file.exists() else {}
     done = report.get("status") == "done" and isinstance(report.get("score"), int)
+    err_detail = report.get("error")
+    if not err_detail and isinstance(report.get("messages"), list):
+        err_detail = "; ".join(str(m) for m in report["messages"] if m)
+    err_msg = None if done else (str(err_detail)[:400] if err_detail else "评测运行未完成，请检查系统任务")
     body = {"submission_id": os.environ["SUBMISSION_ID"], "grading_id": os.environ["GRADING_ID"],
             "runner_ref": runner_ref(), "status": "done" if done else "system_error",
             "score": report["score"] if done else None, "passed": report.get("passed", False),
-            "report": report, "error_message": None if done else "评测运行未完成，请检查系统任务"}
+            "report": report, "error_message": err_msg}
     raw = json.dumps(body, ensure_ascii=False).encode()
     sig = hmac.new(os.environ["GRADE_CALLBACK_SECRET"].encode(), raw, hashlib.sha256).hexdigest()
     # Retry identical signed bytes. The transactional endpoint is idempotent.
@@ -98,8 +102,13 @@ def drain():
                           "grading_id": job["grading_id"], "problem_id": job["problem_id"]}},
                          {"Authorization": "Bearer " + os.environ["GH_TOKEN"],
                           "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"})
-        except (OSError, TimeoutError):
-            failure = "Dispatch response unconfirmed; retry is safe"
+        except (urllib.error.HTTPError, OSError, TimeoutError, ValueError) as exc:
+            code = getattr(exc, "code", None)
+            failure = (
+                f"GitHub dispatch HTTP {code}; retry is safe"
+                if isinstance(code, int)
+                else f"{type(exc).__name__}: dispatch unconfirmed"
+            )
         rpc("finish_grading_dispatch", {"p_grading_id": job["grading_id"],
                                        "p_lease_token": job["lease_token"], "p_error": failure})
 

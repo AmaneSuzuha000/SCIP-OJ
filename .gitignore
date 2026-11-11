@@ -4,14 +4,12 @@ __pycache__/
 _site/
 dist/
 _output/
-.jupyterlite.doit.db
 .env
 .env.*
 !.env.example
 **/.env
 **/.env.*
 !**/.env.example
-site/config.js
 *.pem
 *.key
 *.p12
@@ -29,6 +27,3 @@ node_modules/
 ui-artifacts/
 lite-build/
 ui-preview/
-
-# Local screenshots from web/scripts/screenshot.mjs
-web/shots/

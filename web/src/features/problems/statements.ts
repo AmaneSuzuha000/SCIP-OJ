@@ -6,6 +6,7 @@ export interface Statement {
   difficulty: string;
   tags: string[];
   source: string;
+  template?: string;
 }
 
 export const STATEMENTS: Statement[] = [
@@ -15,6 +16,7 @@ export const STATEMENTS: Statement[] = [
     difficulty: "easy",
     tags: ["MIP","knapsack"],
     source: "# P001 · 0-1 背包\r\n\r\n给定 `n` 件物品，第 `i` 件重量 `weights[i]`、价值 `values[i]`，背包容量 `capacity`。  \r\n选择 0/1 变量使总价值最大且不超过容量。\r\n\r\n## 输入 `instance`\r\n\r\n```json\r\n{\r\n  \"n\": 5,\r\n  \"weights\": [2, 3, 4, 5, 9],\r\n  \"values\": [3, 4, 8, 8, 10],\r\n  \"capacity\": 20,\r\n  \"optimal_value\": 28\r\n}\r\n```\r\n\r\n`optimal_value` 仅供判分参考；正式提交时实例由随机种子生成，请用建模求解，不要硬编码。\r\n\r\n## 输出\r\n\r\n```python\r\n{\r\n  \"status\": \"optimal\",\r\n  \"objective\": float,\r\n  \"solution\": {0: 0.0, 1: 1.0, ...}  # 或长度为 n 的 list\r\n}\r\n```\r\n\r\n## 提示\r\n\r\n可用动态规划或枚举验证小规模结果，课程建模使用 PySCIPOpt。\r\n",
+    template: "\"\"\"P001 学生模板：用 PySCIPOpt 完成 0-1 背包，不要硬编码 optimal_value。\"\"\"\r\n\r\n\r\ndef solve(instance: dict) -> dict:\r\n    from pyscipopt import Model\r\n\r\n    weights = instance[\"weights\"]\r\n    values = instance[\"values\"]\r\n    capacity = int(instance[\"capacity\"])\r\n    n = int(instance[\"n\"])\r\n\r\n    model = Model(\"p001-knapsack\")\r\n    model.hideOutput()\r\n    chosen = [model.addVar(vtype=\"B\", name=f\"x_{i}\") for i in range(n)]\r\n\r\n    # 容量约束：选中物品的重量之和不超过 capacity。\r\n    # model.addCons(sum(weights[i] * chosen[i] for i in range(n)) <= capacity)\r\n    # 目标：最大化选中物品的价值。\r\n    # model.setObjective(sum(values[i] * chosen[i] for i in range(n)), \"maximize\")\r\n\r\n    model.optimize()\r\n    solution = {i: 0.0 for i in range(n)}\r\n    objective = 0.0\r\n    if model.getNSols() > 0:\r\n        solution = {i: float(round(model.getVal(chosen[i]))) for i in range(n)}\r\n        objective = float(model.getObjVal())\r\n    return {\"status\": str(model.getStatus()), \"objective\": objective, \"solution\": solution}\r\n",
   },
   {
     id: "P002",
@@ -22,13 +24,7 @@ export const STATEMENTS: Statement[] = [
     difficulty: "easy",
     tags: ["MIP","assignment"],
     source: "# P002 · 指派问题（Assignment）\r\n\r\n把 \\(n\\) 个工人一对一指派到 \\(n\\) 个任务，最小化总费用。\r\n\r\n## 模型（MIP）\r\n\r\n- 决策：\\(x_{ij} \\in \\{0,1\\}\\) 表示工人 \\(i\\) 是否做任务 \\(j\\)\r\n- \\(\\min \\sum_{i,j} c_{ij} x_{ij}\\)\r\n- 每个工人恰好一个任务：\\(\\sum_j x_{ij} = 1\\)\r\n- 每个任务恰好一个人：\\(\\sum_i x_{ij} = 1\\)\r\n\r\n## `solve(instance)` 契约\r\n\r\n输入 `instance`：\r\n\r\n| 字段 | 含义 |\r\n|------|------|\r\n| `n` | 规模 |\r\n| `costs` | `n×n` 费用矩阵（整数） |\r\n| `optimal_value` | 仅判题侧使用；学生代码**不应依赖** |\r\n\r\n返回：\r\n\r\n```python\r\n{\"status\": \"optimal\"|\"feasible\", \"objective\": float, \"solution\": ...}\r\n```\r\n\r\n`solution` 可为：\r\n\r\n- 嵌套列表 `n×n`，或\r\n- 扁平长度 `n*n` 的列表，或\r\n- 字典键 `\"i,j\"` / `(i,j)`\r\n\r\n值为 0/1。`objective` 须等于 \\(\\sum c_{ij}x_{ij}\\)。\r\n\r\n## 练习评分\r\n\r\n性质验证：格式 → 行/列和为 1 → 整数性 → 目标相对最优 gap。多实例**算术平均**，通过线 **90**。\r\n",
-  },
-  {
-    id: "IE-DES-01",
-    title: "检修工位排队仿真（DES 入门）",
-    difficulty: "medium",
-    tags: ["Simulation","DES","Queueing","IE"],
-    source: "# IE-DES-01 检修工位排队离散事件仿真\r\n\r\n## 题目背景\r\n某城轨列车检修车间设有一个集中待检区和 $c$ 个并行检修工位。列车到达服从参数为 $\\lambda$ 的泊松过程（到达间隔服从均值为 $\\text{arrivalMean}$ 的指数分布）。列车在各工位的检修服务时长服从均值为 $\\text{serviceMean}$ 的指数分布。排队规则为严格先到先服务（FCFS）。\r\n\r\n为了评估工位扩容与生产线瓶颈，需要编写一个离散事件仿真求解器 `solve(instance)`，统计系统在经过指定预热期（`warmup`）后在统计窗口内的各项关键排队性能指标。\r\n\r\n## 输入格式\r\n评测系统向 `solve(instance)` 传入一个字典 `instance`，包含以下字段：\r\n- `arrivalMean`: 浮点数，平均到达间隔（分钟）\r\n- `serviceMean`: 浮点数，平均检修时长（分钟）\r\n- `servers`: 整数，并行检修工位数 $c$\r\n- `horizon`: 整数，总仿真时长（分钟）\r\n- `warmup`: 整数，预热时长（分钟），预热期内发生事件不计入统计指标\r\n- `seed`: 整数，随机数种子（32 位无符号整数）\r\n\r\n## 输出格式\r\n求解器必须返回一个字典，包含以下字段（浮点数或整数）：\r\n- `avgWait`: 平均等待时间（分钟）\r\n- `throughput`: 统计窗口内的小时吞吐率（件/小时）\r\n- `utilization`: 工位平均综合利用率，取值范围在 $[0.0, 1.0]$\r\n- `meanQueue`: 统计窗口内的平均排队队长（人/车）\r\n- `meanWip`: 统计窗口内的平均在制品总数（WIP = 队中 + 工位中）\r\n- `completions`: 统计窗口内完成检修出站的总列车数\r\n\r\n## 评分规则\r\n- **格式分 (F, 15分)**：返回合法字典，且包含全部 6 个必要字段，均为有限数值。\r\n- **物理约束分 (C, 25分)**：利用率在 $[0, 1]$ 之间，平均等待、队长、完工数非负，且满足 $\\text{meanWip} \\ge \\text{meanQueue}$。\r\n- **一致性分 (I, 20分)**：满足守恒率与 Little's Law 检验，吞吐量与完工服务数满足 $\\text{throughput} = 60 \\times \\text{completions} / (\\text{horizon} - \\text{warmup})$。\r\n- **仿真精度分 (O, 40分)**：与平台权威仿真基准（带相同种子的事件驱动离散事件基准）核对，偏差 $\\le 0.1\\%$ 得满分 40 分，依次梯度递减。及格线为 90 分。\r\n",
+    template: "\"\"\"P002 学生模板：用 PySCIPOpt 完成指派问题建模，不要暴力穷举或依赖 optimal_value。\"\"\"\n\n\ndef solve(instance: dict) -> dict:\n    from pyscipopt import Model, quicksum\n\n    n = int(instance[\"n\"])\n    costs = instance[\"costs\"]\n\n    model = Model(\"p002-assignment\")\n    model.hideOutput()\n    x = [[model.addVar(vtype=\"B\", name=f\"x_{i}_{j}\") for j in range(n)] for i in range(n)]\n\n    # TODO: 补充行/列指派约束与最小化总成本目标：\n    # for i in range(n):\n    #     model.addCons(quicksum(x[i][j] for j in range(n)) == 1)\n    # for j in range(n):\n    #     model.addCons(quicksum(x[i][j] for i in range(n)) == 1)\n    # model.setObjective(\n    #     quicksum(costs[i][j] * x[i][j] for i in range(n) for j in range(n)),\n    #     \"minimize\",\n    # )\n\n    model.optimize()\n    sol = [[0.0] * n for _ in range(n)]\n    objective = 0.0\n    if model.getNSols() > 0:\n        sol = [[float(round(model.getVal(x[i][j]))) for j in range(n)] for i in range(n)]\n        objective = float(model.getObjVal())\n    return {\"status\": str(model.getStatus()), \"objective\": objective, \"solution\": sol}\n",
   },
 ];
 

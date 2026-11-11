@@ -1,14 +1,16 @@
 import { supabase } from '@/lib/supabase';
 
+export type EnrollmentRole = 'student' | 'teacher' | 'ta' | 'admin';
+
 export interface EnrolledCourse {
   id: string;
   name: string;
   code: string | null;
-  role: 'student' | 'teacher';
+  role: EnrollmentRole;
 }
 
 interface EnrollmentRow {
-  role: 'student' | 'teacher';
+  role: EnrollmentRole;
   courses: { id: string; name: string; code: string | null } | null;
 }
 

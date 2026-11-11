@@ -1,28 +1,30 @@
 # @scip-oj/web
 
-课程平台的新前端。与旧 site/ 并存，直到切换完成。
+SCIP-OJ 课程平台的 React 19 前端应用，由 GitHub Pages 部署为纯静态单页站点。
 
-## 栈
+## 技术栈
 
-React 19 + TypeScript (strict) + Vite 6 + Tailwind v4 + TanStack Query + Zustand + CodeMirror 6。
+React 19 + TypeScript (strict) + Vite 6 + Tailwind v4 + TanStack Query + Zustand + CodeMirror 6 + KaTeX + Pyodide (Web Worker)。
 
-## 命令
+## 常用命令
 
-    npm install
-    npm run dev        # 本地开发
-    npm run build      # tsc --noEmit && vite build
-    npm run typecheck
-    npm test           # vitest
+```bash
+npm install
+npm run dev        # 本地开发服务器
+npm run typecheck  # TypeScript 严格类型检查
+npm test           # Vitest 单元测试与组件回归
+npm run build      # tsc --noEmit && vite build && node scripts/stage-runtime.mjs
+```
 
-## 设计约束
+> `npm run build` 同时执行 `scripts/stage-runtime.mjs`：从 `node_modules/pyodide` 复制运行时核心并将 `numpy`/`scipy` WASM wheel 缓存至 `dist/runtime/pyodide/`；兼容层位于 `public/runtime/pyscipopt.py`。若更新了 `docs/*.md` 或 `problems/*`，请同步运行仓库根目录下的 `node scripts/gen-docs.mjs` 与 `node scripts/gen-problems.mjs`。
 
-- 所有颜色、间距、圆角只能来自 src/styles/tokens.css，组件里不允许写死数值。
-- Supabase 实例只允许从 src/lib/supabase.ts 获取，禁止在别处再建一个 client。
-- 服务端仍然是唯一权威：浏览器不做任何准入或判分决策，只展示服务端返回的结果。
-- 路由级懒加载是硬要求，/workbench 的编辑器不得进入首屏分块。
+## 设计与安全约束
 
-## 部署
+- **样式令牌**：所有颜色、间距、圆角语义均定义在 `src/styles/tokens.css`，组件中使用语义变量与断点类，不引入平行主题变量体系。
+- **单一客户端**：Supabase 客户端只允许通过 `src/lib/supabase.ts` 创建与访问，禁止在其他模块重复实例化。
+- **服务端权威**：浏览器仅承担展示与本地调试；站点准入、选课、身份核验、作业防作弊校验、提交节流与正式判分全部由 PostgreSQL RLS / RPC / Edge Functions 与无网络隔离 Docker 容器权威裁决。
+- **代码分割与按需加载**：`/workbench` 编辑器、`KaTeX` 数学渲染、本地自测（`selftest.ts`）与 `Pyodide` Web Worker（约 29 MB 运行时）严禁进入首屏初始 JS 分块；`CodeMirror` 根据系统/用户深浅色解析主题动态切换明暗风格。
 
-产物是纯静态文件。dist/404.html 由构建插件从 index.html 复制而来，用于 GitHub Pages
-的 SPA 回退。运行配置通过 config.js 注入 window.SCIP_OJ_CONFIG，或使用
-VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY 环境变量。
+## 部署产物
+
+构建产物输出于 `web/dist/`，经由根目录 `scripts/assemble_site.py` 拼装进最终部署目录（绝不包含 `problems/` 源码目录）。`dist/404.html` 由 Vite 构建插件自动复制 `index.html` 生成，用于 GitHub Pages 的 SPA 路由回退；线上运行时配置由工作流注入 `config.js` 内的 `window.SCIP_OJ_CONFIG` 提供。

@@ -19,12 +19,11 @@ from judge.common import (
     average_scores,
     grade_assignment,
     grade_knapsack,
-    grade_ie_des01,
     validate_meta,
 )
 from judge.contract import contract_fingerprint, contract_view
 from judge.errors import JudgeConfigError, SystemJudgeError
-from judge.private_instances import private_assignment, private_knapsack, private_ie_des01
+from judge.private_instances import private_assignment, private_knapsack
 from judge.catalog import problem_dir_for
 from judge.sandbox import IMAGE, _run_isolated
 
@@ -64,9 +63,6 @@ def grade_file(path: Path, problem_id: str | None = None,
     if grader == "assignment":
         gen = private_assignment
         grade = grade_assignment
-    elif grader == "ie_des01":
-        gen = private_ie_des01
-        grade = grade_ie_des01
     else:
         gen = private_knapsack
         grade = grade_knapsack

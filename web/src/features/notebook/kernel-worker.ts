@@ -23,7 +23,10 @@ interface PyodideLike {
   setStderr(options: { batched: (text: string) => void }): void;
 }
 
-type Incoming = { type: 'boot' } | { type: 'run'; id: number; code: string };
+type Incoming =
+  | { type: 'boot' }
+  | { type: 'run'; id: number; code: string }
+  | { type: 'reset'; id: number };
 
 const BASE = import.meta.env.BASE_URL || '/';
 
@@ -81,11 +84,28 @@ async function boot(): Promise<PyodideLike> {
         '多半是部署里缺少 runtime/pyscipopt.py',
     );
   }
-  py.FS.writeFile('/lib/python3.13/site-packages/pyscipopt.py', new TextEncoder().encode(source));
+  const purelib = String(
+    await py.runPythonAsync('import sysconfig; sysconfig.get_path("purelib")'),
+  ).replace(/\/+$/, '');
+  py.FS.writeFile(purelib + '/pyscipopt.py', new TextEncoder().encode(source));
 
   pyodide = py;
   progress({ stage: 'ready', message: '建模环境已就绪' });
   return py;
+}
+
+async function resetNamespace(): Promise<void> {
+  const py = await boot();
+  await py.runPythonAsync(`
+import sys as _scip_sys
+_main_ns = _scip_sys.modules['__main__'].__dict__
+_keep = {'__name__', '__doc__', '__package__', '__loader__', '__spec__', '__builtins__'}
+for _k in list(_main_ns.keys()):
+    if _k not in _keep:
+        del _main_ns[_k]
+del _main_ns, _k, _keep, _scip_sys
+`);
+  progress({ stage: 'ready', message: '建模环境已重置' });
 }
 
 async function run(code: string): Promise<CellResult> {
@@ -125,6 +145,19 @@ self.onmessage = async (event: MessageEvent<Incoming>) => {
     try {
       const result = await run(data.code);
       self.postMessage({ type: 'result', id: data.id, result });
+    } catch (cause) {
+      self.postMessage({
+        type: 'boot-failed',
+        id: data.id,
+        message: cause instanceof Error ? cause.message : String(cause),
+      });
+    }
+    return;
+  }
+  if (data.type === 'reset') {
+    try {
+      await resetNamespace();
+      self.postMessage({ type: 'reset-done', id: data.id });
     } catch (cause) {
       self.postMessage({
         type: 'boot-failed',

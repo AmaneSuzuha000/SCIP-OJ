@@ -71,7 +71,7 @@ class ContractFingerprintTests(unittest.TestCase):
                 self.assertEqual(len(value), 64)
                 self.assertNotIn(value, seen, "不同题目不应出现指纹碰撞")
                 seen.add(value)
-        self.assertEqual(len(seen), 3)
+        self.assertEqual(len(seen), 2)
 
     def test_fingerprint_requires_a_valid_direction(self):
         with self.assertRaises(JudgeConfigError):

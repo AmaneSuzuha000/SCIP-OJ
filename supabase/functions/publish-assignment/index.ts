@@ -4,13 +4,13 @@
 // POST { course_id, problem_id, due_at, pass_score, n_instances, score_policy }
 // 权限：仅限该课程的教师/助教/管理员
 
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-
 import { handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { createServiceClient } from "../_shared/secrets.ts";
 import { getAuthenticatedUser, isTeacherOrAdmin } from "../_shared/auth.ts";
 
-serve(async (req: Request): Promise<Response> => {
+const SUPPORTED_PROBLEMS = new Set(["P001", "P002"]);
+
+Deno.serve(async (req: Request): Promise<Response> => {
   const corsResp = handleCors(req);
   if (corsResp) return corsResp;
 
@@ -47,8 +47,12 @@ serve(async (req: Request): Promise<Response> => {
       return errorResponse("course_id 格式不正确", 400, "INVALID_COURSE_ID");
     }
     const cleanProblemId = String(problem_id).trim().toUpperCase();
-    if (!/^[A-Z0-9_-]{1,32}$/.test(cleanProblemId)) {
-      return errorResponse("problem_id 只能包含字母、数字、下划线和短横线（1-32 位）", 400, "INVALID_PROBLEM_ID");
+    if (!SUPPORTED_PROBLEMS.has(cleanProblemId)) {
+      return errorResponse(
+        `不支持的题目编号：当前可发布题库为 ${Array.from(SUPPORTED_PROBLEMS).join(", ")}`,
+        400,
+        "INVALID_PROBLEM_ID",
+      );
     }
 
     // 3. 校验教师权限

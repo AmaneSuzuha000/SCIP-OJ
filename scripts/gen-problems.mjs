@@ -6,8 +6,8 @@
  * indication of what to solve. Bundling the text keeps the markdown in
  * problems/ as the single source of truth.
  */
-import { readFile, readdir, writeFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { readFile, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const OUT = resolve(ROOT, 'web/src/features/problems/statements.ts');
@@ -24,6 +24,12 @@ for (const entry of index) {
     console.warn('缺少题面: ' + entry.path);
     continue;
   }
+  let template = '';
+  try {
+    template = await readFile(resolve(ROOT, entry.path, 'template.py'), 'utf8');
+  } catch {
+    template = '';
+  }
   parts.push(
     [
       '  {',
@@ -32,6 +38,7 @@ for (const entry of index) {
       '    difficulty: ' + JSON.stringify(entry.difficulty) + ',',
       '    tags: ' + JSON.stringify(entry.tags ?? []) + ',',
       '    source: ' + JSON.stringify(source) + ',',
+      '    template: ' + JSON.stringify(template) + ',',
       '  },',
     ].join('\n'),
   );
@@ -46,6 +53,7 @@ const file = [
   '  difficulty: string;',
   '  tags: string[];',
   '  source: string;',
+  '  template?: string;',
   '}',
   '',
   'export const STATEMENTS: Statement[] = [',

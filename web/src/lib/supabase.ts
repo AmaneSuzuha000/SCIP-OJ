@@ -23,6 +23,7 @@ export interface Assignment {
   pass_score: number;
   n_instances: number;
   due_at: string | null;
+  score_policy?: 'highest_before_due' | 'latest' | 'highest';
   integrity_policy: 'standard' | 'exam_warn' | 'exam_block';
 }
 
@@ -42,6 +43,10 @@ export interface Grading {
   score: number | null;
   passed: boolean | null;
   report_json: Record<string, unknown> | null;
+  error_message?: string | null;
+  created_at?: string;
+  started_at?: string | null;
+  finished_at?: string | null;
 }
 
 let client: SupabaseClient | null = null;

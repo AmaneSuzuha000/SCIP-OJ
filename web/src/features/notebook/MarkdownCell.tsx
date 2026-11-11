@@ -1,4 +1,5 @@
 import { Suspense, lazy, type ReactNode } from 'react';
+import { Link, useInRouterContext } from 'react-router-dom';
 
 // KaTeX is ~280 kB and ships fonts, so it is fetched only by pages whose
 // material actually contains a formula. Everything else never pays for it.
@@ -28,11 +29,9 @@ type Token =
 
 /**
  * Link targets are authored by us, but an href is still a script-injection
- * surface, so only absolute http(s) URLs and relative paths survive.
- *
- * Relative paths matter: the notebooks link to docs as ../case-studio.html,
- * which resolves correctly against /learn/<id> and keeps working under the
- * /<repo>/ deployment prefix.
+ * surface, so only absolute http(s) URLs and app-relative paths survive.
+ * Relative paths resolve against the current SPA basename and keep working
+ * under the /<repo>/ deployment prefix.
  */
 function safeHref(href: string): string | null {
   if (/^https?:\/\/[^\s]+$/.test(href)) return href;
@@ -98,6 +97,42 @@ function tokenize(text: string): Token[] {
   return tokens;
 }
 
+function MarkdownLink({ href, children }: { href: string; children: ReactNode }) {
+  const inRouter = useInRouterContext();
+  if (href.startsWith('/')) {
+    if (inRouter) {
+      return (
+        <Link to={href} className="text-brand underline underline-offset-2">
+          {children}
+        </Link>
+      );
+    }
+    const base = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
+    return (
+      <a href={base + href} className="text-brand underline underline-offset-2">
+        {children}
+      </a>
+    );
+  }
+  if (href.startsWith('#')) {
+    return (
+      <a href={href} className="text-brand underline underline-offset-2">
+        {children}
+      </a>
+    );
+  }
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer noopener"
+      className="text-brand underline underline-offset-2"
+    >
+      {children}
+    </a>
+  );
+}
+
 function inline(text: string, keyPrefix: string): ReactNode[] {
   return tokenize(text).map((token, index) => {
     const key = keyPrefix + '-' + index;
@@ -112,15 +147,9 @@ function inline(text: string, keyPrefix: string): ReactNode[] {
         );
       case 'link':
         return (
-          <a
-            key={key}
-            href={token.href}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="text-brand underline underline-offset-2"
-          >
+          <MarkdownLink key={key} href={token.href}>
             {token.text}
-          </a>
+          </MarkdownLink>
         );
       case 'math':
         // Until the chunk arrives the formula shows as its TeX source, which is
@@ -242,15 +271,16 @@ function renderProse(source: string, keyPrefix: string): ReactNode[] {
     if (heading) {
       flushList();
       const level = (heading[1] ?? '#').length;
+      const Tag = ('h' + level) as 'h1' | 'h2' | 'h3' | 'h4';
       const sizes = ['text-xl', 'text-base', 'text-sm', 'text-sm'] as const;
       const size = sizes[Math.min(level, 4) - 1] ?? 'text-sm';
       blocks.push(
-        <p
+        <Tag
           key={keyPrefix + '-h-' + index}
           className={size + ' font-semibold text-primary ' + (level <= 2 ? 'mt-2' : 'mt-3')}
         >
           {inline(heading[2] ?? '', keyPrefix + '-h-' + index)}
-        </p>,
+        </Tag>,
       );
       continue;
     }
