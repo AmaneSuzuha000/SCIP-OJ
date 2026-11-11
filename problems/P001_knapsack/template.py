@@ -1,4 +1,4 @@
-"""P001 学生模板：用 PySCIPOpt 完成 0-1 背包，不要硬编码 optimal_value。"""
+"""P001 初始模板：请使用 PySCIPOpt 建立 0-1 背包优化模型。"""
 
 
 def solve(instance: dict) -> dict:

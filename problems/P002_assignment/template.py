@@ -1,4 +1,4 @@
-"""P002 学生模板：用 PySCIPOpt 完成指派问题建模，不要暴力穷举或依赖 optimal_value。"""
+"""P002 初始模板：请使用 PySCIPOpt 建立指派优化模型。"""
 
 
 def solve(instance: dict) -> dict:
@@ -11,7 +11,7 @@ def solve(instance: dict) -> dict:
     model.hideOutput()
     x = [[model.addVar(vtype="B", name=f"x_{i}_{j}") for j in range(n)] for i in range(n)]
 
-    # TODO: 补充行/列指派约束与最小化总成本目标：
+    # 补充行/列指派约束与最小化总成本目标：
     # for i in range(n):
     #     model.addCons(quicksum(x[i][j] for j in range(n)) == 1)
     # for j in range(n):

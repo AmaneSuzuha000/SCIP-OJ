@@ -113,4 +113,11 @@ describe('markdown formulas', () => {
     const standalone = render(<MarkdownCell source={'[指南](/docs/student-guide)'} />);
     expect(standalone.getByRole('link', { name: '指南' })).toHaveAttribute('href', '/docs/student-guide');
   });
+
+  it('renders horizontal rules instead of literal hyphens and styles blockquotes', () => {
+    const { container } = render(<MarkdownCell source={'第一段\n\n---\n\n> 重点提示内容'} />);
+    expect(container.querySelector('hr')).not.toBeNull();
+    expect(container.querySelector('blockquote')).toHaveTextContent('重点提示内容');
+    expect(container.textContent).not.toContain('---');
+  });
 });

@@ -37,6 +37,8 @@ export function AccountMenu() {
 
   if (!profile) return null;
   const isStudent = profile.role === 'student';
+  const label = profile.display_name ?? profile.role;
+  const initial = (label.trim()[0] ?? 'U').toUpperCase();
 
   return (
     <div className="relative" ref={ref}>
@@ -45,9 +47,25 @@ export function AccountMenu() {
         onClick={() => setOpen((value) => !value)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="rounded-[var(--radius-md)] px-2 py-1 text-sm text-secondary hover:bg-hover"
+        className="inline-flex cursor-pointer items-center gap-2 rounded-[var(--radius-md)] px-2 py-1 text-sm text-secondary transition-colors hover:bg-hover hover:text-primary"
       >
-        {profile.display_name ?? profile.role}
+        <span
+          aria-hidden="true"
+          className="flex size-6 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-semibold text-brand"
+        >
+          {initial}
+        </span>
+        <span className="max-w-28 truncate">{label}</span>
+        <svg
+          aria-hidden="true"
+          className={`size-3.5 shrink-0 text-tertiary transition-transform duration-[var(--duration-fast)] ${open ? 'rotate-180' : ''}`}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
       </button>
 
       {open ? (

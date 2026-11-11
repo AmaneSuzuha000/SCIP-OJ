@@ -18,6 +18,7 @@ interface CodeEditorProps {
   readOnly?: boolean;
   ariaLabel?: string;
   blockPaste?: boolean;
+  minHeight?: number;
   onSignal?: (kind: 'input' | 'paste' | 'blocked_paste' | 'copy' | 'drop') => void;
 }
 
@@ -29,6 +30,7 @@ export function CodeEditor({
   readOnly = false,
   ariaLabel,
   blockPaste = false,
+  minHeight = 320,
   onSignal,
 }: CodeEditorProps) {
   const host = useRef<HTMLDivElement | null>(null);
@@ -92,8 +94,8 @@ export function CodeEditor({
           }
         }),
         EditorView.theme({
-          '&': { fontSize: '13px', minHeight: '320px' },
-          '.cm-scroller': { fontFamily: 'var(--font-mono)' },
+          '&': { fontSize: '13px', minHeight: `${minHeight}px` },
+          '.cm-scroller': { fontFamily: 'var(--font-mono)', lineHeight: '1.6' },
         }),
       ],
     });

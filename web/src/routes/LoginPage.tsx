@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { Button, Card, Spinner } from '@/components/ui';
+import { Link, Navigate, useLocation } from 'react-router-dom';
+import { Badge, Button, Card, Spinner } from '@/components/ui';
 import {
   adoptSession,
   parseSessionSnapshot,
@@ -55,12 +55,15 @@ export function LoginPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-4 py-12">
-      <Card className="flex flex-col gap-4 p-6">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-lg font-semibold text-primary">登录课程平台</h1>
-          <p className="text-xs leading-relaxed text-tertiary">
-            使用 GitHub 账号登录。只有任课教师登记过的账号可以访问课程内容。
+    <div className="mx-auto flex max-w-md flex-col gap-5 py-10">
+      <Card className="flex flex-col gap-4 p-6 sm:p-7">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <Badge tone="brand">GitHub OAuth 授权访问</Badge>
+          </div>
+          <h1 className="text-xl font-semibold tracking-tight text-primary">登录课程平台</h1>
+          <p className="text-xs leading-relaxed text-secondary">
+            请使用已在课程名单中登记授权的 GitHub 账号登录，以访问班级作业、线上评测与提交记录。
           </p>
         </div>
 
@@ -71,8 +74,8 @@ export function LoginPage() {
         ) : null}
 
         {access === 'denied' ? (
-          <p className="rounded-[var(--radius-md)] bg-warning-soft p-3 text-xs text-warning">
-            这个 GitHub 账号不在课程白名单内，请联系任课教师登记后再试。
+          <p className="rounded-[var(--radius-md)] bg-warning-soft p-3 text-xs leading-relaxed text-warning">
+            该 GitHub 账号尚未纳入本课程授权访问名单，请联系任课教师登记后再尝试登录。
           </p>
         ) : null}
 
@@ -84,40 +87,53 @@ export function LoginPage() {
           {pending ? <Spinner label="正在跳转" /> : '使用 GitHub 登录'}
         </Button>
 
-        <p className="text-[11px] leading-relaxed text-tertiary">
-          当前回调地址：<code className="text-secondary">{redirectTarget()}</code>
-          。这个地址必须登记在 Supabase 的 Redirect URLs 里，否则登录成功后会被送回站点首页。
-        </p>
+        <div className="flex items-center justify-between border-t border-subtle pt-3 text-xs text-tertiary">
+          <span>未登录也可先行体验：</span>
+          <div className="flex items-center gap-3">
+            <Link to="/learn" className="text-brand hover:underline">
+              拓展学习
+            </Link>
+            <Link to="/docs" className="text-brand hover:underline">
+              课程文档
+            </Link>
+          </div>
+        </div>
+
+        {import.meta.env.DEV ? (
+          <p className="text-[11px] leading-relaxed text-tertiary">
+            [DEV] 当前回调地址：<code className="text-secondary">{redirectTarget()}</code>
+          </p>
+        ) : null}
       </Card>
 
-      <details className="rounded-[var(--radius-lg)] border border-subtle bg-surface p-4">
-        <summary className="cursor-pointer text-xs font-medium text-secondary">
-          跳不回本机？从线上站带一份登录状态过来
-        </summary>
-        <div className="mt-3 flex flex-col gap-2">
-          <ol className="list-decimal pl-4 text-[11px] leading-relaxed text-tertiary">
-            <li>在线上站用同一个 GitHub 账号登录一次。</li>
-            <li>F12 → Application → Local Storage，找到键名以 sb- 开头、以 -auth-token 结尾的那条。</li>
-            <li>复制它的值，粘贴到下面。</li>
-          </ol>
-          <textarea
-            value={pasted}
-            onChange={(event) => setPasted(event.target.value)}
-            rows={4}
-            spellCheck={false}
-            placeholder='{"access_token":"...","refresh_token":"..."}'
-            className="w-full rounded-[var(--radius-md)] border border-subtle bg-canvas p-2 font-mono text-[11px] text-primary outline-none focus:border-brand"
-          />
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => void importSession()}
-            disabled={importing || !pasted.trim()}
-          >
-            {importing ? '正在导入' : '导入登录状态'}
-          </Button>
-        </div>
-      </details>
+      {import.meta.env.DEV ? (
+        <details className="rounded-[var(--radius-lg)] border border-subtle bg-surface p-4">
+          <summary className="cursor-pointer text-xs font-medium text-secondary">
+            [DEV] 本地开发会话导入
+          </summary>
+          <div className="mt-3 flex flex-col gap-2">
+            <p className="text-[11px] leading-relaxed text-tertiary">
+              仅用于本地开发环境无公网 OAuth 回调时导入调试会话 JSON。
+            </p>
+            <textarea
+              value={pasted}
+              onChange={(event) => setPasted(event.target.value)}
+              rows={4}
+              spellCheck={false}
+              placeholder='{"access_token":"...","refresh_token":"..."}'
+              className="w-full rounded-[var(--radius-md)] border border-subtle bg-canvas p-2 font-mono text-[11px] text-primary outline-none focus:border-brand"
+            />
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => void importSession()}
+              disabled={importing || !pasted.trim()}
+            >
+              {importing ? '正在导入' : '导入登录状态'}
+            </Button>
+          </div>
+        </details>
+      ) : null}
     </div>
   );
 }

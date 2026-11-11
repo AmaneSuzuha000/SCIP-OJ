@@ -78,9 +78,10 @@ class SiteAssemblyTests(unittest.TestCase):
             (self.out / "docs" / "学生指南.md").read_bytes(),
             (ROOT / "docs" / "学生指南.md").read_bytes(),
         )
-        # Internal design notes must never reach the public site.
+        # Internal design notes and repo READMEs must never reach the public site.
         self.assertFalse((self.out / "docs" / "ACCESS_CONTROL.md").exists())
         self.assertFalse((self.out / "docs" / "design-evidence").exists())
+        self.assertFalse((self.out / "README.md").exists())
 
     def test_no_problem_answer_reaches_the_public_site(self):
         # A directory copy shipped reference_pyscipopt.py to anyone who requested

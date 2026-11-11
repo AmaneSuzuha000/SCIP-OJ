@@ -12,9 +12,10 @@ const STATUS_LABEL: Record<string, string> = {
   system_error: '系统异常',
 };
 
-function statusTone(status: string): 'neutral' | 'success' | 'warning' | 'danger' {
+function statusTone(status: string): 'neutral' | 'success' | 'warning' | 'danger' | 'brand' {
   if (status === 'done') return 'success';
   if (status === 'system_error') return 'danger';
+  if (status === 'running') return 'brand';
   return 'neutral';
 }
 
@@ -76,11 +77,11 @@ export function SubmissionsPage() {
                 </div>
                 <Badge tone={statusTone(status)}>{STATUS_LABEL[status] ?? status}</Badge>
                 {latest?.score !== null && latest?.score !== undefined ? (
-                  <span className="w-16 text-right text-sm font-semibold text-primary">
+                  <span className="w-16 text-right font-mono text-sm font-semibold text-primary tabular-nums">
                     {latest.score} 分
                   </span>
                 ) : (
-                  <span className="w-16 text-right text-xs text-tertiary">—</span>
+                  <span className="w-16 text-right font-mono text-xs text-tertiary">—</span>
                 )}
                 <Button
                   variant="ghost"
@@ -118,7 +119,7 @@ export function SubmissionsPage() {
         })}
       </Card>
       <p className="text-xs text-tertiary">
-        「系统异常」是基础设施故障，不计入成绩；请稍后重试或联系教师。
+        若状态显示为「系统异常」，表示评测服务临时波动，本次结果不计入成绩，可稍候重提或联系教师复判。
       </p>
     </div>
   );

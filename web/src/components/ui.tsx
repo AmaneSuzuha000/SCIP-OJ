@@ -4,10 +4,10 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type Size = 'sm' | 'md';
 
 const VARIANTS: Record<Variant, string> = {
-  primary: 'bg-brand text-white hover:brightness-110 border-transparent',
+  primary: 'bg-brand text-[var(--text-inverse)] hover:brightness-110 border-transparent shadow-[var(--shadow-sm)]',
   secondary: 'bg-surface text-primary border-strong hover:bg-hover',
-  ghost: 'bg-transparent text-secondary border-transparent hover:bg-hover',
-  danger: 'bg-danger text-white border-transparent hover:brightness-110',
+  ghost: 'bg-transparent text-secondary border-transparent hover:bg-hover hover:text-primary',
+  danger: 'bg-danger text-white border-transparent hover:brightness-110 shadow-[var(--shadow-sm)]',
 };
 
 const SIZES: Record<Size, string> = {
@@ -25,8 +25,9 @@ export function Button({ variant = 'primary', size = 'md', className = '', ...re
     <button
       {...rest}
       className={[
-        'inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] border font-medium',
-        'transition-colors duration-[var(--duration-fast)] disabled:cursor-not-allowed disabled:opacity-50',
+        'inline-flex cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-md)] border font-medium',
+        'transition-[color,background-color,border-color,filter,transform] duration-[var(--duration-fast)]',
+        'active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100',
         VARIANTS[variant],
         SIZES[size],
         className,
@@ -84,9 +85,9 @@ export function Spinner({ label = '加载中' }: { label?: string }) {
 
 export function EmptyState({ title, hint }: { title: string; hint?: string }) {
   return (
-    <div className="flex flex-col items-center gap-1 rounded-[var(--radius-lg)] border border-dashed border-strong px-6 py-10 text-center">
+    <div className="flex flex-col items-center gap-1.5 rounded-[var(--radius-lg)] border border-dashed border-strong bg-surface/50 px-6 py-10 text-center">
       <p className="text-sm font-medium text-secondary">{title}</p>
-      {hint ? <p className="text-xs text-tertiary">{hint}</p> : null}
+      {hint ? <p className="max-w-md text-xs leading-relaxed text-tertiary">{hint}</p> : null}
     </div>
   );
 }

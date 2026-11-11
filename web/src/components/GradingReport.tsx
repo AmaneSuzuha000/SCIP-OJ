@@ -50,29 +50,29 @@ export function GradingReport({
   return (
     <div className="flex flex-col gap-3 text-xs">
       {diag ? (
-        <div className="rounded-[var(--radius-md)] border border-danger bg-danger-soft p-2.5 text-danger">
+        <div className="rounded-[var(--radius-md)] border border-danger/40 bg-danger-soft/70 p-2.5 text-danger">
           {diag}
         </div>
       ) : null}
 
       {breakdown && Object.keys(breakdown).length > 0 ? (
-        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {Object.entries(breakdown)
             .filter(([key]) => key !== 'R')
             .map(([key, value]) => (
               <div
                 key={key}
-                className="flex items-center justify-between rounded-[var(--radius-sm)] bg-muted px-2 py-1"
+                className="flex flex-col gap-0.5 rounded-[var(--radius-md)] border border-subtle bg-muted/50 px-2.5 py-2"
               >
-                <span className="text-tertiary">{BREAKDOWN_LABELS[key] ?? key}</span>
-                <span className="font-mono font-medium text-primary">{value}</span>
+                <span className="text-[11px] text-tertiary">{BREAKDOWN_LABELS[key] ?? key}</span>
+                <span className="font-mono text-sm font-semibold text-primary tabular-nums">{value}</span>
               </div>
             ))}
         </div>
       ) : null}
 
       {messages.length > 0 ? (
-        <ul className="space-y-1 text-secondary">
+        <ul className="space-y-1 rounded-[var(--radius-md)] bg-muted/40 p-2.5 text-secondary">
           {messages.map((msg, idx) => (
             <li key={idx}>• {String(msg)}</li>
           ))}
@@ -82,9 +82,15 @@ export function GradingReport({
       {instances.length > 0 ? (
         <div className="flex flex-col gap-1.5">
           <p className="font-medium text-primary">私有实例明细（{instances.length} 组）</p>
-          <div className="divide-y divide-subtle rounded-[var(--radius-md)] border border-subtle">
+          <div className="divide-y divide-subtle overflow-hidden rounded-[var(--radius-md)] border border-subtle bg-surface">
             {instances.map((inst, index) => (
-              <div key={index} className="flex flex-col gap-1 p-2">
+              <div
+                key={index}
+                className={
+                  'flex flex-col gap-1 border-l-2 px-3 py-2 ' +
+                  (inst.passed ? 'border-l-success' : 'border-l-warning')
+                }
+              >
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-mono text-secondary">实例 #{index + 1}</span>
                   <div className="flex items-center gap-2">
@@ -93,7 +99,7 @@ export function GradingReport({
                         {inst.passed ? '通过' : '未达标'}
                       </Badge>
                     ) : null}
-                    <span className="font-mono font-semibold text-primary">
+                    <span className="font-mono font-semibold text-primary tabular-nums">
                       {inst.score ?? '—'} 分
                     </span>
                   </div>

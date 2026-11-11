@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { Badge, Button, Card, Spinner } from '@/components/ui';
 import { CodeEditor } from '@/features/editor/CodeEditor';
 import { MarkdownCell } from '@/features/notebook/MarkdownCell';
@@ -12,15 +12,6 @@ import {
   type CellResult,
   type KernelProgress,
 } from '@/features/notebook/kernel';
-
-/**
- * One lesson: prose and runnable cells side by side, driven by the browser
- * Python kernel. No notebook server, no embedded IDE -- the page is the course.
- *
- * Cells share a single Python namespace because that is how the notebooks are
- * written: cell 2 defines solve(), cell 3 calls it. Renumbering or running them
- * out of order would silently change what a lesson means.
- */
 
 type CellState =
   | { kind: 'idle' }
@@ -40,8 +31,6 @@ export function LessonPage() {
   const [runningAll, setRunningAll] = useState(false);
   const kernel = useRef<Awaited<ReturnType<typeof loadKernel>> | null>(null);
 
-  // A new lesson means a clean namespace: variables from the previous lesson
-  // are cleared without discarding the already-downloaded runtime unless busy.
   useEffect(() => {
     void resetKernelNamespace();
     kernel.current = null;
@@ -78,7 +67,6 @@ export function LessonPage() {
     [ensureKernel],
   );
 
-  /** Run every code cell in order, stopping at the first failure. */
   const runAll = useCallback(async () => {
     if (!lesson || runningAll) return;
     setRunningAll(true);
@@ -112,48 +100,62 @@ export function LessonPage() {
 
   if (!lesson) {
     return (
-      <Card className="p-6">
-        <p className="text-sm text-secondary">没有这一课。返回学习页重新选择。</p>
+      <Card className="flex flex-col gap-3 p-6">
+        <p className="text-sm text-secondary">未找到该建模案例。</p>
+        <Link to="/learn" className="w-fit text-xs text-brand hover:underline">
+          ← 返回拓展学习
+        </Link>
       </Card>
     );
   }
 
   const busy = runningAll || Object.values(states).some((state) => state.kind === 'running');
+  let codeCounter = 0;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-primary">{lesson.title}</h2>
-          {lesson.summary ? <p className="mt-1 text-sm text-secondary">{lesson.summary}</p> : null}
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge tone="brand">浏览器内运行</Badge>
-          <Button variant="secondary" onClick={() => void resetEnv()} size="sm">
-            重置环境
-          </Button>
-          <Button onClick={runAll} disabled={busy} size="sm">
-            {runningAll ? '运行中…' : '全部运行'}
-          </Button>
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-2">
+        <Link to="/learn" className="w-fit text-xs text-brand hover:underline">
+          ← 返回拓展学习
+        </Link>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight text-primary">{lesson.title}</h1>
+            {lesson.summary ? <p className="mt-1 text-sm text-secondary">{lesson.summary}</p> : null}
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Badge tone="brand">浏览器本地运行</Badge>
+            <Button variant="secondary" onClick={() => void resetEnv()} size="sm">
+              重置环境
+            </Button>
+            <Button onClick={runAll} disabled={busy} size="sm">
+              {runningAll ? '运行中…' : '全部运行'}
+            </Button>
+          </div>
         </div>
       </div>
 
       <KernelStatus progress={progress} error={kernelError} busy={busy} />
 
-      <p className="text-xs text-tertiary">
-        练习环境只用于学习：这里的结果不计入成绩，正式评测在隔离容器中用原生 PySCIPOpt 重新求解。
-      </p>
+      <div className="rounded-[var(--radius-md)] border border-subtle bg-muted/40 px-3.5 py-2 text-xs text-tertiary">
+        提示：此处求解在浏览器本地环境中运行，仅作探索与练习；提交正式作业后将由云端隔离容器独立评测。
+      </div>
 
-      <div className="flex flex-col gap-3">
-        {lesson.cells.map((cell, index) =>
-          cell.kind === 'markdown' ? (
-            <Card key={index} className="p-5">
-              <MarkdownCell source={cell.source} />
-            </Card>
-          ) : (
+      <div className="flex flex-col gap-3.5">
+        {lesson.cells.map((cell, index) => {
+          if (cell.kind === 'markdown') {
+            return (
+              <Card key={index} className="p-5 sm:p-6">
+                <MarkdownCell source={cell.source} />
+              </Card>
+            );
+          }
+          codeCounter += 1;
+          return (
             <CodeCell
               key={index}
               index={index}
+              cellNumber={codeCounter}
               autoFocused={index === firstCodeIndex(lesson.cells)}
               source={edits[index] ?? cell.source}
               state={states[index] ?? { kind: 'idle' }}
@@ -161,8 +163,8 @@ export function LessonPage() {
               onChange={(value) => setEdits((prev) => ({ ...prev, [index]: value }))}
               onRun={() => execute(index, edits[index] ?? cell.source)}
             />
-          ),
-        )}
+          );
+        })}
       </div>
     </div>
   );
@@ -179,24 +181,25 @@ function KernelStatus({
 }) {
   if (error) {
     return (
-      <Card className="border-danger p-4">
-        <p className="text-sm font-medium text-danger">建模环境未能启动</p>
+      <Card className="border-danger bg-danger-soft/40 p-4">
+        <p className="text-sm font-medium text-danger">浏览器求解环境未能就绪</p>
         <p className="mt-1 text-xs text-secondary">{error}</p>
         <p className="mt-2 text-xs text-tertiary">
-          首次使用需要下载约 29 MB 的 Python 运行时；如果网络受限，这里会一直失败。
+          首次运行需按需加载 Python 建模运行时，请检查网络连接后点击「重置环境」重试。
         </p>
       </Card>
     );
   }
   if (!progress || progress.stage === 'ready') {
     return busy ? null : (
-      <p className="text-xs text-tertiary">点「全部运行」或任意单元的运行按钮，首次会加载建模环境。</p>
+      <p className="text-xs text-tertiary">点击「全部运行」或单个代码单元右上角「运行」，首次会自动初始化求解环境。</p>
     );
   }
   return <Spinner label={progress.message} />;
 }
 
 function CodeCell({
+  cellNumber,
   source,
   state,
   busy,
@@ -205,6 +208,7 @@ function CodeCell({
   autoFocused,
 }: {
   index: number;
+  cellNumber: number;
   autoFocused: boolean;
   source: string;
   state: CellState;
@@ -215,17 +219,30 @@ function CodeCell({
   const running = state.kind === 'running';
   return (
     <Card className="overflow-hidden">
-      <div className="flex items-center justify-between border-b border-subtle bg-muted/40 px-3 py-2">
-        <span className="text-xs font-medium text-tertiary">Python</span>
-        <Button variant="ghost" size="sm" onClick={onRun} disabled={busy}>
-          {running ? '运行中…' : '运行'}
-        </Button>
+      <div className="flex items-center justify-between border-b border-subtle bg-muted/50 px-3.5 py-2">
+        <div className="flex items-center gap-2">
+          <span className="rounded bg-surface px-1.5 py-0.5 font-mono text-[11px] font-medium text-tertiary">
+            In [{cellNumber}]
+          </span>
+          <span className="text-xs font-medium text-secondary">Python · PySCIPOpt</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {state.kind === 'done' ? (
+            <Badge tone={state.result.ok ? 'success' : 'danger'}>
+              {state.result.ok ? '执行完成' : '出错'}
+            </Badge>
+          ) : null}
+          <Button variant="secondary" size="sm" onClick={onRun} disabled={busy}>
+            {running ? '运行中…' : '运行'}
+          </Button>
+        </div>
       </div>
       <div className="p-3">
         <CodeEditor
           value={source}
           onChange={onChange}
           readOnly={running}
+          minHeight={140}
           ariaLabel={autoFocused ? '第一个代码单元' : '代码单元'}
         />
       </div>
@@ -236,18 +253,23 @@ function CodeCell({
 
 function CellOutput({ result }: { result: CellResult }) {
   return (
-    <div className="border-t border-subtle bg-raised px-3 py-2">
+    <div
+      className={
+        'border-t border-subtle border-l-3 bg-raised px-4 py-3 ' +
+        (result.ok ? 'border-l-success' : 'border-l-danger')
+      }
+    >
       {result.stdout ? (
-        <pre className="overflow-x-auto whitespace-pre-wrap font-mono text-xs text-secondary">
+        <pre className="overflow-x-auto whitespace-pre-wrap font-mono text-xs leading-relaxed text-secondary">
           {result.stdout}
         </pre>
       ) : null}
       {result.ok ? (
-        result.stdout ? null : <p className="text-xs text-tertiary">该单元没有输出。</p>
+        result.stdout ? null : <p className="text-xs text-tertiary">执行成功（无标准输出）。</p>
       ) : (
         <div className="mt-1">
           <Badge tone="danger">{result.errorType ?? '运行错误'}</Badge>
-          <pre className="mt-2 overflow-x-auto whitespace-pre-wrap font-mono text-xs text-danger">
+          <pre className="mt-2 overflow-x-auto whitespace-pre-wrap font-mono text-xs leading-relaxed text-danger">
             {result.error}
           </pre>
         </div>

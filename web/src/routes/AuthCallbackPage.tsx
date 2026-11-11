@@ -4,12 +4,8 @@ import { Button, Card, Spinner } from '@/components/ui';
 import { useSession } from '@/store/session';
 
 /**
- * OAuth return target. The Supabase client parses the URL fragment on creation
+ * OAuth return target. The client parses the URL fragment on creation
  * and fires onAuthStateChange, so this page only waits for the server verdict.
- *
- * It also has to fail loudly: if Supabase rejects the exchange it appends
- * error / error_description to the URL, and a page that only spins would leave
- * the user with no idea whether their account or the configuration is at fault.
  */
 function readOAuthError(): string | null {
   if (typeof window === 'undefined') return null;
@@ -43,10 +39,12 @@ export function AuthCallbackPage() {
     return (
       <div className="mx-auto max-w-md py-12">
         <Card className="flex flex-col gap-3 p-6">
-          <h1 className="text-base font-semibold text-danger">GitHub 登录失败</h1>
+          <h1 className="text-base font-semibold text-danger">GitHub 登录未能完成</h1>
           <p className="text-xs leading-relaxed text-secondary">{oauthError}</p>
           <p className="text-xs leading-relaxed text-tertiary">
-            常见原因：Supabase 的 Redirect URLs 里没有登记当前地址，或 GitHub OAuth App 的回调地址填错。
+            {import.meta.env.DEV
+              ? '请检查开发环境回调 URL 与 OAuth 应用配置是否一致。'
+              : '请返回登录页重新授权；若反复失败，请联系任课教师确认访问权限或稍后重试。'}
           </p>
           <Link to="/login"><Button size="sm">返回登录</Button></Link>
         </Card>
@@ -56,11 +54,11 @@ export function AuthCallbackPage() {
 
   return (
     <div className="flex flex-col items-center gap-3 py-16">
-      <Spinner label="正在验证账号" />
+      <Spinner label="正在验证账号授权" />
       {slow ? (
         <p className="max-w-sm text-center text-xs leading-relaxed text-tertiary">
-          超过 8 秒仍未完成。若一直停在这里，多半是当前地址没有登记在 Supabase 的 Redirect URLs 中。
-          <Link to="/login" className="ml-1 text-brand underline">返回登录</Link>
+          等待时间较长，可能因网络波动或授权会话已失效。
+          <Link to="/login" className="ml-1 text-brand underline">返回登录页重试</Link>
         </p>
       ) : null}
     </div>

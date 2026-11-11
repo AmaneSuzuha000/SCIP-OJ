@@ -441,27 +441,27 @@ function GradingPanel({
           <div className="max-h-80 overflow-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="bg-muted text-left">
-                  <th className="px-3 py-2 font-medium text-primary">学号</th>
-                  <th className="px-3 py-2 font-medium text-primary">姓名</th>
-                  <th className="px-3 py-2 font-medium text-primary">题目</th>
-                  <th className="px-3 py-2 font-medium text-primary">有效分</th>
-                  <th className="px-3 py-2 font-medium text-primary">达标</th>
-                  <th className="px-3 py-2 font-medium text-primary">提交数</th>
+                <tr className="border-b border-subtle bg-muted/60 text-left text-xs">
+                  <th className="px-3 py-2 font-medium text-secondary">学号</th>
+                  <th className="px-3 py-2 font-medium text-secondary">姓名</th>
+                  <th className="px-3 py-2 font-medium text-secondary">题目</th>
+                  <th className="px-3 py-2 font-medium text-secondary">有效分</th>
+                  <th className="px-3 py-2 font-medium text-secondary">达标</th>
+                  <th className="px-3 py-2 font-medium text-secondary">提交数</th>
                 </tr>
               </thead>
               <tbody>
                 {gradebook.data.map((row) => (
                   <tr
                     key={`${row.user_id}-${row.assignment_id}`}
-                    className="border-b border-subtle last:border-0"
+                    className="border-b border-subtle last:border-0 hover:bg-muted/35"
                   >
-                    <td className="px-3 py-2 font-mono text-xs text-secondary">
+                    <td className="px-3 py-2 font-mono text-xs text-secondary tabular-nums">
                       {row.student_no ?? '未绑定'}
                     </td>
                     <td className="px-3 py-2 text-secondary">{row.display_name ?? '—'}</td>
                     <td className="px-3 py-2 font-mono text-xs text-secondary">{row.problem_id}</td>
-                    <td className="px-3 py-2 font-semibold text-primary">
+                    <td className="px-3 py-2 font-mono font-semibold text-primary tabular-nums">
                       {row.best_score ?? '—'}
                     </td>
                     <td className="px-3 py-2">
@@ -473,7 +473,9 @@ function GradingPanel({
                         </Badge>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-xs text-tertiary">{row.submission_count}</td>
+                    <td className="px-3 py-2 font-mono text-xs text-tertiary tabular-nums">
+                      {row.submission_count}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -647,7 +649,7 @@ function InvitePanel({ courseId }: { courseId: string }) {
       <div>
         <p className="text-sm font-semibold text-primary">学生选课邀请码</p>
         <p className="mt-1 text-xs text-tertiary">
-          把码发到班级群。不要把邀请码写进仓库或公开仓库的文档。
+          请将邀请码分发至授课班级群，切勿发布至公开网页或公共仓库。
         </p>
       </div>
 
@@ -774,7 +776,7 @@ function RosterPanel({ courseId }: { courseId: string }) {
                   </td>
                   <td className="px-3 py-2">
                     {row.verifiedAt ? (
-                      <Badge tone="neutral">已核验</Badge>
+                      <Badge tone="success">已核验</Badge>
                     ) : (
                       <span className="text-xs text-tertiary">未核验</span>
                     )}

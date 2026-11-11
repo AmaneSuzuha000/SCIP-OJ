@@ -190,7 +190,7 @@ function renderTable(rows: string[], key: string) {
         </thead>
         <tbody>
           {body.map((line, rowIndex) => (
-            <tr key={rowIndex} className="border-b border-subtle last:border-0">
+            <tr key={rowIndex} className="border-b border-subtle last:border-0 hover:bg-muted/35">
               {cells(line).map((cell, cellIndex) => (
                 <td key={cellIndex} className="px-3 py-2 align-top text-secondary">
                   {inline(cell, key + '-' + rowIndex + '-' + cellIndex)}
@@ -267,6 +267,11 @@ function renderProse(source: string, keyPrefix: string): ReactNode[] {
       flushList();
       continue;
     }
+    if (/^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
+      flushList();
+      blocks.push(<hr key={keyPrefix + '-hr-' + index} className="my-3 border-subtle" />);
+      continue;
+    }
     const heading = /^(#{1,4})\s+(.*)$/.exec(line);
     if (heading) {
       flushList();
@@ -277,7 +282,7 @@ function renderProse(source: string, keyPrefix: string): ReactNode[] {
       blocks.push(
         <Tag
           key={keyPrefix + '-h-' + index}
-          className={size + ' font-semibold text-primary ' + (level <= 2 ? 'mt-2' : 'mt-3')}
+          className={size + ' font-semibold text-primary ' + (level <= 2 ? 'mt-2.5' : 'mt-3')}
         >
           {inline(heading[2] ?? '', keyPrefix + '-h-' + index)}
         </Tag>,
@@ -288,7 +293,10 @@ function renderProse(source: string, keyPrefix: string): ReactNode[] {
     if (quote) {
       flushList();
       blocks.push(
-        <blockquote key={keyPrefix + '-q-' + index} className="border-l-2 border-brand pl-3 text-sm text-secondary">
+        <blockquote
+          key={keyPrefix + '-q-' + index}
+          className="rounded-r-[var(--radius-sm)] border-l-2 border-brand bg-brand-soft/45 px-3.5 py-2 text-sm leading-relaxed text-secondary"
+        >
           {inline(quote[1] ?? '', keyPrefix + '-q-' + index)}
         </blockquote>,
       );
