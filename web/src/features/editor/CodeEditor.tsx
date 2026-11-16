@@ -12,6 +12,36 @@ import { python } from '@codemirror/lang-python';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { useTheme } from '@/store/theme';
 
+const lightEditorTheme = EditorView.theme(
+  {
+    '&': {
+      backgroundColor: 'var(--bg-surface)',
+      color: 'var(--text-primary)',
+    },
+    '.cm-gutters': {
+      backgroundColor: 'var(--bg-raised)',
+      color: 'var(--text-tertiary)',
+      borderRight: '1px solid var(--border-subtle)',
+      paddingRight: '4px',
+    },
+    '.cm-activeLine': {
+      backgroundColor: 'color-mix(in srgb, var(--brand-50) 55%, transparent)',
+    },
+    '.cm-activeLineGutter': {
+      backgroundColor: 'var(--bg-muted)',
+      color: 'var(--text-primary)',
+      fontWeight: '600',
+    },
+    '.cm-cursor': {
+      borderLeftColor: 'var(--brand-500)',
+    },
+    '&.cm-focused .cm-selectionBackground, ::selection': {
+      backgroundColor: 'var(--brand-50)',
+    },
+  },
+  { dark: false },
+);
+
 interface CodeEditorProps {
   value: string;
   onChange: (next: string) => void;
@@ -59,7 +89,7 @@ export function CodeEditor({
         keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
         python(),
         EditorView.lineWrapping,
-        themeSlot.current.of(resolvedTheme === 'dark' ? oneDark : []),
+        themeSlot.current.of(resolvedTheme === 'dark' ? oneDark : lightEditorTheme),
         readOnlySlot.current.of(EditorState.readOnly.of(readOnly)),
         EditorView.domEventHandlers({
           paste: (event) => {
@@ -95,7 +125,7 @@ export function CodeEditor({
         }),
         EditorView.theme({
           '&': { fontSize: '13px', minHeight: `${minHeight}px` },
-          '.cm-scroller': { fontFamily: 'var(--font-mono)', lineHeight: '1.6' },
+          '.cm-scroller': { fontFamily: 'var(--font-mono)', lineHeight: '1.65' },
         }),
       ],
     });
@@ -111,7 +141,7 @@ export function CodeEditor({
 
   useEffect(() => {
     view.current?.dispatch({
-      effects: themeSlot.current.reconfigure(resolvedTheme === 'dark' ? oneDark : []),
+      effects: themeSlot.current.reconfigure(resolvedTheme === 'dark' ? oneDark : lightEditorTheme),
     });
   }, [resolvedTheme]);
 
@@ -138,7 +168,7 @@ export function CodeEditor({
       role="textbox"
       aria-label={ariaLabel ?? '代码编辑器'}
       aria-multiline="true"
-      className="overflow-hidden rounded-[var(--radius-md)] border border-subtle bg-surface"
+      className="overflow-hidden rounded-[var(--radius-md)] border border-subtle bg-surface shadow-[var(--shadow-sm)]"
     />
   );
 }

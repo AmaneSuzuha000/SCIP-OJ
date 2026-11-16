@@ -102,7 +102,7 @@ export function LessonPage() {
     return (
       <Card className="flex flex-col gap-3 p-6">
         <p className="text-sm text-secondary">未找到该建模案例。</p>
-        <Link to="/learn" className="w-fit text-xs text-brand hover:underline">
+        <Link to="/learn" className="w-fit text-xs font-medium text-brand hover:underline">
           ← 返回拓展学习
         </Link>
       </Card>
@@ -114,16 +114,18 @@ export function LessonPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-col gap-2">
-        <Link to="/learn" className="w-fit text-xs text-brand hover:underline">
+      <Card className="flex flex-col gap-4 p-5 sm:p-6">
+        <Link to="/learn" className="w-fit text-xs font-medium text-brand hover:underline">
           ← 返回拓展学习
         </Link>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight text-primary">{lesson.title}</h1>
-            {lesson.summary ? <p className="mt-1 text-sm text-secondary">{lesson.summary}</p> : null}
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl font-bold tracking-tight text-primary">{lesson.title}</h1>
+            {lesson.summary ? (
+              <p className="mt-1.5 text-sm leading-relaxed text-secondary">{lesson.summary}</p>
+            ) : null}
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
             <Badge tone="brand">浏览器本地运行</Badge>
             <Button variant="secondary" onClick={() => void resetEnv()} size="sm">
               重置环境
@@ -133,15 +135,16 @@ export function LessonPage() {
             </Button>
           </div>
         </div>
-      </div>
+        <div className="border-t border-subtle pt-3">
+          <KernelStatus progress={progress} error={kernelError} busy={busy} />
+        </div>
+      </Card>
 
-      <KernelStatus progress={progress} error={kernelError} busy={busy} />
-
-      <div className="rounded-[var(--radius-md)] border border-subtle bg-muted/40 px-3.5 py-2 text-xs text-tertiary">
+      <div className="rounded-[var(--radius-md)] border border-subtle bg-raised px-4 py-2.5 text-xs text-tertiary">
         提示：此处求解在浏览器本地环境中运行，仅作探索与练习；提交正式作业后将由云端隔离容器独立评测。
       </div>
 
-      <div className="flex flex-col gap-3.5">
+      <div className="flex flex-col gap-4">
         {lesson.cells.map((cell, index) => {
           if (cell.kind === 'markdown') {
             return (
@@ -181,18 +184,20 @@ function KernelStatus({
 }) {
   if (error) {
     return (
-      <Card className="border-danger bg-danger-soft/40 p-4">
-        <p className="text-sm font-medium text-danger">浏览器求解环境未能就绪</p>
+      <div className="rounded-[var(--radius-md)] border border-danger/35 bg-danger-soft/60 p-3.5">
+        <p className="text-sm font-semibold text-danger">浏览器求解环境未能就绪</p>
         <p className="mt-1 text-xs text-secondary">{error}</p>
-        <p className="mt-2 text-xs text-tertiary">
+        <p className="mt-1.5 text-xs text-tertiary">
           首次运行需按需加载 Python 建模运行时，请检查网络连接后点击「重置环境」重试。
         </p>
-      </Card>
+      </div>
     );
   }
   if (!progress || progress.stage === 'ready') {
     return busy ? null : (
-      <p className="text-xs text-tertiary">点击「全部运行」或单个代码单元右上角「运行」，首次会自动初始化求解环境。</p>
+      <p className="text-xs text-tertiary">
+        点击「全部运行」或单个代码单元右上角「运行」，首次会自动初始化求解环境。
+      </p>
     );
   }
   return <Spinner label={progress.message} />;
@@ -219,9 +224,9 @@ function CodeCell({
   const running = state.kind === 'running';
   return (
     <Card className="overflow-hidden">
-      <div className="flex items-center justify-between border-b border-subtle bg-muted/50 px-3.5 py-2">
-        <div className="flex items-center gap-2">
-          <span className="rounded bg-surface px-1.5 py-0.5 font-mono text-[11px] font-medium text-tertiary">
+      <div className="flex items-center justify-between border-b border-subtle bg-raised px-4 py-2">
+        <div className="flex items-center gap-2.5">
+          <span className="rounded-[var(--radius-sm)] border border-subtle bg-surface px-2 py-0.5 font-mono text-[11px] font-semibold text-brand">
             In [{cellNumber}]
           </span>
           <span className="text-xs font-medium text-secondary">Python · PySCIPOpt</span>

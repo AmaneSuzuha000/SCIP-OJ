@@ -93,51 +93,63 @@ export function TeacherPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-primary">教师控制台</h2>
-        <label className="flex items-center gap-2 text-sm text-secondary">
-          当前班级
-          <select
-            value={activeCourse ?? ''}
-            onChange={(event) => {
-              setCourseId(event.target.value);
-              setAssignmentId(null);
-            }}
-            className="rounded-[var(--radius-md)] border border-subtle bg-surface px-2 py-1.5 text-sm text-primary"
-          >
-            {taught.map((course) => (
-              <option key={course.id} value={course.id}>
-                {course.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+      <Card className="flex flex-col gap-4 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <Badge tone="brand">教学管理</Badge>
+              {activeCourseObj?.code ? (
+                <span className="rounded-[var(--radius-sm)] bg-muted px-2 py-0.5 font-mono text-[11px] font-semibold text-secondary">
+                  {activeCourseObj.code}
+                </span>
+              ) : null}
+            </div>
+            <h2 className="mt-1.5 text-xl font-bold tracking-tight text-primary">教师控制台</h2>
+          </div>
+          <label className="flex items-center gap-2 text-xs font-medium text-secondary">
+            <span>当前班级</span>
+            <select
+              value={activeCourse ?? ''}
+              onChange={(event) => {
+                setCourseId(event.target.value);
+                setAssignmentId(null);
+              }}
+              className="rounded-[var(--radius-md)] border border-strong/80 bg-surface px-3 py-1.5 text-sm font-medium text-primary focus:border-brand focus:outline-none"
+            >
+              {taught.map((course) => (
+                <option key={course.id} value={course.id}>
+                  {course.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
 
-      <div className="flex gap-1 overflow-x-auto border-b border-subtle">
-        {(
-          [
-            ['invite', '邀请码'],
-            ['roster', '花名册与核验'],
-            ['assignments', '作业发布'],
-            ['grading', '提交与成绩'],
-          ] as const
-        ).map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setTab(key)}
-            className={
-              '-mb-px shrink-0 border-b-2 px-3 py-2 text-sm transition-colors ' +
-              (tab === key
-                ? 'border-[var(--brand-500)] font-medium text-primary'
-                : 'border-transparent text-secondary hover:text-primary')
-            }
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+        <div className="flex gap-1 overflow-x-auto border-t border-subtle pt-3">
+          {(
+            [
+              ['invite', '邀请码'],
+              ['roster', '花名册与核验'],
+              ['assignments', '作业发布'],
+              ['grading', '提交与成绩'],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTab(key)}
+              className={
+                'shrink-0 cursor-pointer rounded-[var(--radius-md)] px-3.5 py-1.5 text-sm transition-all ' +
+                (tab === key
+                  ? 'bg-brand-soft font-semibold text-brand'
+                  : 'text-secondary hover:bg-hover/80 hover:text-primary')
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </Card>
 
       {activeCourse && tab === 'invite' ? <InvitePanel key={activeCourse} courseId={activeCourse} /> : null}
       {activeCourse && tab === 'roster' ? <RosterPanel key={activeCourse} courseId={activeCourse} /> : null}
@@ -220,7 +232,7 @@ function AssignmentPanel({
   return (
     <div className="flex flex-col gap-5">
       <Card className="flex flex-col gap-4 p-5">
-        <div>
+        <div className="border-b border-subtle pb-3">
           <h3 className="text-sm font-semibold text-primary">发布 / 调整课程作业</h3>
           <p className="mt-1 text-xs text-tertiary">
             同一班级下每道题目对应一份配置；重新发布会更新截止时间、实例数量和考试策略。
@@ -228,12 +240,12 @@ function AssignmentPanel({
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-primary">题目</span>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs font-semibold text-primary">题目</span>
             <select
               value={problemId}
               onChange={(e) => setProblemId(e.target.value)}
-              className="rounded-[var(--radius-md)] border border-subtle bg-surface px-3 py-2 text-sm text-primary"
+              className="rounded-[var(--radius-md)] border border-strong/80 bg-surface px-3 py-2 text-sm text-primary focus:border-brand focus:outline-none"
             >
               {PROBLEM_OPTIONS.map((opt) => (
                 <option key={opt.id} value={opt.id}>
@@ -263,14 +275,14 @@ function AssignmentPanel({
             />
           </Field>
 
-          <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-primary">计分策略</span>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs font-semibold text-primary">计分策略</span>
             <select
               value={scorePolicy}
               onChange={(e) =>
                 setScorePolicy(e.target.value as 'highest_before_due' | 'latest' | 'highest')
               }
-              className="rounded-[var(--radius-md)] border border-subtle bg-surface px-3 py-2 text-sm text-primary"
+              className="rounded-[var(--radius-md)] border border-strong/80 bg-surface px-3 py-2 text-sm text-primary focus:border-brand focus:outline-none"
             >
               <option value="highest_before_due">截止前最高分</option>
               <option value="latest">最后一次有效</option>
@@ -278,14 +290,14 @@ function AssignmentPanel({
             </select>
           </label>
 
-          <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-primary">作答完整度模式</span>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs font-semibold text-primary">作答完整度模式</span>
             <select
               value={integrityPolicy}
               onChange={(e) =>
                 setIntegrityPolicy(e.target.value as 'standard' | 'exam_warn' | 'exam_block')
               }
-              className="rounded-[var(--radius-md)] border border-subtle bg-surface px-3 py-2 text-sm text-primary"
+              className="rounded-[var(--radius-md)] border border-strong/80 bg-surface px-3 py-2 text-sm text-primary focus:border-brand focus:outline-none"
             >
               <option value="standard">常规提交</option>
               <option value="exam_warn">考试监测（记录粘贴与切屏）</option>
@@ -302,31 +314,39 @@ function AssignmentPanel({
           </Field>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 border-t border-subtle pt-3">
           <Button size="sm" disabled={publish.isPending} onClick={() => publish.mutate()}>
             {publish.isPending ? '保存中…' : '保存并发布'}
           </Button>
-          {feedback ? <span className="text-xs text-secondary">{feedback}</span> : null}
+          {feedback ? (
+            <span className="rounded-[var(--radius-sm)] bg-raised px-2.5 py-1 text-xs text-secondary">
+              {feedback}
+            </span>
+          ) : null}
         </div>
       </Card>
 
       <Card className="p-5">
-        <h3 className="text-sm font-semibold text-primary">已发布作业 ({assignments.length})</h3>
+        <div className="flex items-center justify-between gap-2 border-b border-subtle pb-3">
+          <h3 className="text-sm font-semibold text-primary">已发布作业 ({assignments.length})</h3>
+        </div>
         {assignments.length === 0 ? (
-          <div className="mt-3">
+          <div className="mt-4">
             <EmptyState title="尚未发布作业" hint="在上方表单选择题目即可发布给本班学生" />
           </div>
         ) : (
-          <div className="mt-3 divide-y divide-subtle">
+          <div className="mt-2 divide-y divide-subtle">
             {assignments.map((a) => {
               const stmt = findStatement(a.problem_id);
               return (
-                <div key={a.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
-                  <div>
-                    <p className="text-sm font-medium text-primary">
-                      {a.problem_id}
-                      {stmt ? ` · ${stmt.title}` : ''}
-                    </p>
+                <div key={a.id} className="flex flex-wrap items-center justify-between gap-3 py-3.5">
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <Badge tone="brand">{a.problem_id}</Badge>
+                      <p className="text-sm font-semibold text-primary">
+                        {stmt ? stmt.title : a.problem_id}
+                      </p>
+                    </div>
                     <p className="text-xs text-tertiary">
                       及格 {a.pass_score} · {a.n_instances} 组实例 ·{' '}
                       {SCORE_POLICY_LABEL[a.score_policy ?? 'highest_before_due'] ?? a.score_policy} ·{' '}
@@ -417,10 +437,10 @@ function GradingPanel({
   return (
     <div className="flex flex-col gap-5">
       <Card className="flex flex-col gap-3 p-5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-subtle pb-3">
           <div>
             <h3 className="text-sm font-semibold text-primary">课程成绩簿</h3>
-            <p className="text-xs text-tertiary">按有效计分策略汇总所有已选课学生与试验记录</p>
+            <p className="mt-0.5 text-xs text-tertiary">按有效计分策略汇总所有已选课学生与试验记录</p>
           </div>
           <Button
             variant="secondary"
@@ -439,33 +459,33 @@ function GradingPanel({
         ) : !gradebook.data?.length ? (
           <EmptyState title="成绩簿为空" hint="学生选课并发布作业后会生成记录" />
         ) : (
-          <div className="max-h-80 overflow-auto">
+          <div className="max-h-80 overflow-auto rounded-[var(--radius-md)] border border-subtle">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-subtle bg-muted/60 text-left text-xs">
-                  <th className="px-3 py-2 font-medium text-secondary">学号</th>
-                  <th className="px-3 py-2 font-medium text-secondary">姓名</th>
-                  <th className="px-3 py-2 font-medium text-secondary">题目</th>
-                  <th className="px-3 py-2 font-medium text-secondary">有效分</th>
-                  <th className="px-3 py-2 font-medium text-secondary">达标</th>
-                  <th className="px-3 py-2 font-medium text-secondary">提交数</th>
+                <tr className="border-b border-subtle bg-raised text-left text-xs">
+                  <th className="px-3.5 py-2.5 font-semibold text-secondary">学号</th>
+                  <th className="px-3.5 py-2.5 font-semibold text-secondary">姓名</th>
+                  <th className="px-3.5 py-2.5 font-semibold text-secondary">题目</th>
+                  <th className="px-3.5 py-2.5 font-semibold text-secondary">有效分</th>
+                  <th className="px-3.5 py-2.5 font-semibold text-secondary">达标</th>
+                  <th className="px-3.5 py-2.5 font-semibold text-secondary">提交数</th>
                 </tr>
               </thead>
               <tbody>
                 {gradebook.data.map((row) => (
                   <tr
                     key={`${row.user_id}-${row.assignment_id}`}
-                    className="border-b border-subtle last:border-0 hover:bg-muted/35"
+                    className="border-b border-subtle last:border-0 hover:bg-raised/70"
                   >
-                    <td className="px-3 py-2 font-mono text-xs text-secondary tabular-nums">
+                    <td className="px-3.5 py-2.5 font-mono text-xs text-secondary tabular-nums">
                       {row.student_no ?? '未绑定'}
                     </td>
-                    <td className="px-3 py-2 text-secondary">{row.display_name ?? '—'}</td>
-                    <td className="px-3 py-2 font-mono text-xs text-secondary">{row.problem_id}</td>
-                    <td className="px-3 py-2 font-mono font-semibold text-primary tabular-nums">
+                    <td className="px-3.5 py-2.5 font-medium text-primary">{row.display_name ?? '—'}</td>
+                    <td className="px-3.5 py-2.5 font-mono text-xs text-secondary">{row.problem_id}</td>
+                    <td className="px-3.5 py-2.5 font-mono font-semibold text-primary tabular-nums">
                       {row.best_score ?? '—'}
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3.5 py-2.5">
                       {row.passed === null ? (
                         <span className="text-xs text-tertiary">—</span>
                       ) : (
@@ -474,7 +494,7 @@ function GradingPanel({
                         </Badge>
                       )}
                     </td>
-                    <td className="px-3 py-2 font-mono text-xs text-tertiary tabular-nums">
+                    <td className="px-3.5 py-2.5 font-mono text-xs text-tertiary tabular-nums">
                       {row.submission_count}
                     </td>
                   </tr>
@@ -486,8 +506,11 @@ function GradingPanel({
       </Card>
 
       <Card className="p-5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold text-primary">提交明细与复判</h3>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-subtle pb-3">
+          <div>
+            <h3 className="text-sm font-semibold text-primary">提交明细与复判</h3>
+            <p className="mt-0.5 text-xs text-tertiary">选择对应作业后可查阅提交源码、自报完整度线索与发起重判</p>
+          </div>
           {selectedAssignment ? (
             <Button
               variant="secondary"
@@ -506,7 +529,7 @@ function GradingPanel({
             setActionMsg(null);
             onSelectAssignment(event.target.value || null);
           }}
-          className="mt-3 w-full rounded-[var(--radius-md)] border border-subtle bg-surface px-2 py-1.5 text-sm text-primary"
+          className="mt-3.5 w-full rounded-[var(--radius-md)] border border-strong/80 bg-surface px-3 py-2 text-sm text-primary focus:border-brand focus:outline-none"
         >
           <option value="">选择作业</option>
           {assignments.map((assignment) => (
@@ -517,11 +540,15 @@ function GradingPanel({
           ))}
         </select>
 
-        {actionMsg ? <p className="mt-2 text-xs text-secondary">{actionMsg}</p> : null}
+        {actionMsg ? (
+          <p className="mt-2.5 rounded-[var(--radius-sm)] bg-raised px-3 py-1.5 text-xs text-secondary">
+            {actionMsg}
+          </p>
+        ) : null}
 
         <div className="mt-4">
           {!assignmentId ? (
-            <EmptyState title="先选择一次作业" />
+            <EmptyState title="先选择一次作业" hint="在上方下拉框中挑选题目以查看该题全部学生提交" />
           ) : submissions.isLoading ? (
             <Spinner label="正在读取提交" />
           ) : submissions.error ? (
@@ -529,35 +556,51 @@ function GradingPanel({
           ) : (submissions.data ?? []).length === 0 ? (
             <EmptyState title="这次作业还没有提交" />
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-[var(--radius-md)] border border-subtle">
               <table className="w-full border-collapse text-sm">
                 <thead>
-                  <tr className="bg-muted text-left">
-                    <th className="px-3 py-2 font-medium text-primary">编号</th>
-                    <th className="px-3 py-2 font-medium text-primary">次数</th>
-                    <th className="px-3 py-2 font-medium text-primary">状态</th>
-                    <th className="px-3 py-2 font-medium text-primary">分数</th>
-                    <th className="px-3 py-2 font-medium text-primary">时间</th>
-                    <th className="px-3 py-2 font-medium text-primary">操作</th>
+                  <tr className="border-b border-subtle bg-raised text-left text-xs">
+                    <th className="px-3.5 py-2.5 font-semibold text-secondary">编号</th>
+                    <th className="px-3.5 py-2.5 font-semibold text-secondary">次数</th>
+                    <th className="px-3.5 py-2.5 font-semibold text-secondary">状态</th>
+                    <th className="px-3.5 py-2.5 font-semibold text-secondary">分数</th>
+                    <th className="px-3.5 py-2.5 font-semibold text-secondary">时间</th>
+                    <th className="px-3.5 py-2.5 font-semibold text-secondary">操作</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(submissions.data ?? []).map((row) => {
                     const latest = latestOf(row.gradings ?? []);
                     return (
-                      <tr key={row.id} className="border-b border-subtle last:border-0">
-                        <td className="px-3 py-2 font-mono text-xs text-secondary">{row.public_code}</td>
-                        <td className="px-3 py-2 text-secondary">{row.attempt_no}</td>
-                        <td className="px-3 py-2 text-secondary">
-                          {latest ? (STATUS_LABEL[latest.status] ?? latest.status) : '未评测'}
+                      <tr key={row.id} className="border-b border-subtle last:border-0 hover:bg-raised/70">
+                        <td className="px-3.5 py-2.5 font-mono text-xs font-medium text-primary">
+                          {row.public_code}
                         </td>
-                        <td className="px-3 py-2 text-secondary">
+                        <td className="px-3.5 py-2.5 font-mono text-xs text-secondary tabular-nums">
+                          #{row.attempt_no}
+                        </td>
+                        <td className="px-3.5 py-2.5">
+                          <Badge
+                            tone={
+                              latest?.status === 'done'
+                                ? latest.passed
+                                  ? 'success'
+                                  : 'warning'
+                                : latest?.status === 'system_error'
+                                  ? 'danger'
+                                  : 'neutral'
+                            }
+                          >
+                            {latest ? (STATUS_LABEL[latest.status] ?? latest.status) : '未评测'}
+                          </Badge>
+                        </td>
+                        <td className="px-3.5 py-2.5 font-mono font-semibold text-primary tabular-nums">
                           {latest?.score === null || latest?.score === undefined ? '—' : latest.score}
                         </td>
-                        <td className="px-3 py-2 text-xs text-tertiary">
+                        <td className="px-3.5 py-2.5 text-xs text-tertiary">
                           {new Date(row.created_at).toLocaleString('zh-CN')}
                         </td>
-                        <td className="px-3 py-2">
+                        <td className="px-3.5 py-2.5">
                           <div className="flex items-center gap-1.5">
                             <Button
                               variant="ghost"
@@ -608,7 +651,7 @@ function GradingPanel({
               return (
                 <>
                   {meta?.late || meta?.integrity ? (
-                    <div className="flex flex-col gap-1.5 rounded-[var(--radius-md)] border border-subtle bg-muted/40 p-2.5 text-xs">
+                    <div className="flex flex-col gap-1.5 rounded-[var(--radius-md)] border border-subtle bg-raised p-3 text-xs">
                       <div className="flex flex-wrap items-center gap-2">
                         {meta.late ? <Badge tone="warning">逾期提交</Badge> : null}
                         {meta.integrity?.policy ? (
@@ -617,7 +660,7 @@ function GradingPanel({
                           </Badge>
                         ) : null}
                         {meta.integrity && meta.integrity.client_policy_matches === false ? (
-                          <span className="text-danger">端侧策略标记不一致</span>
+                          <span className="font-medium text-danger">端侧策略标记不一致</span>
                         ) : null}
                       </div>
                       {counters ? (
@@ -639,8 +682,8 @@ function GradingPanel({
                     errorMessage={latest?.error_message}
                   />
                   <div>
-                    <p className="mb-1 text-xs font-medium text-tertiary">提交代码</p>
-                    <pre className="max-h-72 overflow-auto rounded-[var(--radius-sm)] bg-muted p-3 font-mono text-xs text-secondary">
+                    <p className="mb-1.5 text-xs font-semibold text-secondary">提交代码</p>
+                    <pre className="max-h-72 overflow-auto rounded-[var(--radius-md)] border border-subtle bg-raised p-3.5 font-mono text-xs leading-relaxed text-secondary">
                       {inspectRow.code_text}
                     </pre>
                   </div>
@@ -682,16 +725,16 @@ function InvitePanel({ courseId }: { courseId: string }) {
   });
 
   return (
-    <Card className="flex flex-col gap-4 p-5">
-      <div>
+    <Card className="flex flex-col gap-5 p-5">
+      <div className="border-b border-subtle pb-3">
         <p className="text-sm font-semibold text-primary">学生选课邀请码</p>
         <p className="mt-1 text-xs text-tertiary">
           请将邀请码分发至授课班级群，切勿发布至公开网页或公共仓库。
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <code className="rounded-[var(--radius-md)] bg-muted px-3 py-2 font-mono text-base text-primary">
+      <div className="flex flex-wrap items-center gap-3 rounded-[var(--radius-md)] border border-subtle bg-raised p-4">
+        <code className="rounded-[var(--radius-sm)] border border-subtle bg-surface px-4 py-2 font-mono text-lg font-bold tracking-wider text-primary">
           {code.isLoading ? '读取中…' : (code.data ?? '尚未生成')}
         </code>
         {code.data ? (
@@ -700,7 +743,7 @@ function InvitePanel({ courseId }: { courseId: string }) {
             size="sm"
             onClick={() => {
               void navigator.clipboard?.writeText(code.data ?? '');
-              setMessage('已复制');
+              setMessage('已复制邀请码');
             }}
           >
             复制邀请码
@@ -708,7 +751,7 @@ function InvitePanel({ courseId }: { courseId: string }) {
         ) : null}
       </div>
 
-      <div className="flex flex-wrap items-end gap-2">
+      <div className="flex flex-wrap items-end gap-2.5">
         <Field label="轮换为新码" hint="留空则由系统生成随机码">
           <TextInput
             value={next}
@@ -721,7 +764,11 @@ function InvitePanel({ courseId }: { courseId: string }) {
           {rotate.isPending ? '更新中…' : '轮换邀请码'}
         </Button>
       </div>
-      {message ? <p className="text-xs text-secondary">{message}</p> : null}
+      {message ? (
+        <p className="rounded-[var(--radius-sm)] bg-raised px-3 py-1.5 text-xs text-secondary">
+          {message}
+        </p>
+      ) : null}
     </Card>
   );
 }
@@ -770,10 +817,12 @@ function RosterPanel({ courseId }: { courseId: string }) {
     return <EmptyState title="无法读取花名册" hint={(roster.error as Error).message} />;
   }
   const rows = roster.data ?? [];
+  const matchedCount = rows.filter((r) => r.status === 'matched').length;
+  const verifiedCount = rows.filter((r) => Boolean(r.verifiedAt)).length;
 
   return (
     <Card className="flex flex-col gap-4 p-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-subtle pb-3">
         <div>
           <p className="text-sm font-semibold text-primary">花名册与身份核验</p>
           <p className="mt-1 text-xs text-tertiary">
@@ -785,40 +834,63 @@ function RosterPanel({ courseId }: { courseId: string }) {
         </Button>
       </div>
 
-      {message ? <p className="text-xs text-secondary">{message}</p> : null}
+      {rows.length > 0 ? (
+        <div className="grid grid-cols-3 gap-2.5">
+          <div className="rounded-[var(--radius-md)] border border-subtle bg-raised px-3.5 py-2.5">
+            <p className="text-[11px] text-tertiary">名单总人数</p>
+            <p className="mt-0.5 font-mono text-lg font-bold text-primary tabular-nums">{rows.length}</p>
+          </div>
+          <div className="rounded-[var(--radius-md)] border border-subtle bg-raised px-3.5 py-2.5">
+            <p className="text-[11px] text-tertiary">已认领账号</p>
+            <p className="mt-0.5 font-mono text-lg font-bold text-brand tabular-nums">{matchedCount}</p>
+          </div>
+          <div className="rounded-[var(--radius-md)] border border-subtle bg-raised px-3.5 py-2.5">
+            <p className="text-[11px] text-tertiary">已线下核验</p>
+            <p className="mt-0.5 font-mono text-lg font-bold text-success tabular-nums">{verifiedCount}</p>
+          </div>
+        </div>
+      ) : null}
+
+      {message ? (
+        <p className="rounded-[var(--radius-sm)] bg-raised px-3 py-1.5 text-xs text-secondary">
+          {message}
+        </p>
+      ) : null}
 
       {rows.length === 0 ? (
         <EmptyState title="还没有导入花名册" hint="导入后学生才能把学号与账号对上" />
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto rounded-[var(--radius-md)] border border-subtle">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="bg-muted text-left">
-                <th className="px-3 py-2 font-medium text-primary">学号</th>
-                <th className="px-3 py-2 font-medium text-primary">姓名</th>
-                <th className="px-3 py-2 font-medium text-primary">认领</th>
-                <th className="px-3 py-2 font-medium text-primary">核验</th>
-                <th className="px-3 py-2 font-medium text-primary">操作</th>
+              <tr className="border-b border-subtle bg-raised text-left text-xs">
+                <th className="px-3.5 py-2.5 font-semibold text-secondary">学号</th>
+                <th className="px-3.5 py-2.5 font-semibold text-secondary">姓名</th>
+                <th className="px-3.5 py-2.5 font-semibold text-secondary">认领</th>
+                <th className="px-3.5 py-2.5 font-semibold text-secondary">核验</th>
+                <th className="px-3.5 py-2.5 font-semibold text-secondary">操作</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.rosterId} className="border-b border-subtle last:border-0">
-                  <td className="px-3 py-2 font-mono text-xs text-secondary">{row.studentNo}</td>
-                  <td className="px-3 py-2 text-secondary">{row.displayName}</td>
-                  <td className="px-3 py-2">
+                <tr key={row.rosterId} className="border-b border-subtle last:border-0 hover:bg-raised/70">
+                  <td className="px-3.5 py-2.5 font-mono text-xs text-secondary tabular-nums">
+                    {row.studentNo}
+                  </td>
+                  <td className="px-3.5 py-2.5 font-medium text-primary">{row.displayName}</td>
+                  <td className="px-3.5 py-2.5">
                     <Badge tone={row.status === 'matched' ? 'brand' : 'neutral'}>
                       {row.status === 'matched' ? '已认领' : '待绑定'}
                     </Badge>
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3.5 py-2.5">
                     {row.verifiedAt ? (
                       <Badge tone="success">已核验</Badge>
                     ) : (
                       <span className="text-xs text-tertiary">未核验</span>
                     )}
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3.5 py-2.5">
                     {row.status === 'matched' && row.matchedUserId && !row.verifiedAt ? (
                       <Button
                         size="sm"
@@ -853,7 +925,7 @@ function RosterPanel({ courseId }: { courseId: string }) {
             onChange={(event) => setCsv(event.target.value)}
             rows={6}
             placeholder={'20260001,李同学\n20260002,王同学,wangtongxue'}
-            className="w-full rounded-[var(--radius-md)] border border-subtle bg-surface px-3 py-2 font-mono text-xs text-primary placeholder:text-tertiary focus:border-[var(--brand-500)] focus:outline-none"
+            className="w-full rounded-[var(--radius-md)] border border-strong/80 bg-surface px-3 py-2 font-mono text-xs text-primary placeholder:text-tertiary focus:border-[var(--brand-500)] focus:ring-2 focus:ring-[var(--brand-500)]/15 focus:outline-none"
           />
         </Field>
         <div className="mt-4 flex justify-end gap-2">

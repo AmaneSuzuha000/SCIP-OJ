@@ -39,23 +39,34 @@ export function AccountMenu() {
   const isStudent = profile.role === 'student';
   const label = profile.display_name ?? profile.role;
   const initial = (label.trim()[0] ?? 'U').toUpperCase();
+  const roleHint = isStudent
+    ? (profile.student_no ?? '未绑定学号')
+    : profile.role === 'admin'
+      ? '平台管理员'
+      : '课程教师';
 
   return (
     <div className="relative" ref={ref}>
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
+        aria-label={label}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="inline-flex cursor-pointer items-center gap-2 rounded-[var(--radius-md)] px-2 py-1 text-sm text-secondary transition-colors hover:bg-hover hover:text-primary"
+        className="inline-flex cursor-pointer items-center gap-2 rounded-[var(--radius-md)] border border-subtle bg-raised/70 px-2.5 py-1 text-sm text-secondary transition-colors hover:border-strong hover:bg-hover hover:text-primary"
       >
         <span
           aria-hidden="true"
-          className="flex size-6 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-semibold text-brand"
+          className="flex size-5 shrink-0 items-center justify-center rounded-full bg-brand text-[11px] font-semibold text-[var(--text-inverse)]"
         >
           {initial}
         </span>
-        <span className="max-w-28 truncate">{label}</span>
+        <span className="max-w-28 truncate font-medium text-primary">{label}</span>
+        {profile.student_no ? (
+          <span className="hidden rounded-[var(--radius-sm)] bg-muted px-1.5 py-0.5 font-mono text-[10px] text-tertiary md:inline">
+            {profile.student_no}
+          </span>
+        ) : null}
         <svg
           aria-hidden="true"
           className={`size-3.5 shrink-0 text-tertiary transition-transform duration-[var(--duration-fast)] ${open ? 'rotate-180' : ''}`}
@@ -71,21 +82,21 @@ export function AccountMenu() {
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 top-full z-[var(--z-header)] mt-1 w-56 rounded-[var(--radius-md)] border border-subtle bg-surface p-1 shadow-[var(--shadow-md)]"
+          className="absolute right-0 top-full z-[var(--z-header)] mt-1.5 w-60 rounded-[var(--radius-lg)] border border-subtle bg-surface p-1.5 shadow-[var(--shadow-lg)]"
         >
-          <div className="px-3 py-2">
-            <p className="truncate text-xs text-tertiary">
-              {isStudent ? (profile.student_no ?? '未绑定学号') : profile.role === 'admin' ? '管理员' : '教师'}
-            </p>
+          <div className="rounded-[var(--radius-md)] bg-raised px-3 py-2.5">
+            <p className="truncate text-xs font-semibold text-primary">{label}</p>
+            <p className="mt-0.5 truncate font-mono text-[11px] text-tertiary">{roleHint}</p>
           </div>
-          <hr className="my-1 border-subtle" />
+          <hr className="my-1.5 border-subtle" />
           <MenuItem
             onClick={() => {
               setOpen(false);
               setProfileOpen(true);
             }}
           >
-            个人资料
+            <span>个人资料</span>
+            <span className="text-[11px] text-tertiary">学号 / 姓名</span>
           </MenuItem>
           <MenuItem
             onClick={() => {
@@ -93,7 +104,8 @@ export function AccountMenu() {
               setJoinOpen(true);
             }}
           >
-            加入课程
+            <span>加入课程</span>
+            <span className="text-[11px] text-tertiary">输入邀请码</span>
           </MenuItem>
         </div>
       ) : null}
@@ -110,7 +122,7 @@ function MenuItem({ onClick, children }: { onClick: () => void; children: React.
       type="button"
       role="menuitem"
       onClick={onClick}
-      className="w-full rounded-[var(--radius-sm)] px-3 py-1.5 text-left text-sm text-secondary hover:bg-hover"
+      className="flex w-full cursor-pointer items-center justify-between rounded-[var(--radius-md)] px-3 py-2 text-left text-sm text-secondary transition-colors hover:bg-hover hover:text-primary"
     >
       {children}
     </button>

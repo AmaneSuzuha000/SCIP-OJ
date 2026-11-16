@@ -250,82 +250,101 @@ export function WorkbenchPage() {
       value={code}
       onChange={handleCodeChange}
       blockPaste={blockPaste}
-      minHeight={420}
+      minHeight={440}
       onSignal={handleSignal}
       ariaLabel="作业代码编辑器"
     />
   );
 
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <Link to={backPath} className="w-fit text-xs text-brand hover:underline">
-          ← 返回课程作业
-        </Link>
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="flex min-w-0 flex-col gap-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <div className="inline-flex rounded-[var(--radius-md)] border border-subtle bg-muted/50 p-0.5">
-                {(
-                  [
-                    ['statement', '题目'],
-                    ['code', '代码'],
-                    ['split', '分屏对照'],
-                  ] as const
-                ).map(([name, label]) => (
-                  <button
-                    key={name}
-                    type="button"
-                    onClick={() => setTab(name)}
-                    className={
-                      'cursor-pointer rounded-[var(--radius-sm)] px-3 py-1 text-xs transition-colors sm:text-sm ' +
-                      (name === 'split' ? 'hidden xl:inline-flex ' : '') +
-                      (tab === name
-                        ? 'bg-surface font-medium text-primary shadow-[var(--shadow-sm)]'
-                        : 'text-secondary hover:text-primary')
-                    }
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              {assignment.data ? (
-                <span className="ml-1 font-mono text-xs text-tertiary">
-                  {assignment.data.problem_id} · 及格 {assignment.data.pass_score} ·{' '}
-                  {assignment.data.n_instances} 组算例
+    <div className="flex flex-col gap-5">
+      <Card className="flex flex-col gap-3 p-4 sm:px-5 sm:py-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Link to={backPath} className="text-xs font-medium text-brand hover:underline">
+              ← 返回课程作业
+            </Link>
+            <span className="text-subtle">/</span>
+            {effectiveProblemId ? (
+              <Badge tone="brand">{effectiveProblemId}</Badge>
+            ) : null}
+            <h1 className="text-sm font-bold text-primary sm:text-base">
+              {statement ? statement.title : '建模作答工作台'}
+            </h1>
+          </div>
+          {assignment.data ? (
+            <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-secondary">
+              <span className="rounded-[var(--radius-sm)] bg-muted px-2 py-0.5 font-mono">
+                及格 {assignment.data.pass_score}
+              </span>
+              <span className="rounded-[var(--radius-sm)] bg-muted px-2 py-0.5 font-mono">
+                {assignment.data.n_instances} 组算例
+              </span>
+              {assignment.data.due_at ? (
+                <span className="rounded-[var(--radius-sm)] bg-muted px-2 py-0.5">
+                  截止 {new Date(assignment.data.due_at).toLocaleString('zh-CN')}
                 </span>
               ) : null}
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {showCode ? (
-                <Button variant="ghost" size="sm" onClick={resetTemplate} disabled={submit.isPending}>
-                  恢复模板
-                </Button>
-              ) : null}
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => void runSelfTest()}
-                disabled={selfTesting || submit.isPending}
+          ) : null}
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-subtle pt-3">
+          <div className="inline-flex rounded-[var(--radius-md)] border border-subtle bg-muted/70 p-0.5">
+            {(
+              [
+                ['statement', '题目'],
+                ['code', '代码'],
+                ['split', '分屏对照'],
+              ] as const
+            ).map(([name, label]) => (
+              <button
+                key={name}
+                type="button"
+                onClick={() => setTab(name)}
+                className={
+                  'cursor-pointer rounded-[var(--radius-sm)] px-3 py-1 text-xs transition-all sm:text-[13px] ' +
+                  (name === 'split' ? 'hidden xl:inline-flex ' : '') +
+                  (tab === name
+                    ? 'bg-surface font-semibold text-primary shadow-[var(--shadow-sm)]'
+                    : 'text-secondary hover:text-primary')
+                }
               >
-                {selfTesting ? '自测中…' : '本地自测'}
-              </Button>
-              <Button onClick={() => submit.mutate()} disabled={submit.isPending} size="sm">
-                {submit.isPending ? '提交中…' : '提交作业'}
-              </Button>
-            </div>
+                {label}
+              </button>
+            ))}
           </div>
 
+          <div className="flex flex-wrap items-center gap-2">
+            {showCode ? (
+              <Button variant="ghost" size="sm" onClick={resetTemplate} disabled={submit.isPending}>
+                恢复模板
+              </Button>
+            ) : null}
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => void runSelfTest()}
+              disabled={selfTesting || submit.isPending}
+            >
+              {selfTesting ? '自测中…' : '本地自测'}
+            </Button>
+            <Button onClick={() => submit.mutate()} disabled={submit.isPending} size="sm">
+              {submit.isPending ? '提交中…' : '提交作业'}
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_370px]">
+        <div className="flex min-w-0 flex-col gap-3">
           {integrityPolicy === 'exam_block' ? (
-            <Card className="border-danger/40 bg-danger-soft/60 px-4 py-2.5 text-xs text-danger">
+            <Card className="border-danger/40 bg-danger-soft/65 px-4 py-2.5 text-xs leading-relaxed text-danger">
               严格防作弊模式：已禁用代码粘贴，且须经教师完成花名册核验后方可正式交卷。
               {pasteNotice ? `（${pasteNotice}）` : ''}
             </Card>
           ) : integrityPolicy === 'exam_warn' ? (
-            <Card className="border-warning/40 bg-warning-soft/60 px-4 py-2 text-xs text-warning">
+            <Card className="border-warning/40 bg-warning-soft/65 px-4 py-2.5 text-xs leading-relaxed text-warning">
               考试监测模式：系统将记录编辑、粘贴与切换窗口操作供教师复核。
             </Card>
           ) : null}
@@ -343,33 +362,33 @@ export function WorkbenchPage() {
         </div>
 
         <div className="flex flex-col gap-4">
-          <Card className="flex h-fit flex-col gap-3 p-4 sm:p-5">
-            <div className="flex items-center justify-between gap-2">
+          <Card className="flex h-fit flex-col gap-3.5 p-5">
+            <div className="flex items-center justify-between gap-2 border-b border-subtle pb-3">
               <p className="text-sm font-semibold text-primary">正式评测状态</p>
               {assignment.data ? (
                 <Badge tone="neutral">及格线 {assignment.data.pass_score}</Badge>
               ) : null}
             </div>
             {submit.isError ? (
-              <p className="rounded-[var(--radius-sm)] bg-danger-soft/60 p-2.5 text-xs leading-relaxed text-danger">
+              <p className="rounded-[var(--radius-md)] border border-danger/35 bg-danger-soft/75 p-3 text-xs leading-relaxed text-danger">
                 {(submit.error as Error).message}
               </p>
             ) : null}
             {submit.data ? (
-              <p className="font-mono text-xs text-tertiary">
+              <p className="rounded-[var(--radius-sm)] bg-raised px-2.5 py-1.5 font-mono text-xs text-secondary">
                 第 {submit.data.attempt_no} 次提交 · {submit.data.public_code}
                 {submit.data.late ? ' · 逾期提交' : ''}
               </p>
             ) : latestSubmission ? (
-              <p className="font-mono text-xs text-tertiary">
+              <p className="rounded-[var(--radius-sm)] bg-raised px-2.5 py-1.5 font-mono text-xs text-secondary">
                 最近提交：第 {latestSubmission.attempt_no} 次 · {latestSubmission.public_code}
                 {(latestSubmission.metadata as { late?: boolean } | null)?.late ? ' · 逾期提交' : ''}
               </p>
             ) : null}
             {grading.isLoading ? <Spinner label="查询评测结果" /> : null}
             {verdict ? (
-              <div className="flex flex-col gap-2.5">
-                <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-2 rounded-[var(--radius-md)] border border-subtle bg-raised px-3.5 py-3">
                   <Badge
                     tone={
                       verdict.status === 'done'
@@ -390,31 +409,32 @@ export function WorkbenchPage() {
                         : '评测中'}
                   </Badge>
                   {verdict.score !== null ? (
-                    <p className="font-mono text-2xl font-semibold text-primary tabular-nums">
-                      {verdict.score} <span className="text-xs font-normal text-tertiary">分</span>
+                    <p className="font-mono text-3xl font-bold tracking-tight text-primary tabular-nums">
+                      {verdict.score}{' '}
+                      <span className="text-xs font-normal text-tertiary">分</span>
                     </p>
                   ) : null}
                 </div>
                 {verdict.status === 'system_error' ? (
-                  <p className="rounded-[var(--radius-sm)] bg-danger-soft/60 p-2 text-xs text-danger">
+                  <p className="rounded-[var(--radius-md)] border border-danger/35 bg-danger-soft/65 p-2.5 text-xs text-danger">
                     服务端出现临时异常，本次记录不会计为 0 分，请稍后重试或联系教师协助复判。
                   </p>
                 ) : null}
                 <GradingReport report={verdict.report_json} errorMessage={verdict.error_message} />
               </div>
             ) : !activeSubmissionId && !submit.isError && !existingSubmissions.isLoading ? (
-              <p className="rounded-[var(--radius-md)] bg-muted/50 px-3 py-2.5 text-xs leading-relaxed text-tertiary">
+              <p className="rounded-[var(--radius-md)] border border-subtle bg-raised px-3.5 py-3 text-xs leading-relaxed text-tertiary">
                 编写模型后建议先点击「本地自测」检查格式与公开样例，确认无误再正式交卷。
               </p>
             ) : null}
-            <p className="mt-auto border-t border-subtle pt-2.5 text-[11px] leading-relaxed text-tertiary">
+            <p className="mt-auto border-t border-subtle pt-3 text-[11px] leading-relaxed text-tertiary">
               正式成绩由云端隔离容器调用原生 PySCIPOpt 验证全部测试算例后写入。
             </p>
           </Card>
 
           {selfTesting || selfTestResult ? (
-            <Card className="flex flex-col gap-2.5 p-4">
-              <div className="flex items-center justify-between gap-2">
+            <Card className="flex flex-col gap-2.5 p-5">
+              <div className="flex items-center justify-between gap-2 border-b border-subtle pb-2.5">
                 <p className="text-sm font-semibold text-primary">浏览器本地自测</p>
                 <Badge tone={selfTestResult ? (selfTestResult.ok ? 'success' : 'danger') : 'neutral'}>
                   {selfTesting ? '运行中' : selfTestResult?.ok ? '样例通过' : '未通过'}
@@ -423,16 +443,16 @@ export function WorkbenchPage() {
               {selfTesting && selfTestProgress ? <Spinner label={selfTestProgress.message} /> : null}
               {selfTestResult ? (
                 <div className="flex flex-col gap-2 text-xs">
-                  <p className={selfTestResult.ok ? 'text-secondary' : 'text-danger'}>
+                  <p className={selfTestResult.ok ? 'font-medium text-success' : 'font-medium text-danger'}>
                     {selfTestResult.summary}
                   </p>
                   {selfTestResult.stdout ? (
-                    <pre className="max-h-36 overflow-auto rounded-[var(--radius-sm)] bg-muted p-2.5 font-mono text-secondary">
+                    <pre className="max-h-36 overflow-auto rounded-[var(--radius-sm)] border border-subtle bg-raised p-2.5 font-mono text-secondary">
                       {selfTestResult.stdout}
                     </pre>
                   ) : null}
                   {selfTestResult.error ? (
-                    <pre className="max-h-36 overflow-auto rounded-[var(--radius-sm)] bg-danger-soft p-2.5 font-mono text-danger">
+                    <pre className="max-h-36 overflow-auto rounded-[var(--radius-sm)] border border-danger/35 bg-danger-soft p-2.5 font-mono text-danger">
                       {selfTestResult.error}
                     </pre>
                   ) : null}

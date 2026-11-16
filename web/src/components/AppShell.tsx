@@ -47,30 +47,37 @@ export function AppShell() {
   const cycle = useTheme((s) => s.cycle);
 
   return (
-    <div className="flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-[var(--z-header)] border-b border-subtle bg-surface/85 backdrop-blur">
-        {/* One row on a laptop, two on a phone via flex order so AccountMenu
-            and its dialogs mount only once in the DOM. */}
-        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2 sm:min-h-14 sm:flex-nowrap sm:py-0">
-          <NavLink to="/" className="order-1 flex shrink-0 items-center gap-2">
+    <div className="flex min-h-dvh flex-col bg-canvas">
+      <header className="sticky top-0 z-[var(--z-header)] border-b border-subtle bg-surface/85 backdrop-blur-md">
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2 sm:min-h-14 sm:flex-nowrap sm:py-0">
+          <NavLink to="/" className="order-1 group flex shrink-0 items-center gap-2.5">
             <span
               aria-hidden="true"
-              className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] bg-brand-soft text-brand"
+              className="flex size-8 items-center justify-center rounded-[var(--radius-md)] border border-brand/25 bg-brand-soft text-brand shadow-[var(--shadow-sm)] transition-transform duration-[var(--duration-fast)] group-hover:scale-[1.03]"
             >
               <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 2 20 7v10l-8 5-8-5V7l8-5Z" />
                 <path d="m12 22V12m0 0 8-5m-8 5L4 7" />
               </svg>
             </span>
-            <span className="flex items-baseline gap-1.5">
-              <span className="text-sm font-semibold tracking-[0.16em] text-primary">SCIP</span>
-              <span className="text-xs font-medium tracking-[0.12em] text-tertiary">OJ</span>
+            <span className="flex items-center gap-1.5">
+              <span className="text-sm font-bold tracking-[0.14em] text-primary">SCIP</span>
+              <span className="text-xs font-semibold tracking-[0.1em] text-tertiary">OJ</span>
+              <span className="hidden rounded-[var(--radius-sm)] border border-subtle bg-raised px-1.5 py-0.5 font-mono text-[10px] font-medium text-tertiary lg:inline-block">
+                MIP LAB
+              </span>
             </span>
           </NavLink>
 
           <div className="order-2 ml-auto flex shrink-0 items-center gap-1.5 sm:order-3">
             <AccountMenu />
-            <Button variant="ghost" size="sm" onClick={cycle} aria-label="切换配色" className="gap-1.5 px-2.5">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={cycle}
+              aria-label="切换配色"
+              className="gap-1.5 px-2.5"
+            >
               <ThemeIcon theme={theme} />
               <span className="hidden sm:inline">
                 {theme === 'dark' ? '深色' : theme === 'light' ? '浅色' : '跟随系统'}
@@ -88,7 +95,7 @@ export function AppShell() {
           </div>
 
           <nav
-            className="order-3 -mx-4 flex w-[calc(100%+2rem)] items-center gap-1 overflow-x-auto px-4 sm:order-2 sm:mx-0 sm:w-auto sm:flex-1 sm:px-0"
+            className="order-3 -mx-4 flex w-[calc(100%+2rem)] items-center gap-1 overflow-x-auto border-t border-subtle/60 px-4 pt-1.5 sm:order-2 sm:mx-0 sm:w-auto sm:flex-1 sm:border-t-0 sm:px-0 sm:pt-0"
             aria-label="主导航"
           >
             {NAV.filter((item) => !item.staff || (profile && profile.role !== 'student')).map((item) => (
@@ -98,10 +105,10 @@ export function AppShell() {
                 end={item.end}
                 className={({ isActive }) =>
                   [
-                    'shrink-0 whitespace-nowrap rounded-[var(--radius-md)] px-3 py-1.5 text-sm transition-colors',
+                    'relative shrink-0 whitespace-nowrap rounded-[var(--radius-md)] px-3 py-1.5 text-sm transition-colors duration-[var(--duration-fast)]',
                     isActive
-                      ? 'bg-brand-soft font-medium text-brand'
-                      : 'text-secondary hover:bg-hover hover:text-primary',
+                      ? 'bg-brand-soft font-semibold text-brand'
+                      : 'text-secondary hover:bg-hover/80 hover:text-primary',
                   ].join(' ')
                 }
               >
@@ -116,10 +123,14 @@ export function AppShell() {
         <Outlet />
       </main>
 
-      <footer className="border-t border-subtle bg-surface/40 py-6">
-        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 px-4 text-xs text-tertiary">
-          <span>SCIP-OJ · 工业工程《系统建模与仿真》课程实验平台</span>
-          <span>教学案例采用合成数据 · 网页本地运行仅作练习，不计入正式成绩</span>
+      <footer className="border-t border-subtle bg-surface/65 py-6">
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 text-xs text-tertiary">
+          <div className="flex items-center gap-2">
+            <span className="font-mono font-semibold text-secondary">SCIP-OJ</span>
+            <span>·</span>
+            <span>工业工程《系统建模与仿真》课程实验平台</span>
+          </div>
+          <span>教学案例采用合成数据 · 浏览器本地求解仅作探索，正式成绩以云端容器评测为准</span>
         </div>
       </footer>
     </div>
