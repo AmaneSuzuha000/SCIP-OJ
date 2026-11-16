@@ -23,7 +23,7 @@ def image_identity(image="scip-oj-student:ci"):
 
 def main():
     work = Path("_grading_tmp")
-    context = json.loads((work / "context.json").read_text())
+    context = json.loads((work / "context.json").read_text(encoding="utf-8"))
     settings = {**context["config"], "instance_seed": context["instance_seed"]}
     report = grade_file(work / "submission.py", settings["problem_id"], settings)
     image_id, image_digest = image_identity()

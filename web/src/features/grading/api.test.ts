@@ -29,6 +29,7 @@ describe('grading api', () => {
       codeText: 'def solve(i): return {}',
       requestKey: '11111111-1111-4111-8111-111111111111',
       clientIntegrity: {
+        reported_policy: 'exam_warn',
         elapsed_seconds: 12,
         input_events: 3,
         paste_events: 0,
@@ -43,7 +44,10 @@ describe('grading api', () => {
         assignment_id: 'a1',
         code_text: 'def solve(i): return {}',
         request_key: '11111111-1111-4111-8111-111111111111',
-        client_integrity: expect.objectContaining({ blocked_pastes: 0 }),
+        client_integrity: expect.objectContaining({
+          reported_policy: 'exam_warn',
+          blocked_pastes: 0,
+        }),
       },
     });
   });

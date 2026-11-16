@@ -66,7 +66,8 @@ for (const lesson of lessons) {
   const pre = await page.locator('pre').allInnerTexts();
   const traceback = pre.find((text) => text.includes('Traceback') || text.includes('Error:'));
   const banner = await page.locator('body').innerText();
-  const startupFailed = banner.includes('建模环境未能启动');
+  const startupFailed =
+    banner.includes('浏览器求解环境未能就绪') || banner.includes('建模环境未能启动');
 
   if (traceback || startupFailed) {
     failures += 1;

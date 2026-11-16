@@ -59,6 +59,12 @@ class GradingSecurityTests(unittest.TestCase):
             grade_assignment({"objective": 2, "solution": [[1], [0, 1, 0]]},
                              self.a, self.a_meta)
 
+    def test_string_or_bytes_solution_is_rejected(self):
+        with self.assertRaises(ValueError):
+            grade_knapsack({"objective": 4, "solution": "01"}, self.k, self.k_meta)
+        with self.assertRaises(ValueError):
+            grade_assignment({"objective": 2, "solution": "1001"}, self.a, self.a_meta)
+
     def test_objective_gap_rejects_nan(self):
         with self.assertRaises(ValueError):
             score_objective(math.nan, 10)

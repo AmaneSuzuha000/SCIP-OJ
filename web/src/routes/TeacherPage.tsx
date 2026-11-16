@@ -139,13 +139,14 @@ export function TeacherPage() {
         ))}
       </div>
 
-      {activeCourse && tab === 'invite' ? <InvitePanel courseId={activeCourse} /> : null}
-      {activeCourse && tab === 'roster' ? <RosterPanel courseId={activeCourse} /> : null}
+      {activeCourse && tab === 'invite' ? <InvitePanel key={activeCourse} courseId={activeCourse} /> : null}
+      {activeCourse && tab === 'roster' ? <RosterPanel key={activeCourse} courseId={activeCourse} /> : null}
       {activeCourse && tab === 'assignments' ? (
-        <AssignmentPanel courseId={activeCourse} assignments={assignments.data ?? []} />
+        <AssignmentPanel key={activeCourse} courseId={activeCourse} assignments={assignments.data ?? []} />
       ) : null}
       {activeCourse && tab === 'grading' ? (
         <GradingPanel
+          key={activeCourse}
           courseId={activeCourse}
           courseCode={activeCourseObj?.code ?? undefined}
           assignments={assignments.data ?? []}
@@ -595,8 +596,44 @@ function GradingPanel({
           <div className="flex flex-col gap-3">
             {(() => {
               const latest = latestOf(inspectRow.gradings ?? []);
+              const meta = (inspectRow.metadata ?? null) as {
+                late?: boolean;
+                integrity?: {
+                  policy?: string;
+                  client_policy_matches?: boolean;
+                  counters?: Record<string, number>;
+                };
+              } | null;
+              const counters = meta?.integrity?.counters;
               return (
                 <>
+                  {meta?.late || meta?.integrity ? (
+                    <div className="flex flex-col gap-1.5 rounded-[var(--radius-md)] border border-subtle bg-muted/40 p-2.5 text-xs">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {meta.late ? <Badge tone="warning">逾期提交</Badge> : null}
+                        {meta.integrity?.policy ? (
+                          <Badge tone={meta.integrity.policy === 'exam_block' ? 'danger' : 'warning'}>
+                            {INTEGRITY_LABEL[meta.integrity.policy] ?? meta.integrity.policy}
+                          </Badge>
+                        ) : null}
+                        {meta.integrity && meta.integrity.client_policy_matches === false ? (
+                          <span className="text-danger">端侧策略标记不一致</span>
+                        ) : null}
+                      </div>
+                      {counters ? (
+                        <p className="font-mono text-[11px] text-secondary tabular-nums">
+                          用时 {counters.elapsed_seconds ?? 0}s · 编辑 {counters.input_events ?? 0} ·
+                          粘贴 {counters.paste_events ?? 0} · 拦截粘贴 {counters.blocked_pastes ?? 0} ·
+                          切屏 {counters.hidden_events ?? 0} · 拖拽 {counters.drop_events ?? 0}
+                        </p>
+                      ) : null}
+                      {counters ? (
+                        <p className="text-[11px] text-tertiary">
+                          说明：以上监测计数由浏览器自报，仅作人工复核参考，禁止单独作为违纪依据。
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
                   <GradingReport
                     report={latest?.report_json}
                     errorMessage={latest?.error_message}

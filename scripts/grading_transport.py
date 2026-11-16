@@ -34,7 +34,7 @@ def claim():
     grading_id = os.environ["GRADING_ID"]
     data = rpc("claim_grading", {"p_grading_id": grading_id, "p_submission_id": submission_id,
                                 "p_runner_ref": runner_ref(), "p_legacy_ref": os.environ["GITHUB_SHA"]})
-    with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+    with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
         output.write(f"claimed={'true' if data else 'false'}\n")
         if not data:
             return  # Duplicate delivery does not own this attempt or callback.

@@ -8,6 +8,7 @@ import {
   createRequestKeyManager,
   getAssignment,
   latestGrading,
+  listAssignmentSubmissions,
   submitCode,
   type ClientIntegritySignals,
 } from '@/features/grading/api';
@@ -98,6 +99,7 @@ export function WorkbenchPage() {
   useEffect(() => {
     const nextDraft = readDraft(assignmentId);
     dirtyRef.current = Boolean(nextDraft);
+    keyManagerRef.current.confirmAndRotate();
     setCode(nextDraft ?? initialTemplate);
     setSubmissionId(null);
     setSelfTestResult(null);
@@ -154,10 +156,19 @@ export function WorkbenchPage() {
   const integrityPolicy = assignment.data?.integrity_policy ?? 'standard';
   const blockPaste = integrityPolicy === 'exam_block';
 
+  const existingSubmissions = useQuery({
+    queryKey: ['assignment-submissions', assignmentId],
+    queryFn: () => listAssignmentSubmissions(assignmentId as string),
+    enabled: Boolean(assignmentId),
+  });
+  const latestSubmission = existingSubmissions.data?.[0] ?? null;
+  const activeSubmissionId = submissionId ?? latestSubmission?.id ?? null;
+
   const submit = useMutation({
     mutationFn: () => {
       const requestKey = keyManagerRef.current.keyFor(assignmentId as string, code);
       const clientIntegrity: ClientIntegritySignals = {
+        reported_policy: integrityPolicy,
         elapsed_seconds: Math.max(0, Math.round((Date.now() - startedAtRef.current) / 1000)),
         ...signalsRef.current,
       };
@@ -172,13 +183,14 @@ export function WorkbenchPage() {
       setSubmissionId(receipt.submission_id);
       keyManagerRef.current.confirmAndRotate();
       await queryClient.invalidateQueries({ queryKey: ['my-submissions'] });
+      await queryClient.invalidateQueries({ queryKey: ['assignment-submissions', assignmentId] });
     },
   });
 
   const grading = useQuery({
-    queryKey: ['grading', submissionId],
-    queryFn: () => latestGrading(submissionId as string),
-    enabled: Boolean(submissionId),
+    queryKey: ['grading', activeSubmissionId],
+    queryFn: () => latestGrading(activeSubmissionId as string),
+    enabled: Boolean(activeSubmissionId),
     refetchInterval: (query) => {
       const status = query.state.data?.status;
       return status === 'queued' || status === 'running' ? 2000 : false;
@@ -348,6 +360,11 @@ export function WorkbenchPage() {
                 第 {submit.data.attempt_no} 次提交 · {submit.data.public_code}
                 {submit.data.late ? ' · 逾期提交' : ''}
               </p>
+            ) : latestSubmission ? (
+              <p className="font-mono text-xs text-tertiary">
+                最近提交：第 {latestSubmission.attempt_no} 次 · {latestSubmission.public_code}
+                {(latestSubmission.metadata as { late?: boolean } | null)?.late ? ' · 逾期提交' : ''}
+              </p>
             ) : null}
             {grading.isLoading ? <Spinner label="查询评测结果" /> : null}
             {verdict ? (
@@ -385,7 +402,7 @@ export function WorkbenchPage() {
                 ) : null}
                 <GradingReport report={verdict.report_json} errorMessage={verdict.error_message} />
               </div>
-            ) : !submit.data && !submit.isError ? (
+            ) : !activeSubmissionId && !submit.isError && !existingSubmissions.isLoading ? (
               <p className="rounded-[var(--radius-md)] bg-muted/50 px-3 py-2.5 text-xs leading-relaxed text-tertiary">
                 编写模型后建议先点击「本地自测」检查格式与公开样例，确认无误再正式交卷。
               </p>

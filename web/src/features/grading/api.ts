@@ -11,6 +11,7 @@ export interface SubmitReceipt {
 }
 
 export interface ClientIntegritySignals {
+  reported_policy?: 'standard' | 'exam_warn' | 'exam_block';
   elapsed_seconds: number;
   input_events: number;
   paste_events: number;

@@ -172,6 +172,34 @@ try {
   assert.equal(await scalar('SELECT matched_user_id FROM roster_pending WHERE id=$1',[postJoinRowId]),lateStudent);
   assert.equal(await scalar('SELECT is_verified_course_student($1,$2)',[rosterCourse,lateStudent]),false);
 
+  // TA can confirm identity & view verified roster; global admin (without enrollment) passes is_teacher_of & gradebook/leaderboard/roster RPCs.
+  const taUser=randomUUID(), globalAdmin=randomUUID(), dupStudent=randomUUID();
+  await query(`INSERT INTO auth.users(id,email) VALUES($1,'ta@test.invalid'),($2,'admin@test.invalid'),($3,'dup@test.invalid')`,[taUser,globalAdmin,dupStudent]);
+  await query(`INSERT INTO public.enrollments(course_id,user_id,role) VALUES($1,$2,'ta')`,[rosterCourse,taUser]);
+  await query(`UPDATE public.profiles SET role='admin' WHERE user_id=$1`,[globalAdmin]);
+  await query("SELECT set_config('request.jwt.claim.sub',$1,false),set_config('request.jwt.claims',$2,false)",[taUser,JSON.stringify({sub:taUser,role:'authenticated'})]);
+  await exec('SET ROLE authenticated');
+  await query('SELECT confirm_student_identity($1,$2)',[postJoinRowId,lateStudent]);
+  const taVerified=(await query('SELECT * FROM get_course_verified_roster($1)',[rosterCourse])).rows;
+  assert.equal(taVerified.length,1);
+  assert.equal(taVerified[0].roster_id,postJoinRowId);
+  await exec('RESET ROLE');
+
+  await query("SELECT set_config('request.jwt.claim.sub',$1,false),set_config('request.jwt.claims',$2,false)",[globalAdmin,JSON.stringify({sub:globalAdmin,role:'authenticated'})]);
+  await exec('SET ROLE authenticated');
+  assert.equal(await scalar('SELECT is_teacher_of($1)',[course]),true);
+  assert.equal((await query('SELECT * FROM get_teacher_gradebook($1)',[course])).rows.length,4);
+  assert.equal((await query('SELECT * FROM get_course_leaderboard($1,NULL)',[course])).rows.length,1);
+  assert.equal((await query('SELECT * FROM get_course_verified_roster($1)',[rosterCourse])).rows.length,1);
+  await exec('RESET ROLE');
+
+  // Case-insensitive student_no uniqueness & whitespace normalization on profiles/roster_pending.
+  await query(`UPDATE public.profiles SET student_no='  u20260100  ', display_name='   ' WHERE user_id=$1`,[lateStudent]);
+  assert.equal(await scalar('SELECT student_no FROM public.profiles WHERE user_id=$1',[lateStudent]),'u20260100');
+  assert.equal(await scalar('SELECT display_name FROM public.profiles WHERE user_id=$1',[lateStudent]),'Late Joiner');
+  await assert.rejects(query(`UPDATE public.profiles SET student_no='U20260100' WHERE user_id=$1`,[dupStudent]),/uq_profiles_student_no_ci|duplicate key/);
+  await assert.rejects(query(`INSERT INTO public.roster_pending(course_id,student_no,display_name) VALUES($1,'  20260100 ','Dup')`,[rosterCourse]),/uq_roster_pending_course_student_no_ci|roster_pending_course_id_student_no_key|duplicate key/);
+
   await query("SELECT set_config('request.jwt.claim.sub',NULL,false),set_config('request.jwt.claims','',false)");
   // Native PostgreSQL CI uses independent sessions to prove the lock/lease races.
   if (native) {

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Badge, Card, EmptyState, Spinner } from '@/components/ui';
@@ -17,6 +18,11 @@ const POLICY_LABEL: Record<string, string> = {
 
 export function CoursePage() {
   const { courseId } = useParams<{ courseId: string }>();
+  const [lbProblem, setLbProblem] = useState<string>('ALL');
+
+  useEffect(() => {
+    setLbProblem('ALL');
+  }, [courseId]);
 
   const assignments = useQuery({
     queryKey: ['assignments', courseId],
@@ -25,8 +31,9 @@ export function CoursePage() {
   });
 
   const leaderboard = useQuery({
-    queryKey: ['leaderboard', courseId],
-    queryFn: () => listCourseLeaderboard(courseId as string),
+    queryKey: ['leaderboard', courseId, lbProblem],
+    queryFn: () =>
+      listCourseLeaderboard(courseId as string, lbProblem === 'ALL' ? undefined : lbProblem),
     enabled: Boolean(courseId),
   });
 
@@ -90,7 +97,28 @@ export function CoursePage() {
 
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold text-primary">课程排行榜</h2>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h2 className="text-lg font-semibold text-primary">课程排行榜</h2>
+            {assignments.data && assignments.data.length > 0 ? (
+              <div className="inline-flex rounded-[var(--radius-md)] border border-subtle bg-muted/50 p-0.5 text-xs">
+                {(['ALL', ...assignments.data.map((a) => a.problem_id)] as const).map((pid) => (
+                  <button
+                    key={pid}
+                    type="button"
+                    onClick={() => setLbProblem(pid)}
+                    className={
+                      'cursor-pointer rounded-[var(--radius-sm)] px-2.5 py-1 transition-colors ' +
+                      (lbProblem === pid
+                        ? 'bg-surface font-medium text-primary shadow-[var(--shadow-sm)]'
+                        : 'text-secondary hover:text-primary')
+                    }
+                  >
+                    {pid === 'ALL' ? '综合' : pid}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
           <span className="text-xs text-tertiary">学号已在服务端脱敏处理，仅展示在籍学生正式成绩</span>
         </div>
         {leaderboard.isLoading ? (

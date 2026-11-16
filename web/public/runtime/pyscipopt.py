@@ -72,6 +72,14 @@ class _Expr:
     def __rmul__(self, other):
         return self.__mul__(other)
 
+    def __truediv__(self, other):
+        if isinstance(other, (int, float, np.integer, np.floating)):
+            denom = float(other)
+            if denom == 0.0:
+                raise ZeroDivisionError("表达式不能除以 0")
+            return _Expr({k: v / denom for k, v in self.coeffs.items()}, self.const / denom)
+        return NotImplemented
+
     # ---- comparisons ------------------------------------------------
     def __le__(self, other):
         return self._constraint(other, "<=")
@@ -212,8 +220,11 @@ class Model:
             raise NotImplementedError("暂不支持变量类型 " + str(vtype))
         if vtype == "B":
             lb, ub = 0.0, 1.0
-        if ub is None:
-            ub = _INF
+        else:
+            if lb is None:
+                lb = 0.0
+            if ub is None:
+                ub = _INF
         var = Variable(len(self._vars), name or ("x" + str(len(self._vars))), vtype, lb, ub, obj)
         self._vars.append(var)
         return var
@@ -324,7 +335,9 @@ class Model:
             return self._solution[expr.index]
         if isinstance(expr, _Expr):
             return sum(coef * self._solution[i] for i, coef in expr.coeffs.items()) + expr.const
-        raise TypeError("getVal 需要单个变量")
+        if isinstance(expr, (int, float, np.integer, np.floating)):
+            return float(expr)
+        raise TypeError("getVal 需要变量、线性表达式或数值")
 
     def getObjVal(self):
         if self._objval is None:

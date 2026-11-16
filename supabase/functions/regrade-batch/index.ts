@@ -8,7 +8,16 @@
 import { handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { createServiceClient } from "../_shared/secrets.ts";
 import { getAuthenticatedUser, isTeacherOrAdmin } from "../_shared/auth.ts";
-import { gradingRevision, batchRequestKey, UUID_RE } from "../_shared/grading.ts";
+import { dispatchQueued, gradingRevision, batchRequestKey, UUID_RE } from "../_shared/grading.ts";
+
+function batchItemError(message?: string): string {
+  const msg = message || "";
+  if (msg.includes("TEACHER_ROLE_REQUIRED")) return "仅本课程教师或助教可发起复判";
+  if (msg.includes("SUBMISSION_NOT_FOUND")) return "提交记录不存在";
+  if (msg.includes("INVALID_GRADER_REF")) return "评分器版本校验失败，请重试或联系管理员";
+  if (msg.includes("IDEMPOTENCY_CONFLICT")) return "复判请求编号冲突，请刷新后重试";
+  return "复判保存失败或无权访问，请核对后重试";
+}
 
 Deno.serve(async (req: Request): Promise<Response> => {
   const corsResp = handleCors(req);
@@ -19,7 +28,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { supabase } = createServiceClient();
+    const { supabase, supabaseUrl } = createServiceClient();
 
     // 1. 身份认证
     const auth = await getAuthenticatedUser(req, supabase);
@@ -90,16 +99,28 @@ Deno.serve(async (req: Request): Promise<Response> => {
     try { revision = await gradingRevision(supabase); }
     catch { /* Existing per-item receipts can still be replayed. */ }
     // Each item is a complete transaction with its own audit and outbox.
-    // Scheduled consumers drain batches, avoiding Edge execution time limits.
+    // Immediate dispatch is used for small batches (<= 5); larger batches drain
+    // via scheduled recovery to stay well within Edge Function timeouts.
     const results: Array<{ id: string; success: boolean; grading_id?: string; error?: string }> = [];
+    const dispatchIds: string[] = [];
     for (const id of targetSubmissionIds) {
       const { data, error } = await supabase.rpc("enqueue_grading", {
         p_user_id: user.id, p_assignment_id: null, p_submission_id: id,
         p_code_text: null, p_request_key: await batchRequestKey(requestKey,id),
         p_grader_ref: revision, p_metadata: {}, p_reason: reason,
       });
-      results.push(error ? { id, success:false, error:"复判保存失败或无权访问，请核对后重试" }
-        : { id, success:true, grading_id:data.grading_id });
+      if (error) {
+        results.push({ id, success: false, error: batchItemError(error.message) });
+      } else {
+        results.push({ id, success: true, grading_id: data.grading_id });
+        if (targetSubmissionIds.length <= 5 && data?.grading_id) {
+          dispatchIds.push(data.grading_id);
+        }
+      }
+    }
+
+    if (dispatchIds.length > 0) {
+      await Promise.allSettled(dispatchIds.map((gid) => dispatchQueued(supabase, supabaseUrl, gid)));
     }
 
     return jsonResponse({

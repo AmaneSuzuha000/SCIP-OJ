@@ -68,12 +68,16 @@ class PySCIPOptShimTests(unittest.TestCase):
         m2 = shim.Model("obj-const")
         m2.hideOutput()
         a = m2.addVar("a", vtype="I", lb=1, ub=4)
-        b = m2.addVar("b", vtype="I", lb=0, ub=4)
-        m2.addCons(a + b >= 3)
+        b = m2.addVar("b", vtype="I", lb=None, ub=4)
+        m2.addCons((a + b) / 2 >= 1.5)
         m2.setObjective(5 * a + 2 * b + 12.5, "minimize")
         m2.optimize()
         self.assertEqual(m2.getStatus(), "optimal")
         self.assertAlmostEqual(m2.getObjVal(), 5 * 1 + 2 * 2 + 12.5)
+        self.assertAlmostEqual(m2.getVal(7), 7.0)
+        self.assertAlmostEqual(m2.getVal(a + b), 3.0)
+        with self.assertRaises(ZeroDivisionError):
+            _ = a / 0
 
         # 3) Infeasible model must expose zero solutions cleanly
         m3 = shim.Model("infeasible")
@@ -271,6 +275,36 @@ class SandboxPipeRunnerTests(unittest.TestCase):
             with mock.patch.object(sandbox.subprocess, "Popen", return_value=fail_start_proc):
                 with self.assertRaises(SystemJudgeError):
                     sandbox._run_isolated(code_path, {}, 3)
+
+    def test_sandbox_worker_frames_result_despite_trailing_no_newline_and_stdout_swap(self):
+        from judge import sandbox_worker
+
+        with tempfile.TemporaryDirectory() as tmp:
+            sub = Path(tmp) / "sub.py"
+            sub.write_text(
+                "import io, sys\n"
+                "def solve(inst):\n"
+                "    print('debug without newline', end='')\n"
+                "    sys.stdout = io.StringIO()\n"
+                "    return {'objective': 4, 'solution': [0, 1]}\n",
+                encoding="utf-8",
+            )
+            fake_in = io.StringIO('{"n": 2}\n')
+            fake_out = io.StringIO()
+            with mock.patch.object(sandbox_worker, "STUDENT_FILE", sub), mock.patch.object(
+                sys, "stdin", fake_in
+            ), mock.patch.object(sys, "stdout", fake_out):
+                rc = sandbox_worker.main()
+
+            self.assertEqual(rc, 0)
+            lines = fake_out.getvalue().splitlines()
+            result_lines = [
+                line[len(sandbox_worker.RESULT_PREFIX):]
+                for line in lines
+                if line.startswith(sandbox_worker.RESULT_PREFIX)
+            ]
+            self.assertEqual(len(result_lines), 1)
+            self.assertEqual(json.loads(result_lines[0]), {"objective": 4, "solution": [0, 1]})
 
 
 if __name__ == "__main__":

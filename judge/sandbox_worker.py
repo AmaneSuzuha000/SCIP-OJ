@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -15,7 +16,20 @@ ERROR_PREFIX = "SCIP_OJ_ERROR="
 STUDENT_FILE = Path("/sandbox/submission.py")
 
 
+def _emit_protocol(stream, line: str) -> None:
+    payload = "\n" + line + "\n"
+    try:
+        if stream is not None and not getattr(stream, "closed", False):
+            stream.write(payload)
+            stream.flush()
+            return
+    except (OSError, ValueError):
+        pass
+    os.write(1, payload.encode("utf-8", errors="replace"))
+
+
 def main() -> int:
+    protocol_out = sys.stdout
     try:
         public_instance = json.loads(sys.stdin.readline())
         if not isinstance(public_instance, dict):
@@ -30,11 +44,11 @@ def main() -> int:
         result = module.solve(public_instance)
         # Disallow non-JSON and non-finite outputs before passing to host scorer.
         serialized = json.dumps(result, allow_nan=False, ensure_ascii=False)
-        print(RESULT_PREFIX + serialized, flush=True)
+        _emit_protocol(protocol_out, RESULT_PREFIX + serialized)
         return 0
     except BaseException as exc:
         # Never expose the host scorer, secrets, stack frames or private seeds.
-        print(ERROR_PREFIX + f"{type(exc).__name__}: {str(exc)[:300]}", flush=True)
+        _emit_protocol(protocol_out, ERROR_PREFIX + f"{type(exc).__name__}: {str(exc)[:300]}")
         return 2
 
 

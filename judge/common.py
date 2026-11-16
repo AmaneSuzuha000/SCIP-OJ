@@ -224,6 +224,8 @@ def _finite_float(value: Any) -> float:
 
 
 def _as_vector(solution: Mapping[Any, float] | Sequence[float], n: int) -> list[float]:
+    if isinstance(solution, (str, bytes, bytearray)):
+        raise ValueError("solution 不能是字符串或字节序列")
     if isinstance(solution, Mapping):
         out = []
         for i in range(n):
@@ -338,6 +340,8 @@ def grade_assignment(result: Mapping[str, Any], instance: Mapping[str, Any], met
 
 def _as_matrix(solution: Mapping[Any, float] | Sequence[Any], n: int) -> list[list[float]]:
     """Accept flat n*n list, nested list, or dict keys 'i,j' / (i,j) / i*n+j."""
+    if isinstance(solution, (str, bytes, bytearray)):
+        raise ValueError("solution 不能是字符串或字节序列")
     if isinstance(solution, Mapping):
         mat = [[0.0] * n for _ in range(n)]
         for i in range(n):
