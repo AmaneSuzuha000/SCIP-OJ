@@ -18,11 +18,11 @@ export const lessons: Lesson[] = [
     "id": "01_P001_knapsack_PySCIPOpt",
     "file": "01_P001_knapsack_PySCIPOpt.ipynb",
     "title": "P001 0-1 背包问题 · PySCIPOpt 建模与评测演示",
-    "summary": "本 Notebook 在浏览器内直接运行（WebAssembly + Python），无需安装环境。",
+    "summary": "场景：在有限预算或载荷容量上限下，从若干不可分割的候选物料或项目中遴选组合，使总收益最大。本案例在浏览器（WebAssembly + Python）中直接运行 from pyscipopt import Model, quicksum，无需本地配置环境。",
     "cells": [
       {
         "kind": "markdown",
-        "source": "# P001 0-1 背包问题 · PySCIPOpt 建模与评测演示\n\n本 Notebook 在浏览器内直接运行（WebAssembly + Python），无需安装环境。\n在浏览器内核中可以直接 `from pyscipopt import Model` 求解混合整数线性规划 (MIP)。"
+        "source": "# P001 0-1 背包问题 · PySCIPOpt 建模与评测演示\n\n**场景**：在有限预算或载荷容量上限下，从若干不可分割的候选物料或项目中遴选组合，使总收益最大。本案例在浏览器（WebAssembly + Python）中直接运行 `from pyscipopt import Model, quicksum`，无需本地配置环境。\n\n练习用，不计正式成绩。\n\n## 1. 混合整数线性规划模型\n\n- 二元变量 $x_i \\in \\{0, 1\\}$ 表示第 $i$ 件物品是否选入背包；\n- 目标函数：最大化所选物品总价值：\n\n$$\\max \\sum_{i=0}^{n-1} v_i x_i$$\n\n- 容量约束：选中物品总重量不超过容量上限 $\\sum_{i=0}^{n-1} w_i x_i \\le C$。"
       },
       {
         "kind": "code",
@@ -30,7 +30,7 @@ export const lessons: Lesson[] = [
       },
       {
         "kind": "markdown",
-        "source": "## 1. 契约定义：solve(instance) -> dict\n\n输入数据规范：\n- `n`: 物品数量\n- `weights`: 物品重量列表 `[w0, w1, ...]`\n- `values`: 物品价值列表 `[v0, v1, ...]`\n- `capacity`: 背包容量上限\n\n返回值规范：\n- `status`: `\"optimal\"` 等\n- `objective`: float 目标值（选入物品的总价值）\n- `solution`: dict，键为物品下标（0..n-1），值为 0.0 或 1.0"
+        "source": "## 2. 接口契约：solve(instance) -> dict\n\n输入数据规范：\n- `n`：物品数量；\n- `weights`：物品重量列表 `[w0, w1, ...]`；\n- `values`：物品价值列表 `[v0, v1, ...]`；\n- `capacity`：背包容量上限。\n\n返回值规范：\n- `status`：求解状态（如 `\"optimal\"`）；\n- `objective`：`float` 目标值（选入物品的总价值）；\n- `solution`：物品下标映射 `dict`（`0..n-1 -> 0.0 / 1.0`）或长度为 `n` 的列表。"
       },
       {
         "kind": "code",
@@ -39,6 +39,10 @@ export const lessons: Lesson[] = [
       {
         "kind": "code",
         "source": "# 测试用例验证\ntest_instance = {\n    \"n\": 4,\n    \"weights\": [2, 3, 4, 5],\n    \"values\": [3, 4, 5, 6],\n    \"capacity\": 8\n}\nres = solve(test_instance)\nprint(\"求解结果:\", res)"
+      },
+      {
+        "kind": "markdown",
+        "source": "## 3. 可以接着改什么\n\n1. 将 `capacity` 从 `8` 调整为 `7` 或 `10`，观察选中物品组合与单位重量价值排序规律；\n2. 把某件物品价值调低后重跑，检验「性价比高但占容量大」的物品何时被多个小物品替代；\n3. 正式提交 `P001` 作业前，请前往「课程教学 → 工作台」用公开样例点击 **「本地自测」** 校验。"
       }
     ]
   },
@@ -46,11 +50,11 @@ export const lessons: Lesson[] = [
     "id": "02_P002_assignment_PySCIPOpt",
     "file": "02_P002_assignment_PySCIPOpt.ipynb",
     "title": "P002 指派问题 · PySCIPOpt 建模与评测演示",
-    "summary": "本 Notebook 在浏览器内直接运行（WebAssembly + Python），无需安装环境。",
+    "summary": "场景：将 $n$ 名作业人员（或机台）一对一指派给 $n$ 项独立生产任务，在双向唯一匹配约束下最小化总作业成本。本案例演示标准平衡指派模型的 PySCIPOpt 实现与解矩阵提取。",
     "cells": [
       {
         "kind": "markdown",
-        "source": "# P002 指派问题 · PySCIPOpt 建模与评测演示\n\n本 Notebook 在浏览器内直接运行（WebAssembly + Python），无需安装环境。\n示范使用 PySCIPOpt 建立 0-1 整数线性规划模型求解标准指派问题。"
+        "source": "# P002 指派问题 · PySCIPOpt 建模与评测演示\n\n**场景**：将 $n$ 名作业人员（或机台）一对一指派给 $n$ 项独立生产任务，在双向唯一匹配约束下最小化总作业成本。本案例演示标准平衡指派模型的 PySCIPOpt 实现与解矩阵提取。\n\n练习用，不计正式成绩。\n\n## 1. 混合整数线性规划模型\n\n- 二元变量 $x_{ij} \\in \\{0, 1\\}$ 表示人员 $i$ 是否承担任务 $j$；\n- 目标函数：最小化总指派成本：\n\n$$\\min \\sum_{i=0}^{n-1} \\sum_{j=0}^{n-1} c_{ij} x_{ij}$$\n\n- 行约束（每人恰分派一项任务）：$\\sum_{j=0}^{n-1} x_{ij} = 1$，$\\forall i$；\n- 列约束（每项任务恰由一人承担）：$\\sum_{i=0}^{n-1} x_{ij} = 1$，$\\forall j$。\n\n由于指派约束矩阵具备**全幺模性**，即使将变量改为连续非负，极点最优解也保持整数性。"
       },
       {
         "kind": "code",
@@ -58,7 +62,7 @@ export const lessons: Lesson[] = [
       },
       {
         "kind": "markdown",
-        "source": "## 1. 契约定义：solve(instance) -> dict\n\n输入数据规范：\n- `n`: 人数与任务数\n- `costs`: n x n 费用矩阵，`costs[i][j]` 为人 i 完成任务 j 的成本\n\n返回值规范：\n- `status`: `\"optimal\"` 等\n- `objective`: float 最小总成本\n- `solution`: n x n 矩阵，每行每列恰有一个 1.0，其余为 0.0"
+        "source": "## 2. 接口契约：solve(instance) -> dict\n\n输入数据规范：\n- `n`：人数与任务数；\n- `costs`：$n \\times n$ 费用矩阵，`costs[i][j]` 为人员 $i$ 完成任务 $j$ 的成本。\n\n返回值规范：\n- `status`：求解状态（如 `\"optimal\"`）；\n- `objective`：`float` 最小总成本；\n- `solution`：$n \\times n$ 二维矩阵，每行每列恰有一个 `1.0`，其余为 `0.0`。"
       },
       {
         "kind": "code",
@@ -67,6 +71,10 @@ export const lessons: Lesson[] = [
       {
         "kind": "code",
         "source": "# 测试用例验证\ntest_instance = {\n    \"n\": 3,\n    \"costs\": [\n        [9, 2, 7],\n        [6, 4, 3],\n        [5, 8, 1]\n    ]\n}\nres = solve(test_instance)\nprint(\"指派求解结果:\", res)"
+      },
+      {
+        "kind": "markdown",
+        "source": "## 3. 可以接着改什么\n\n1. 将矩阵中某格成本改为极大值（模拟人员不具备该技能），观察匹配方案如何重新分配；\n2. 对费用矩阵任意一行同加固定常数，验证最优匹配组合不变而目标值同步增加该常数；\n3. 准备提交 `P002` 正式作业时，可在工作台切换「分屏对照」对照题面与模板完成编码。"
       }
     ]
   },
@@ -98,7 +106,7 @@ export const lessons: Lesson[] = [
       },
       {
         "kind": "markdown",
-        "source": "## 3. 独立穷举 Oracle 验证（81 种指派，不依赖 SCIP 的求解结果）\n\n枚举 3^4=81 种分配，逐一检查容量；启用设施为有至少一名客户指派的设施。由于固定成本非负，在此模型中最优解不需要开启空闲设施。这给出一个独立且可检查的最优目标对照。"
+        "source": "## 3. 独立穷举 Oracle 验证（81 种指派，不依赖 SCIP 的求解结果）\n\n枚举 $3^4 = 81$ 种分配，逐一检查容量；启用设施为有至少一名客户指派的设施。由于固定成本非负，在此模型中最优解不需要开启空闲设施。这给出一个独立且可检查的最优目标对照。"
       },
       {
         "kind": "code",
@@ -106,7 +114,7 @@ export const lessons: Lesson[] = [
       },
       {
         "kind": "markdown",
-        "source": "## 4. 从“优化”走向“仿真”\n\n1. 固定这份静态分配，若客户需求每天随机到达且维修服务时间不确定，中心会出现怎样的等待？\n2. 把需求改为多个高/低负荷场景，分别求解静态最优，再测试方案在未见场景的表现；评估方案鲁棒性时，应通过样本外独立场景检验决策表现。\n3. 思考练习：把需求改成随机到达、维修时间随机之后，就需要排队仿真而不是线性规划；分析系统等待时间与服务资源配置。\n4. 课堂拓展：允许客户需求可分割时，须将 x_ij 改成连续流量并重写守恒约束，求解结果不一定与当前整数指派模型相同。\n\n练习用，不计正式成绩。"
+        "source": "## 4. 从“优化”走向“仿真”\n\n1. 固定这份静态分配，若客户需求每天随机到达且维修服务时间不确定，中心会出现怎样的等待？\n2. 把需求改为多个高/低负荷场景，分别求解静态最优，再测试方案在未见场景的表现；评估方案鲁棒性时，应通过样本外独立场景检验决策表现。\n3. 思考练习：把需求改成随机到达、维修时间随机之后，就需要排队仿真而不是线性规划；分析系统等待时间与服务资源配置。\n4. 课堂拓展：允许客户需求可分割时，须将 $x_{ij}$ 改成连续流量并重写守恒约束，求解结果不一定与当前整数指派模型相同。\n\n练习用，不计正式成绩。"
       }
     ]
   },
@@ -170,7 +178,7 @@ export const lessons: Lesson[] = [
       },
       {
         "kind": "markdown",
-        "source": "## 2. 独立精确验证\n\n只有 4 个工件，共 4! = 24 种排列。完全不调用 SCIP，按物理加工顺序计算每个排列的完工矩阵，对照 MIP 最优值。"
+        "source": "## 2. 独立精确验证\n\n只有 4 个工件，共 $4! = 24$ 种排列。完全不调用 SCIP，按物理加工顺序计算每个排列的完工矩阵，对照 MIP 最优值。"
       },
       {
         "kind": "code",

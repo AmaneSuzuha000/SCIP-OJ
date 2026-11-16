@@ -1,16 +1,16 @@
 [
   {
     "id": "P001",
-    "title": "0-1 背包（MIP 入门）",
+    "title": "0-1 背包优化（资源预算分配）",
     "difficulty": "easy",
-    "tags": ["MIP", "knapsack"],
+    "tags": ["0-1 整数规划", "背包模型", "资源分配"],
     "path": "problems/P001_knapsack"
   },
   {
     "id": "P002",
-    "title": "指派问题（Assignment）",
+    "title": "平衡指派优化（任务一对一匹配）",
     "difficulty": "easy",
-    "tags": ["MIP", "assignment"],
+    "tags": ["0-1 整数规划", "指派模型", "全幺模矩阵"],
     "path": "problems/P002_assignment"
   }
 ]

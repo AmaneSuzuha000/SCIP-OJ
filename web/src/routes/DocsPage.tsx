@@ -4,6 +4,10 @@ import { DOCUMENTS, DOC_GROUP_LABEL, type DocGroup } from '@/features/docs/docum
 
 const ORDER: DocGroup[] = ['student', 'teacher', 'case'];
 
+function readingMinutes(source: string): number {
+  return Math.max(1, Math.ceil(source.length / 450));
+}
+
 /**
  * The course handbooks.
  *
@@ -14,7 +18,10 @@ export function DocsPage() {
   return (
     <div className="flex flex-col gap-8">
       <section className="rounded-[var(--radius-lg)] border border-subtle bg-surface p-6 shadow-[var(--shadow-sm)]">
-        <Badge tone="brand">课程文档</Badge>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge tone="brand">课程文档 · {DOCUMENTS.length} 份手册</Badge>
+          <Badge tone="neutral">学生指南 / 规范</Badge>
+        </div>
         <h1 className="mt-3 text-2xl font-bold tracking-tight text-primary sm:text-3xl">指南与规范</h1>
         <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-secondary">
           汇聚平台使用指南、课程学习路径建议、拓展建模案例说明与实验评价规范。
@@ -44,7 +51,9 @@ export function DocsPage() {
                       <p className="line-clamp-2 text-xs leading-relaxed text-tertiary">{doc.summary}</p>
                     ) : null}
                     <div className="mt-auto flex items-center justify-between border-t border-subtle pt-3 text-xs">
-                      <span className="font-mono text-tertiary">{doc.id}</span>
+                      <span className="font-mono text-tertiary">
+                        约 {readingMinutes(doc.source)} 分钟阅读
+                      </span>
                       <span className="font-medium text-brand">阅读正文 →</span>
                     </div>
                   </Card>

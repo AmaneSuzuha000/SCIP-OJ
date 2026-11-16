@@ -233,7 +233,24 @@ export function WorkbenchPage() {
   const showCode = tab === 'code' || tab === 'split';
 
   const statementCard = statement ? (
-    <Card className="flex flex-col gap-3 p-5 sm:p-6">
+    <Card className="flex flex-col gap-4 p-5 sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-subtle pb-3">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge tone="brand">{statement.id}</Badge>
+          <Badge tone="neutral">
+            {statement.difficulty === 'easy' ? '基础核心' : statement.difficulty}
+          </Badge>
+          {statement.tags.map((tag) => (
+            <span
+              key={tag}
+              className="rounded-[var(--radius-sm)] bg-muted px-2 py-0.5 text-[11px] text-secondary"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+        <span className="text-[11px] text-tertiary">第 4 节公开样例已内置于「本地自测」</span>
+      </div>
       <MarkdownCell source={statement.source} />
     </Card>
   ) : assignment.isLoading ? (

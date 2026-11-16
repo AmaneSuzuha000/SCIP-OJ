@@ -9,13 +9,17 @@ def solve(instance: dict) -> dict:
 
     model = Model("p002-assignment")
     model.hideOutput()
+
+    # 1. 定义 0-1 决策变量：x[i][j] = 1 表示人员 i 指派给任务 j
     x = [[model.addVar(vtype="B", name=f"x_{i}_{j}") for j in range(n)] for i in range(n)]
 
-    # 补充行/列指派约束与最小化总成本目标：
+    # 2. 添加行指派约束（每人恰一项任务）与列指派约束（每任务恰由一人承担）
     # for i in range(n):
     #     model.addCons(quicksum(x[i][j] for j in range(n)) == 1)
     # for j in range(n):
     #     model.addCons(quicksum(x[i][j] for i in range(n)) == 1)
+
+    # 3. 设置目标函数：最小化总指派费用
     # model.setObjective(
     #     quicksum(costs[i][j] * x[i][j] for i in range(n) for j in range(n)),
     #     "minimize",

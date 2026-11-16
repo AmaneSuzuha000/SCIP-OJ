@@ -102,21 +102,21 @@ function MarkdownLink({ href, children }: { href: string; children: ReactNode })
   if (href.startsWith('/')) {
     if (inRouter) {
       return (
-        <Link to={href} className="text-brand underline underline-offset-2">
+        <Link to={href} className="font-medium text-brand underline underline-offset-2">
           {children}
         </Link>
       );
     }
     const base = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
     return (
-      <a href={base + href} className="text-brand underline underline-offset-2">
+      <a href={base + href} className="font-medium text-brand underline underline-offset-2">
         {children}
       </a>
     );
   }
   if (href.startsWith('#')) {
     return (
-      <a href={href} className="text-brand underline underline-offset-2">
+      <a href={href} className="font-medium text-brand underline underline-offset-2">
         {children}
       </a>
     );
@@ -126,7 +126,7 @@ function MarkdownLink({ href, children }: { href: string; children: ReactNode })
       href={href}
       target="_blank"
       rel="noreferrer noopener"
-      className="text-brand underline underline-offset-2"
+      className="font-medium text-brand underline underline-offset-2"
     >
       {children}
     </a>
@@ -141,7 +141,10 @@ function inline(text: string, keyPrefix: string): ReactNode[] {
         return <strong key={key} className="font-semibold text-primary">{token.text}</strong>;
       case 'code':
         return (
-          <code key={key} className="rounded bg-muted px-1 py-0.5 font-mono text-[0.9em] text-secondary">
+          <code
+            key={key}
+            className="rounded-[var(--radius-sm)] border border-subtle bg-raised px-1.5 py-0.5 font-mono text-[0.88em] text-primary"
+          >
             {token.text}
           </code>
         );
@@ -166,7 +169,23 @@ function inline(text: string, keyPrefix: string): ReactNode[] {
   });
 }
 
-/** A run of table rows, kept together so the header can be separated. */
+type Alignment = 'text-left' | 'text-right' | 'text-center';
+
+function parseAlignments(sepLine: string | undefined): Alignment[] {
+  if (!sepLine || !/^\s*\|?[\s:|-]+\|?\s*$/.test(sepLine)) return [];
+  return sepLine
+    .replace(/^\s*\|/, '')
+    .replace(/\|\s*$/, '')
+    .split('|')
+    .map((cell) => {
+      const t = cell.trim();
+      if (t.startsWith(':') && t.endsWith(':')) return 'text-center';
+      if (t.endsWith(':')) return 'text-right';
+      return 'text-left';
+    });
+}
+
+/** A run of table rows, kept together so the header and column alignments apply cleanly. */
 function renderTable(rows: string[], key: string) {
   const cells = (line: string) =>
     line
@@ -175,14 +194,18 @@ function renderTable(rows: string[], key: string) {
       .split('|')
       .map((cell) => cell.trim());
   const header = cells(rows[0] ?? '');
+  const alignments = parseAlignments(rows[1]);
   const body = rows.slice(1).filter((line) => !/^\s*\|?[\s:|-]+\|?\s*$/.test(line));
   return (
-    <div key={key} className="overflow-x-auto rounded-md border border-subtle">
+    <div key={key} className="my-1 overflow-x-auto rounded-[var(--radius-md)] border border-subtle">
       <table className="w-full border-collapse text-sm">
         <thead>
-          <tr className="bg-muted">
+          <tr className="bg-raised">
             {header.map((cell, index) => (
-              <th key={index} className="border-b border-subtle px-3 py-2 text-left font-medium text-primary">
+              <th
+                key={index}
+                className={`border-b border-subtle px-3.5 py-2.5 text-xs font-semibold text-primary ${alignments[index] ?? 'text-left'}`}
+              >
                 {inline(cell, key + '-h-' + index)}
               </th>
             ))}
@@ -190,9 +213,12 @@ function renderTable(rows: string[], key: string) {
         </thead>
         <tbody>
           {body.map((line, rowIndex) => (
-            <tr key={rowIndex} className="border-b border-subtle last:border-0 hover:bg-muted/35">
+            <tr key={rowIndex} className="border-b border-subtle last:border-0 hover:bg-raised/65">
               {cells(line).map((cell, cellIndex) => (
-                <td key={cellIndex} className="px-3 py-2 align-top text-secondary">
+                <td
+                  key={cellIndex}
+                  className={`px-3.5 py-2.5 align-top text-xs leading-relaxed text-secondary sm:text-sm ${alignments[cellIndex] ?? 'text-left'}`}
+                >
                   {inline(cell, key + '-' + rowIndex + '-' + cellIndex)}
                 </td>
               ))}
@@ -204,17 +230,39 @@ function renderTable(rows: string[], key: string) {
   );
 }
 
+/** Deterministic section id matching DocPage's table-of-contents generator. */
+export function headingAnchorId(title: string): string {
+  const cleaned = title
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s_-]+/gu, '')
+    .replace(/\s+/g, '-');
+  return 'sec-' + (cleaned || 'section');
+}
+
+const HEADING_CLASSES: Record<number, string> = {
+  1: 'mt-1 mb-1 border-b border-subtle pb-2.5 text-xl font-bold tracking-tight text-primary',
+  2: 'mt-5 mb-1 border-l-3 border-brand pl-2.5 text-base font-bold text-primary',
+  3: 'mt-3.5 text-sm font-semibold text-primary',
+  4: 'mt-3 text-sm font-semibold text-secondary',
+};
+
 /** Everything except display math: one pass over the lines of a text run. */
 function renderProse(source: string, keyPrefix: string): ReactNode[] {
   const blocks: ReactNode[] = [];
   let list: string[] = [];
+  let quoteLines: string[] = [];
   // Ordered and unordered runs must not merge: in the course material a
   // numbered list is a sequence of steps and the numbers carry meaning.
   let ordered = false;
 
   const flushList = () => {
     if (list.length === 0) return;
-    const className = 'ml-5 space-y-1 text-sm text-secondary ' + (ordered ? 'list-decimal' : 'list-disc');
+    const className =
+      'ml-5 space-y-1.5 text-sm leading-relaxed text-secondary ' +
+      (ordered ? 'list-decimal' : 'list-disc');
     const items = list.map((item, index) => (
       <li key={index}>{inline(item, keyPrefix + '-li-' + blocks.length + '-' + index)}</li>
     ));
@@ -228,14 +276,33 @@ function renderProse(source: string, keyPrefix: string): ReactNode[] {
     list = [];
   };
 
+  const flushQuote = () => {
+    if (quoteLines.length === 0) return;
+    const blockIdx = blocks.length;
+    blocks.push(
+      <blockquote
+        key={keyPrefix + '-q-' + blockIdx}
+        className="space-y-1.5 rounded-r-[var(--radius-md)] border-l-3 border-brand bg-brand-soft/45 px-4 py-2.5 text-xs leading-relaxed text-secondary sm:text-sm"
+      >
+        {quoteLines.map((qLine, qIdx) => (
+          <p key={qIdx}>{inline(qLine, keyPrefix + '-q-' + blockIdx + '-' + qIdx)}</p>
+        ))}
+      </blockquote>,
+    );
+    quoteLines = [];
+  };
+
   const lines = source.split('\n');
   for (let index = 0; index < lines.length; index += 1) {
     const line = (lines[index] ?? '').replace(/\s+$/, '');
 
     // A fenced block swallows everything up to its closing fence, so the
     // content inside is never treated as markdown.
-    if (/^\s*```/.test(line)) {
+    const fenceOpen = /^\s*```([^\s`]*)\s*$/.exec(line);
+    if (fenceOpen) {
       flushList();
+      flushQuote();
+      const lang = (fenceOpen[1] ?? '').trim();
       const body: string[] = [];
       index += 1;
       while (index < lines.length && !/^\s*```/.test(lines[index] ?? '')) {
@@ -243,9 +310,19 @@ function renderProse(source: string, keyPrefix: string): ReactNode[] {
         index += 1;
       }
       blocks.push(
-        <pre key={keyPrefix + '-pre-' + index} className="overflow-x-auto rounded-md bg-muted p-3 text-xs leading-relaxed text-secondary">
-          <code className="font-mono">{body.join('\n')}</code>
-        </pre>,
+        <div
+          key={keyPrefix + '-pre-' + index}
+          className="my-1 overflow-hidden rounded-[var(--radius-md)] border border-subtle bg-raised"
+        >
+          {lang ? (
+            <div className="border-b border-subtle bg-muted/60 px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-tertiary">
+              {lang}
+            </div>
+          ) : null}
+          <pre className="overflow-x-auto p-3.5 text-xs leading-relaxed text-secondary">
+            <code className="font-mono">{body.join('\n')}</code>
+          </pre>
+        </div>,
       );
       continue;
     }
@@ -253,6 +330,7 @@ function renderProse(source: string, keyPrefix: string): ReactNode[] {
     // Consecutive pipe rows form one table.
     if (/^\s*\|.*\|\s*$/.test(line)) {
       flushList();
+      flushQuote();
       const rows: string[] = [];
       while (index < lines.length && /^\s*\|.*\|\s*$/.test(lines[index] ?? '')) {
         rows.push(lines[index] ?? '');
@@ -265,26 +343,29 @@ function renderProse(source: string, keyPrefix: string): ReactNode[] {
 
     if (!line.trim()) {
       flushList();
+      flushQuote();
       continue;
     }
     if (/^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
       flushList();
-      blocks.push(<hr key={keyPrefix + '-hr-' + index} className="my-3 border-subtle" />);
+      flushQuote();
+      blocks.push(<hr key={keyPrefix + '-hr-' + index} className="my-3.5 border-subtle" />);
       continue;
     }
     const heading = /^(#{1,4})\s+(.*)$/.exec(line);
     if (heading) {
       flushList();
+      flushQuote();
       const level = (heading[1] ?? '#').length;
       const Tag = ('h' + level) as 'h1' | 'h2' | 'h3' | 'h4';
-      const sizes = ['text-xl', 'text-base', 'text-sm', 'text-sm'] as const;
-      const size = sizes[Math.min(level, 4) - 1] ?? 'text-sm';
+      const titleText = heading[2] ?? '';
       blocks.push(
         <Tag
           key={keyPrefix + '-h-' + index}
-          className={size + ' font-semibold text-primary ' + (level <= 2 ? 'mt-2.5' : 'mt-3')}
+          id={level === 2 ? headingAnchorId(titleText) : undefined}
+          className={HEADING_CLASSES[level] ?? HEADING_CLASSES[3]}
         >
-          {inline(heading[2] ?? '', keyPrefix + '-h-' + index)}
+          {inline(titleText, keyPrefix + '-h-' + index)}
         </Tag>,
       );
       continue;
@@ -292,16 +373,10 @@ function renderProse(source: string, keyPrefix: string): ReactNode[] {
     const quote = /^\s*>\s?(.*)$/.exec(line);
     if (quote) {
       flushList();
-      blocks.push(
-        <blockquote
-          key={keyPrefix + '-q-' + index}
-          className="rounded-r-[var(--radius-sm)] border-l-2 border-brand bg-brand-soft/45 px-3.5 py-2 text-sm leading-relaxed text-secondary"
-        >
-          {inline(quote[1] ?? '', keyPrefix + '-q-' + index)}
-        </blockquote>,
-      );
+      quoteLines.push(quote[1] ?? '');
       continue;
     }
+    flushQuote();
     const bullet = /^\s*[-*]\s+(.*)$/.exec(line);
     const numbered = /^\s*\d+[.)]\s+(.*)$/.exec(line);
     if (bullet || numbered) {
@@ -319,6 +394,7 @@ function renderProse(source: string, keyPrefix: string): ReactNode[] {
     );
   }
   flushList();
+  flushQuote();
   return blocks;
 }
 
@@ -332,14 +408,19 @@ export function MarkdownCell({ source }: { source: string }) {
     if (index % 2 === 1) {
       const tex = unwrap(part);
       blocks.push(
-        <Suspense key={index} fallback={<pre className="font-mono text-xs text-tertiary">{tex}</pre>}>
-          <MathSpan tex={tex} display />
-        </Suspense>,
+        <div
+          key={index}
+          className="my-1 overflow-x-auto rounded-[var(--radius-md)] border border-subtle/70 bg-raised/60 px-4 py-2"
+        >
+          <Suspense fallback={<pre className="font-mono text-xs text-tertiary">{tex}</pre>}>
+            <MathSpan tex={tex} display />
+          </Suspense>
+        </div>,
       );
       return;
     }
     blocks.push(...renderProse(part, 'b' + index));
   });
 
-  return <div className="flex flex-col gap-2">{blocks}</div>;
+  return <div className="flex flex-col gap-2.5">{blocks}</div>;
 }

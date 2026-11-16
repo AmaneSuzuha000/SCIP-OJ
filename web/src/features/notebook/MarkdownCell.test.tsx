@@ -120,4 +120,36 @@ describe('markdown formulas', () => {
     expect(container.querySelector('blockquote')).toHaveTextContent('重点提示内容');
     expect(container.textContent).not.toContain('---');
   });
+
+  it('groups consecutive blockquote lines, applies table alignment, and shows fence language tag', () => {
+    const { container } = render(
+      <MarkdownCell
+        source={[
+          '> 第一行提示',
+          '> 第二行补充',
+          '',
+          '| 维度 | 权重 | 状态 |',
+          '| --- | ---: | :---: |',
+          '| 格式 | 10 | 通过 |',
+          '',
+          '```python',
+          'x = 1',
+          '```',
+        ].join('\n')}
+      />,
+    );
+
+    const quotes = container.querySelectorAll('blockquote');
+    expect(quotes).toHaveLength(1);
+    expect(quotes[0]).toHaveTextContent('第一行提示');
+    expect(quotes[0]).toHaveTextContent('第二行补充');
+
+    const headers = container.querySelectorAll('th');
+    expect(headers[0]).toHaveClass('text-left');
+    expect(headers[1]).toHaveClass('text-right');
+    expect(headers[2]).toHaveClass('text-center');
+
+    expect(screen.getByText('python')).toBeInTheDocument();
+    expect(container.querySelector('pre code')).toHaveTextContent('x = 1');
+  });
 });
